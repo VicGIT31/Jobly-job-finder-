@@ -1,0 +1,98 @@
+import type { Metadata } from "next";
+import Link from "next/link";
+import { notFound } from "next/navigation";
+import { prisma } from "@/lib/prisma";
+import { OfferCard } from "@/components/offers/offer-card";
+import { offerToDocument } from "@/server/search/sync";
+
+export const dynamic = "force-dynamic";
+
+async function getCompany(slug: string) {
+  return prisma.company.findUnique({
+    where: { slug },
+    include: {
+      offers: {
+        where: { status: "ACTIVE" },
+        include: { company: true },
+        orderBy: { publishedAt: "desc" },
+      },
+    },
+  });
+}
+
+export async function generateMetadata({
+  params,
+}: {
+  params: { slug: string };
+}): Promise<Metadata> {
+  const company = await getCompany(params.slug);
+  if (!company) return { title: "Entreprise introuvable" };
+  return {
+    title: `${company.name} — offres et présentation`,
+    description: company.description.slice(0, 160),
+  };
+}
+
+export default async function EntreprisePage({ params }: { params: { slug: string } }) {
+  const company = await getCompany(params.slug);
+  if (!company) notFound();
+
+  return (
+    <div className="mx-auto max-w-6xl px-4 py-8">
+      <nav aria-label="Fil d'Ariane" className="text-sm text-ink/60">
+        <Link href="/entreprises" className="underline-offset-4 hover:underline">
+          Entreprises
+        </Link>{" "}
+        / <span aria-current="page">{company.name}</span>
+      </nav>
+
+      <header className="mt-4 border-b border-ink pb-8">
+        <div className="flex items-center gap-3">
+          <h1 className="font-display text-4xl font-black tracking-tight">{company.name}</h1>
+          {company.featured && (
+            <span className="stamp bg-signal text-[#141414] !border-[#141414]">À la une</span>
+          )}
+        </div>
+        <p className="mt-2 text-sm uppercase tracking-wider text-ink/60">
+          {company.sector} · {company.size} salariés
+          {company.website && (
+            <>
+              {" · "}
+              <a
+                href={company.website}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="normal-case text-cobalt underline-offset-4 hover:underline"
+              >
+                Site web ↗
+              </a>
+            </>
+          )}
+        </p>
+        <p className="mt-4 max-w-3xl leading-relaxed text-ink/85">{company.description}</p>
+      </header>
+
+      <section className="mt-8" aria-labelledby="offres-entreprise">
+        <h2 id="offres-entreprise" className="font-display text-2xl font-bold">
+          {company.offers.length} offre{company.offers.length > 1 ? "s" : ""} active
+          {company.offers.length > 1 ? "s" : ""}
+        </h2>
+        {company.offers.length > 0 ? (
+          <div className="mt-5 grid gap-3 md:grid-cols-2">
+            {company.offers.map((offer, i) => (
+              <OfferCard key={offer.id} offer={offerToDocument(offer)} index={i} />
+            ))}
+          </div>
+        ) : (
+          <p className="mt-4 border border-dashed border-ink/40 p-8 text-center text-ink/70">
+            Aucune offre active pour le moment —{" "}
+            <Link href="/offres" className="font-semibold text-cobalt underline-offset-4 hover:underline">
+              voir toutes les offres
+            </Link>
+            .
+          </p>
+        )}
+      </section>
+    </div>
+  );
+}
