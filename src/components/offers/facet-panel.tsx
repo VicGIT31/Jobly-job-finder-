@@ -1,0 +1,173 @@
+"use client";
+
+import type { FacetCounts } from "@/server/search/query";
+import {
+  CONTRACT_LABELS,
+  CONTRACT_TYPES,
+  DATE_RANGE_LABELS,
+  DATE_RANGES,
+  EDUCATION_LABELS,
+  EDUCATION_LEVELS,
+  RADII,
+  REMOTE_LABELS,
+  REMOTE_POLICIES,
+} from "@/lib/search-params";
+
+type FacetGroupProps = {
+  title: string;
+  options: Array<{ value: string; label: string; count: number }>;
+  selected: string[];
+  onToggle: (value: string) => void;
+};
+
+function FacetGroup({ title, options, selected, onToggle }: FacetGroupProps) {
+  if (options.length === 0) return null;
+  return (
+    <fieldset className="rule pt-4">
+      <legend className="pb-2 text-xs font-bold uppercase tracking-widest">{title}</legend>
+      <div className="flex flex-col gap-0.5">
+        {options.map((opt) => (
+          <label
+            key={opt.value}
+            className="flex min-h-[32px] cursor-pointer items-center justify-between gap-2 px-1 text-sm hover:bg-ink/5"
+          >
+            <span className="flex items-center gap-2">
+              <input
+                type="checkbox"
+                className="h-4 w-4 accent-cobalt"
+                checked={selected.includes(opt.value)}
+                onChange={() => onToggle(opt.value)}
+              />
+              {opt.label}
+            </span>
+            <span className="text-xs tabular-nums text-ink/50">{opt.count}</span>
+          </label>
+        ))}
+      </div>
+    </fieldset>
+  );
+}
+
+export type FacetSelection = {
+  contrat: string[];
+  remote: string[];
+  niveau: string[];
+  secteur: string[];
+  datePub?: string;
+  rayon?: number;
+  ville: string;
+};
+
+export function FacetPanel({
+  facets,
+  selection,
+  onToggle,
+  onDatePub,
+  onRayon,
+}: {
+  facets: FacetCounts;
+  selection: FacetSelection;
+  onToggle: (facet: "contrat" | "remote" | "niveau" | "secteur", value: string) => void;
+  onDatePub: (value?: string) => void;
+  onRayon: (value?: number) => void;
+}) {
+  const contractOptions = CONTRACT_TYPES.filter(
+    (c) => (facets.contractType?.[c] ?? 0) > 0 || selection.contrat.includes(c),
+  ).map((c) => ({ value: c, label: CONTRACT_LABELS[c], count: facets.contractType?.[c] ?? 0 }));
+
+  const remoteOptions = REMOTE_POLICIES.filter(
+    (r) => (facets.remotePolicy?.[r] ?? 0) > 0 || selection.remote.includes(r),
+  ).map((r) => ({ value: r, label: REMOTE_LABELS[r], count: facets.remotePolicy?.[r] ?? 0 }));
+
+  const educationOptions = EDUCATION_LEVELS.filter(
+    (e) => (facets.educationLevel?.[e] ?? 0) > 0 || selection.niveau.includes(e),
+  ).map((e) => ({ value: e, label: EDUCATION_LABELS[e], count: facets.educationLevel?.[e] ?? 0 }));
+
+  const sectorOptions = Object.entries(facets.sector ?? {})
+    .sort((a, b) => b[1] - a[1])
+    .slice(0, 12)
+    .map(([value, count]) => ({ value, label: value, count }));
+
+  return (
+    <aside aria-label="Filtres" className="flex flex-col gap-4">
+      <FacetGroup
+        title="Type de contrat"
+        options={contractOptions}
+        selected={selection.contrat}
+        onToggle={(v) => onToggle("contrat", v)}
+      />
+      <FacetGroup
+        title="Télétravail"
+        options={remoteOptions}
+        selected={selection.remote}
+        onToggle={(v) => onToggle("remote", v)}
+      />
+      <FacetGroup
+        title="Niveau d'études"
+        options={educationOptions}
+        selected={selection.niveau}
+        onToggle={(v) => onToggle("niveau", v)}
+      />
+      <FacetGroup
+        title="Secteur"
+        options={sectorOptions}
+        selected={selection.secteur}
+        onToggle={(v) => onToggle("secteur", v)}
+      />
+
+      <fieldset className="rule pt-4">
+        <legend className="pb-2 text-xs font-bold uppercase tracking-widest">
+          Date de publication
+        </legend>
+        <div className="flex flex-col gap-0.5">
+          <label className="flex min-h-[32px] cursor-pointer items-center gap-2 px-1 text-sm hover:bg-ink/5">
+            <input
+              type="radio"
+              name="datePub"
+              className="h-4 w-4 accent-cobalt"
+              checked={!selection.datePub}
+              onChange={() => onDatePub(undefined)}
+            />
+            Toutes
+          </label>
+          {DATE_RANGES.map((range) => (
+            <label
+              key={range}
+              className="flex min-h-[32px] cursor-pointer items-center gap-2 px-1 text-sm hover:bg-ink/5"
+            >
+              <input
+                type="radio"
+                name="datePub"
+                className="h-4 w-4 accent-cobalt"
+                checked={selection.datePub === range}
+                onChange={() => onDatePub(range)}
+              />
+              {DATE_RANGE_LABELS[range]}
+            </label>
+          ))}
+        </div>
+      </fieldset>
+
+      {selection.ville && (
+        <fieldset className="rule pt-4">
+          <legend className="pb-2 text-xs font-bold uppercase tracking-widest">
+            Rayon autour de {selection.ville}
+          </legend>
+          <select
+            aria-label="Rayon de recherche"
+            className="input-ink"
+            value={selection.rayon ?? ""}
+            onChange={(e) => onRayon(e.target.value ? Number(e.target.value) : undefined)}
+          >
+            <option value="">Ville exacte</option>
+            {RADII.map((r) => (
+              <option key={r} value={r}>
+                À moins de {r} km
+              </option>
+            ))}
+          </select>
+        </fieldset>
+      )}
+    </aside>
+  );
+}

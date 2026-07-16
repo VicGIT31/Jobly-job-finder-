@@ -3,25 +3,82 @@
 @tailwind utilities;
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  /* Ink & Signal — papier chaud / encre presque noire */
+  --paper: 250 247 242; /* #FAF7F2 */
+  --ink: 20 20 20; /* #141414 */
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+.dark {
+  /* Mode sombre : encre inversée */
+  --paper: 17 17 17; /* #111 */
+  --ink: 237 234 227; /* #EDEAE3 */
+}
+
+@layer base {
+  body {
+    @apply bg-paper font-sans text-ink antialiased;
+  }
+
+  /* Focus visibles — accessibilité clavier */
+  :focus-visible {
+    outline: 2px solid #2743f0;
+    outline-offset: 2px;
+  }
+  .dark :focus-visible {
+    outline-color: #ffd84d;
+  }
+
+  ::selection {
+    background: #ffd84d;
+    color: #141414;
   }
 }
 
-body {
-  color: var(--foreground);
-  background: var(--background);
-  font-family: Arial, Helvetica, sans-serif;
+@layer components {
+  /* Filet fin façon journal */
+  .rule {
+    @apply border-t border-ink/20;
+  }
+
+  /* Surlignage marqueur jaune signal */
+  .highlight-marker {
+    background: linear-gradient(transparent 55%, #ffd84d 55%, #ffd84d 92%, transparent 92%);
+    color: #141414;
+  }
+  .dark .highlight-marker {
+    color: inherit;
+    background: linear-gradient(transparent 55%, rgba(255, 216, 77, 0.35) 55%, rgba(255, 216, 77, 0.35) 92%, transparent 92%);
+  }
+
+  /* Tampon type de contrat */
+  .stamp {
+    @apply inline-block border-2 border-ink px-1.5 py-0.5 text-[11px] font-bold uppercase tracking-widest;
+  }
+
+  /* Ticket de filtre */
+  .ticket {
+    @apply inline-flex min-h-[28px] items-center gap-1 border border-ink/40 px-2 py-0.5 text-sm;
+  }
+
+  .btn-cobalt {
+    @apply inline-flex min-h-[44px] items-center justify-center gap-2 bg-cobalt px-5 py-2.5 font-bold text-white transition-all duration-150 hover:-translate-x-0.5 hover:-translate-y-0.5 hover:shadow-hard active:translate-x-0 active:translate-y-0 active:shadow-none;
+  }
+
+  .btn-outline {
+    @apply inline-flex min-h-[44px] items-center justify-center gap-2 border border-ink bg-transparent px-5 py-2.5 font-bold text-ink transition-all duration-150 hover:-translate-x-0.5 hover:-translate-y-0.5 hover:shadow-hard active:translate-x-0 active:translate-y-0 active:shadow-none;
+  }
+
+  .input-ink {
+    @apply min-h-[44px] w-full border border-ink/40 bg-paper px-3 py-2 text-ink placeholder:text-ink/40 focus:border-ink;
+  }
 }
 
-@layer utilities {
-  .text-balance {
-    text-wrap: balance;
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
   }
 }
