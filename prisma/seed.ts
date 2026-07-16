@@ -1,0 +1,283 @@
+/**
+ * Seed NextStep — 15 entreprises, 60+ offres variées, 3 comptes de test.
+ * Idempotent : upsert par slug/dedupHash, relançable sans doublons.
+ */
+import { PrismaClient, ContractType, RemotePolicy, EducationLevel, Role } from "@prisma/client";
+import bcrypt from "bcryptjs";
+import { computeDedupHash } from "../src/server/ingest/dedup";
+import { slugifyFr } from "../src/lib/slug";
+
+const prisma = new PrismaClient();
+
+// ---------- Villes (lat/lng réels) ----------
+const CITIES: Record<string, { lat: number; lng: number }> = {
+  Paris: { lat: 48.8566, lng: 2.3522 },
+  Lyon: { lat: 45.764, lng: 4.8357 },
+  Marseille: { lat: 43.2965, lng: 5.3698 },
+  Toulouse: { lat: 43.6047, lng: 1.4442 },
+  Bordeaux: { lat: 44.8378, lng: -0.5792 },
+  Nantes: { lat: 47.2184, lng: -1.5536 },
+  Lille: { lat: 50.6292, lng: 3.0573 },
+  Strasbourg: { lat: 48.5734, lng: 7.7521 },
+  Rennes: { lat: 48.1173, lng: -1.6778 },
+  Montpellier: { lat: 43.6108, lng: 3.8767 },
+  Grenoble: { lat: 45.1885, lng: 5.7245 },
+  Nice: { lat: 43.7102, lng: 7.262 },
+};
+
+// ---------- Entreprises ----------
+const COMPANIES = [
+  { name: "Alan", sector: "Assurance / Santé", size: "201-1000", website: "https://alan.com", description: "Alan réinvente l'assurance santé avec une expérience 100 % digitale, transparente et sans paperasse. Plus de 500 000 membres nous font confiance. Notre culture : ownership distribué, écrit plutôt que réunions, transparence radicale des salaires.", featured: true },
+  { name: "Doctolib", sector: "Santé / Tech", size: "1000+", website: "https://doctolib.fr", description: "Doctolib est le leader européen de la e-santé. Nous aidons 90 millions de patients à accéder aux soins et 400 000 soignants à améliorer leur quotidien. Rejoindre Doctolib, c'est transformer la santé pour de bon.", featured: true },
+  { name: "BlaBlaCar", sector: "Mobilité", size: "201-1000", website: "https://blablacar.fr", description: "BlaBlaCar est la plateforme de covoiturage leader dans le monde : 26 millions de membres dans 21 pays. Notre mission : devenir la référence du voyage partagé, économique et durable.", featured: true },
+  { name: "Qonto", sector: "Fintech", size: "1000+", website: "https://qonto.com", description: "Qonto simplifie la gestion financière de 500 000 entreprises européennes. Compte pro, facturation, comptabilité : nous construisons la solution tout-en-un que les indépendants et PME méritent.", featured: false },
+  { name: "Back Market", sector: "E-commerce / Impact", size: "201-1000", website: "https://backmarket.fr", description: "Back Market est la première marketplace mondiale de produits reconditionnés. Notre combat : rendre la tech durable désirable et lutter contre l'obsolescence programmée.", featured: true },
+  { name: "Mirakl", sector: "SaaS / E-commerce", size: "201-1000", website: "https://mirakl.com", description: "Mirakl édite la plateforme SaaS de marketplace la plus avancée du marché, utilisée par plus de 450 grandes entreprises dans le monde (Carrefour, Decathlon, Airbus Helicopters).", featured: false },
+  { name: "OVHcloud", sector: "Cloud / Infrastructure", size: "1000+", website: "https://ovhcloud.com", description: "OVHcloud est le leader européen du cloud. 450 000 serveurs, 43 datacenters, un modèle intégré unique de la fabrication des serveurs à l'exploitation. Nous défendons un cloud souverain, ouvert et durable.", featured: false },
+  { name: "Decathlon Digital", sector: "Retail / Sport", size: "1000+", website: "https://digital.decathlon.net", description: "Decathlon Digital, ce sont 4 500 techs qui construisent les produits numériques du n°1 mondial du sport : e-commerce, logistique, data, apps mobiles utilisées par des millions de sportifs.", featured: false },
+  { name: "Ledger", sector: "Crypto / Sécurité", size: "201-1000", website: "https://ledger.com", description: "Ledger sécurise 20 % des crypto-actifs mondiaux avec ses wallets hardware. Entre hardware, firmware et services, nous sommes à la frontière de la sécurité et de la blockchain.", featured: false },
+  { name: "Contentsquare", sector: "SaaS / Analytics", size: "1000+", website: "https://contentsquare.com", description: "Contentsquare analyse l'expérience digitale de plus d'un milliard de sessions par jour pour 1 300 clients dans le monde. Notre plateforme d'analytics UX est utilisée par les plus grandes marques.", featured: false },
+  { name: "ManoMano", sector: "E-commerce", size: "201-1000", website: "https://manomano.fr", description: "ManoMano est la marketplace européenne leader du bricolage et du jardinage : 7 pays, 5 000 marchands partenaires, et une ambition intacte de réinventer l'habitat.", featured: false },
+  { name: "Swile", sector: "Fintech / RH", size: "201-1000", website: "https://swile.co", description: "Swile réinvente les avantages salariés : titres-resto, mobilité, cadeaux, dans une super-app et une carte unique. 85 000 entreprises clientes, une mission : une worklife épanouie pour tous.", featured: false },
+  { name: "Ubisoft", sector: "Jeu vidéo", size: "1000+", website: "https://ubisoft.com", description: "Ubisoft crée des mondes : Assassin's Creed, Rayman, Just Dance. 19 000 talents dans 30 pays, dont les studios historiques de Montpellier, Paris, Lyon et Annecy.", featured: true },
+  { name: "Veepee", sector: "E-commerce", size: "1000+", website: "https://veepee.fr", description: "Veepee (ex-vente-privee) a inventé la vente événementielle en ligne. 66 millions de membres en Europe, 6 000 collaborateurs, et un écosystème tech qui traite des pics à 3 millions de visiteurs/jour.", featured: false },
+  { name: "Pennylane", sector: "Fintech / Comptabilité", size: "201-1000", website: "https://pennylane.com", description: "Pennylane construit le système d'exploitation financier des PME françaises : comptabilité, facturation et pilotage en temps réel, pour les dirigeants et leurs experts-comptables.", featured: false },
+] as const;
+
+// ---------- Générateur de description ----------
+function buildDescription(opts: {
+  title: string;
+  company: string;
+  city: string;
+  contract: ContractType;
+  missions: string[];
+  profil: string[];
+  stack?: string;
+}): string {
+  const contractLabel: Record<ContractType, string> = {
+    CDI: "CDI",
+    CDD: "CDD",
+    STAGE: "stage",
+    ALTERNANCE: "alternance",
+    VIE: "VIE",
+  };
+  return [
+    `## Le poste`,
+    ``,
+    `${opts.company} recrute un·e **${opts.title}** en ${contractLabel[opts.contract]} à ${opts.city}.`,
+    ``,
+    `## Vos missions`,
+    ``,
+    ...opts.missions.map((m) => `- ${m}`),
+    ``,
+    `## Profil recherché`,
+    ``,
+    ...opts.profil.map((p) => `- ${p}`),
+    ...(opts.stack ? [``, `## Environnement technique`, ``, opts.stack] : []),
+    ``,
+    `## Process de recrutement`,
+    ``,
+    `Un premier échange de 30 min, un entretien avec l'équipe, une étude de cas courte. Réponse garantie sous deux semaines.`,
+  ].join("\n");
+}
+
+type SeedOffer = {
+  title: string;
+  company: string;
+  city: keyof typeof CITIES;
+  contract: ContractType;
+  remote: RemotePolicy;
+  education: EducationLevel;
+  sector: string;
+  salaryMin?: number;
+  salaryMax?: number;
+  sourceSite: string;
+  daysAgo: number; // ancienneté de publication
+  missions: string[];
+  profil: string[];
+  stack?: string;
+  expired?: boolean;
+};
+
+const O = (o: SeedOffer) => o;
+
+// ---------- 62 offres ----------
+const OFFERS: SeedOffer[] = [
+  // --- Tech / Dev ---
+  O({ title: "Stage — Développeur Full Stack TypeScript", company: "Alan", city: "Paris", contract: "STAGE", remote: "HYBRID", education: "BAC_5", sector: "Tech / Développement", salaryMin: 1400, salaryMax: 1800, sourceSite: "welcometothejungle.com", daysAgo: 2, missions: ["Développer des features produit de bout en bout (React, Node, PostgreSQL)", "Participer aux revues de code et aux rituels d'équipe", "Écrire des tests et contribuer à la qualité du code"], profil: ["Étudiant·e en dernière année d'école d'ingénieur ou master informatique", "Premières expériences TypeScript (projets, stages, open source)", "Goût du produit et de l'autonomie"], stack: "TypeScript, React, Node.js, PostgreSQL, AWS." }),
+  O({ title: "Développeur Backend Ruby — CDI", company: "Doctolib", city: "Paris", contract: "CDI", remote: "HYBRID", education: "BAC_5", sector: "Tech / Développement", salaryMin: 48000, salaryMax: 62000, sourceSite: "linkedin.com", daysAgo: 5, missions: ["Concevoir et faire évoluer les APIs du produit patient", "Garantir la scalabilité d'une plateforme à 90 M d'utilisateurs", "Encadrer techniquement les juniors de l'équipe"], profil: ["3+ ans d'expérience backend (Ruby on Rails apprécié)", "Culture forte du test et de la revue de code", "Français et anglais courants"], stack: "Ruby on Rails, PostgreSQL, Kafka, Kubernetes." }),
+  O({ title: "Alternance — Développeur Mobile React Native", company: "BlaBlaCar", city: "Paris", contract: "ALTERNANCE", remote: "HYBRID", education: "BAC_3", sector: "Tech / Développement", salaryMin: 1100, salaryMax: 1600, sourceSite: "jobteaser.com", daysAgo: 1, missions: ["Développer des écrans de l'app covoiturage (5 M MAU)", "Corriger des bugs remontés par le support", "Participer aux A/B tests produit"], profil: ["Formation bac+3/5 en informatique", "Bases solides en JavaScript/React", "Rythme 3 semaines entreprise / 1 semaine école accepté"], stack: "React Native, TypeScript, GraphQL." }),
+  O({ title: "Stage — Data Engineer", company: "Back Market", city: "Bordeaux", contract: "STAGE", remote: "HYBRID", education: "BAC_5", sector: "Data", salaryMin: 1300, salaryMax: 1700, sourceSite: "welcometothejungle.com", daysAgo: 3, missions: ["Construire des pipelines dbt/BigQuery pour les équipes produit", "Fiabiliser la qualité des données marchands", "Documenter les datasets critiques"], profil: ["Master data/informatique en cours", "SQL avancé, Python", "Curiosité pour l'e-commerce"], stack: "BigQuery, dbt, Airflow, Python." }),
+  O({ title: "Ingénieur DevOps — CDI", company: "OVHcloud", city: "Lille", contract: "CDI", remote: "ONSITE", education: "BAC_5", sector: "Tech / Infrastructure", salaryMin: 42000, salaryMax: 55000, sourceSite: "indeed.com", daysAgo: 8, missions: ["Automatiser le déploiement de milliers de serveurs bare-metal", "Améliorer l'observabilité (Prometheus, Grafana)", "Participer à l'astreinte (1 semaine / 8)"], profil: ["Expérience Linux et infra as code (Ansible, Terraform)", "À l'aise en environnement à très grande échelle", "Esprit d'équipe"], stack: "Linux, Ansible, Terraform, Go, Prometheus." }),
+  O({ title: "Stage — Développeur Gameplay C++", company: "Ubisoft", city: "Montpellier", contract: "STAGE", remote: "ONSITE", education: "BAC_5", sector: "Jeu vidéo", salaryMin: 1200, salaryMax: 1500, sourceSite: "jobteaser.com", daysAgo: 4, missions: ["Prototyper des mécaniques de jeu sur un titre non annoncé", "Travailler main dans la main avec les game designers", "Optimiser les performances (profiling, mémoire)"], profil: ["École d'ingénieur ou master jeu vidéo", "Très bon niveau C++", "Passion du jeu vidéo et sens du détail"], stack: "C++, moteur propriétaire, Perforce." }),
+  O({ title: "Développeur Frontend Vue.js — CDI", company: "ManoMano", city: "Paris", contract: "CDI", remote: "FULL", education: "BAC_3", sector: "Tech / Développement", salaryMin: 45000, salaryMax: 58000, sourceSite: "welcometothejungle.com", daysAgo: 6, missions: ["Développer les parcours d'achat de la marketplace", "Améliorer les Core Web Vitals", "Contribuer au design system interne"], profil: ["2+ ans d'expérience front moderne (Vue ou React)", "Sensibilité performance et accessibilité", "Full remote possible depuis la France"], stack: "Vue 3, Nuxt, TypeScript, Node.js." }),
+  O({ title: "Alternance — Ingénieur QA Automatisation", company: "Veepee", city: "Nantes", contract: "ALTERNANCE", remote: "HYBRID", education: "BAC_3", sector: "Tech / Qualité", salaryMin: 1000, salaryMax: 1500, sourceSite: "indeed.com", daysAgo: 10, missions: ["Écrire des tests E2E (Playwright) sur le tunnel de commande", "Maintenir la CI de tests de non-régression", "Analyser les flaky tests"], profil: ["Formation informatique bac+3 minimum", "Premières notions de tests automatisés", "Rigueur et curiosité"], stack: "Playwright, TypeScript, GitLab CI." }),
+  O({ title: "Stage — Sécurité Firmware", company: "Ledger", city: "Paris", contract: "STAGE", remote: "ONSITE", education: "BAC_5", sector: "Cybersécurité", salaryMin: 1500, salaryMax: 1900, sourceSite: "linkedin.com", daysAgo: 7, missions: ["Auditer le firmware des wallets (C, assembleur)", "Développer des outils de fuzzing internes", "Documenter les findings avec l'équipe Donjon"], profil: ["Master sécurité ou école d'ingénieur", "Bases en C et en reverse engineering", "CTF appréciés"], stack: "C, Rust, outils de reverse (Ghidra, IDA)." }),
+  O({ title: "Ingénieur Machine Learning — CDI", company: "Contentsquare", city: "Paris", contract: "CDI", remote: "HYBRID", education: "BAC_5", sector: "Data / IA", salaryMin: 55000, salaryMax: 70000, sourceSite: "welcometothejungle.com", daysAgo: 12, missions: ["Développer des modèles de détection de frustration utilisateur", "Industrialiser les pipelines ML (feature store, monitoring)", "Collaborer avec les équipes produit sur l'IA générative"], profil: ["3+ ans en ML appliqué", "Python solide, expérience production", "Anglais courant (équipe internationale)"], stack: "Python, PyTorch, Spark, Databricks, AWS." }),
+  O({ title: "VIE — Développeur Cloud (Montréal)", company: "OVHcloud", city: "Paris", contract: "VIE", remote: "ONSITE", education: "BAC_5", sector: "Tech / Infrastructure", salaryMin: 2600, salaryMax: 2900, sourceSite: "civiweb.com", daysAgo: 9, missions: ["Rejoindre l'équipe produit Public Cloud à Montréal (18 mois)", "Développer des APIs OpenStack en Go", "Faire le pont avec les équipes françaises"], profil: ["Diplômé·e d'école d'ingénieur (éligible VIE, 18-28 ans)", "Bon niveau Go ou Python", "Anglais professionnel"], stack: "Go, OpenStack, Kubernetes." }),
+  O({ title: "Stage — Développeur Backend Java", company: "Decathlon Digital", city: "Lille", contract: "STAGE", remote: "HYBRID", education: "BAC_5", sector: "Tech / Développement", salaryMin: 1200, salaryMax: 1600, sourceSite: "jobteaser.com", daysAgo: 2, missions: ["Développer des microservices logistique (Spring Boot)", "Écrire des tests d'intégration", "Participer aux mobs de l'équipe"], profil: ["Bac+4/5 informatique", "Bases Java/Spring", "Intérêt pour le sport apprécié"], stack: "Java 21, Spring Boot, Kafka, GCP." }),
+  O({ title: "Alternance — Data Analyst", company: "Swile", city: "Montpellier", contract: "ALTERNANCE", remote: "HYBRID", education: "BAC_5", sector: "Data", salaryMin: 1000, salaryMax: 1400, sourceSite: "welcometothejungle.com", daysAgo: 5, missions: ["Construire les dashboards de pilotage business (Metabase)", "Analyser les usages de la carte Swile", "Automatiser les reportings récurrents"], profil: ["Master data/statistiques en cours", "SQL opérationnel, notions Python", "Bon relationnel avec les équipes métier"], stack: "SQL, dbt, Metabase, Python." }),
+  O({ title: "Développeur Fullstack — CDD 12 mois", company: "Pennylane", city: "Paris", contract: "CDD", remote: "HYBRID", education: "BAC_5", sector: "Tech / Développement", salaryMin: 45000, salaryMax: 55000, sourceSite: "linkedin.com", daysAgo: 11, missions: ["Renforcer l'équipe facturation pour la réforme e-invoicing 2026", "Développer côté Rails et React", "Participer au support technique niveau 2"], profil: ["2+ ans fullstack", "Intérêt pour les sujets fintech/compta", "Disponible rapidement"], stack: "Ruby on Rails, React, PostgreSQL." }),
+  O({ title: "Stage — SRE / Plateforme", company: "Qonto", city: "Paris", contract: "STAGE", remote: "HYBRID", education: "BAC_5", sector: "Tech / Infrastructure", salaryMin: 1400, salaryMax: 1800, sourceSite: "welcometothejungle.com", daysAgo: 3, missions: ["Améliorer les outils de déploiement internes", "Mettre en place des SLOs sur les services critiques", "Participer aux post-mortems"], profil: ["École d'ingénieur, orientation systèmes/réseaux", "Bases Kubernetes et scripting", "Esprit d'analyse"], stack: "Kubernetes, AWS, Terraform, Datadog." }),
+
+  // --- Produit / Design ---
+  O({ title: "Stage — Product Manager Junior", company: "BlaBlaCar", city: "Paris", contract: "STAGE", remote: "HYBRID", education: "BAC_5", sector: "Produit", salaryMin: 1300, salaryMax: 1700, sourceSite: "jobteaser.com", daysAgo: 1, missions: ["Analyser les parcours utilisateurs du bus et du covoiturage", "Prioriser un backlog avec les développeurs", "Conduire des interviews utilisateurs"], profil: ["École de commerce ou d'ingénieur, fibre produit", "Aisance avec les données (SQL est un plus)", "Excellente communication écrite"] }),
+  O({ title: "Product Designer — CDI", company: "Alan", city: "Paris", contract: "CDI", remote: "FULL", education: "BAC_3", sector: "Design", salaryMin: 50000, salaryMax: 65000, sourceSite: "welcometothejungle.com", daysAgo: 14, missions: ["Concevoir les parcours santé de l'app (10 M d'écrans vus/jour)", "Faire évoluer le design system", "Tester vos hypothèses avec la recherche utilisateur"], profil: ["3+ ans en design produit", "Portfolio démontrant un process complet", "Anglais courant"] }),
+  O({ title: "Alternance — UX Researcher", company: "Doctolib", city: "Nantes", contract: "ALTERNANCE", remote: "HYBRID", education: "BAC_5", sector: "Design", salaryMin: 1000, salaryMax: 1400, sourceSite: "jobteaser.com", daysAgo: 6, missions: ["Organiser des sessions de tests utilisateurs avec des soignants", "Synthétiser les insights pour les équipes produit", "Alimenter le repository de recherche"], profil: ["Master ergonomie, psycho cognitive ou UX", "Méthodes quali et quanti", "Empathie et rigueur"] }),
+  O({ title: "Stage — UI Designer", company: "Ubisoft", city: "Lyon", contract: "STAGE", remote: "ONSITE", education: "BAC_3", sector: "Design", salaryMin: 1100, salaryMax: 1400, sourceSite: "indeed.com", daysAgo: 9, missions: ["Créer des interfaces in-game (HUD, menus)", "Décliner les maquettes en assets intégrables", "Itérer avec les retours des playtests"], profil: ["Formation design graphique/UI", "Maîtrise Figma et Photoshop", "Sensibilité gaming"] }),
+
+  // --- Marketing / Growth / Comm ---
+  O({ title: "Stage — Growth Marketing", company: "Swile", city: "Paris", contract: "STAGE", remote: "HYBRID", education: "BAC_5", sector: "Marketing", salaryMin: 1200, salaryMax: 1500, sourceSite: "welcometothejungle.com", daysAgo: 2, missions: ["Piloter des campagnes d'acquisition B2B (LinkedIn, SEA)", "Optimiser les landing pages (A/B tests)", "Analyser le funnel et proposer des expérimentations"], profil: ["École de commerce ou master marketing digital", "Première expérience growth/acquisition appréciée", "À l'aise avec les chiffres"] }),
+  O({ title: "Alternance — Chef de projet Marketing Sport", company: "Decathlon Digital", city: "Lille", contract: "ALTERNANCE", remote: "HYBRID", education: "BAC_3", sector: "Marketing", salaryMin: 900, salaryMax: 1300, sourceSite: "jobteaser.com", daysAgo: 4, missions: ["Coordonner les campagnes e-commerce des sports d'hiver", "Briefer les équipes créa et médias", "Suivre les KPIs de campagne"], profil: ["Bac+3 à bac+5 marketing/communication", "Organisation et esprit d'équipe", "Pratique sportive appréciée"] }),
+  O({ title: "Stage — Marketing Produit (stage de fin d'études)", company: "Back Market", city: "Paris", contract: "STAGE", remote: "HYBRID", education: "BAC_5", sector: "Marketing", salaryMin: 1300, salaryMax: 1600, sourceSite: "linkedin.com", daysAgo: 8, missions: ["Lancer de nouvelles catégories de produits reconditionnés", "Étudier la concurrence et le pricing", "Construire les argumentaires de vente"], profil: ["Master marketing ou école de commerce", "Intérêt pour l'économie circulaire", "Anglais courant"] }),
+  O({ title: "Content Manager — CDI", company: "ManoMano", city: "Bordeaux", contract: "CDI", remote: "HYBRID", education: "BAC_3", sector: "Marketing / Contenu", salaryMin: 34000, salaryMax: 42000, sourceSite: "indeed.com", daysAgo: 13, missions: ["Piloter la production de contenus conseils bricolage/jardin", "Manager un pool de freelances", "Optimiser le SEO éditorial"], profil: ["3 ans d'expérience en content marketing", "Excellente plume française", "Bases SEO solides"] }),
+  O({ title: "Alternance — Community Manager", company: "Ubisoft", city: "Paris", contract: "ALTERNANCE", remote: "HYBRID", education: "BAC_3", sector: "Communication", salaryMin: 900, salaryMax: 1200, sourceSite: "jobteaser.com", daysAgo: 3, missions: ["Animer les réseaux sociaux d'une franchise majeure", "Rédiger les posts et modérer la communauté", "Produire des reportings hebdomadaires"], profil: ["Formation communication digitale", "Culture gaming et réseaux sociaux", "Créativité et réactivité"] }),
+  O({ title: "Stage — Communication Corporate", company: "OVHcloud", city: "Paris", contract: "STAGE", remote: "HYBRID", education: "BAC_5", sector: "Communication", salaryMin: 1100, salaryMax: 1400, sourceSite: "welcometothejungle.com", daysAgo: 15, missions: ["Rédiger les communiqués et dossiers de presse", "Préparer les prises de parole des dirigeants", "Suivre les retombées médias"], profil: ["Master communication/journalisme", "Excellente expression écrite", "Intérêt pour la tech et la souveraineté numérique"] }),
+
+  // --- Business / Sales ---
+  O({ title: "Stage — Business Developer B2B", company: "Qonto", city: "Lyon", contract: "STAGE", remote: "ONSITE", education: "BAC_5", sector: "Commercial", salaryMin: 1200, salaryMax: 1600, sourceSite: "jobteaser.com", daysAgo: 1, missions: ["Prospecter les PME de la région lyonnaise", "Qualifier les leads entrants", "Participer aux démos produit"], profil: ["École de commerce", "Tempérament chasseur, goût du challenge", "Première expérience commerciale appréciée"] }),
+  O({ title: "Account Executive Mid-Market — CDI", company: "Mirakl", city: "Paris", contract: "CDI", remote: "HYBRID", education: "BAC_5", sector: "Commercial", salaryMin: 55000, salaryMax: 85000, sourceSite: "linkedin.com", daysAgo: 7, missions: ["Gérer un cycle de vente complexe (6-9 mois) auprès des retailers", "Construire vos business cases avec les équipes avant-vente", "Dépasser un objectif annuel ambitieux"], profil: ["4+ ans en vente SaaS B2B", "Track record démontrable", "Anglais courant"] }),
+  O({ title: "Alternance — Sales Development Representative", company: "Pennylane", city: "Paris", contract: "ALTERNANCE", remote: "ONSITE", education: "BAC_3", sector: "Commercial", salaryMin: 1000, salaryMax: 1500, sourceSite: "welcometothejungle.com", daysAgo: 5, missions: ["Prospecter les cabinets d'expertise comptable", "Décrocher des rendez-vous qualifiés pour les AE", "Alimenter le CRM (HubSpot)"], profil: ["Bac+3/5 commerce", "Aisance téléphonique", "Résilience et esprit d'équipe"] }),
+  O({ title: "VIE — Business Developer (Berlin)", company: "Back Market", city: "Paris", contract: "VIE", remote: "ONSITE", education: "BAC_5", sector: "Commercial", salaryMin: 2400, salaryMax: 2700, sourceSite: "civiweb.com", daysAgo: 10, missions: ["Développer le portefeuille de marchands allemands (12 mois, Berlin)", "Négocier les conditions commerciales", "Coordonner l'onboarding avec les équipes françaises"], profil: ["Éligible VIE, allemand courant obligatoire", "Formation commerce/international", "Autonomie forte"] }),
+  O({ title: "Stage — Customer Success", company: "Contentsquare", city: "Paris", contract: "STAGE", remote: "HYBRID", education: "BAC_5", sector: "Customer Success", salaryMin: 1200, salaryMax: 1500, sourceSite: "jobteaser.com", daysAgo: 6, missions: ["Accompagner un portefeuille de clients grands comptes", "Préparer les business reviews trimestrielles", "Identifier les opportunités d'upsell"], profil: ["École de commerce ou master", "Sens du service et de l'analyse", "Anglais courant"] }),
+
+  // --- Finance / RH / Juridique / Ops ---
+  O({ title: "Stage — Analyste Financier", company: "Qonto", city: "Paris", contract: "STAGE", remote: "HYBRID", education: "BAC_5", sector: "Finance", salaryMin: 1400, salaryMax: 1800, sourceSite: "linkedin.com", daysAgo: 4, missions: ["Participer aux clôtures mensuelles et au forecast", "Construire les analyses de rentabilité par segment", "Améliorer les modèles financiers"], profil: ["Master finance (école de commerce, université)", "Excel/Sheets avancé, notions SQL appréciées", "Rigueur absolue"] }),
+  O({ title: "Alternance — Contrôleur de Gestion", company: "Veepee", city: "Paris", contract: "ALTERNANCE", remote: "HYBRID", education: "BAC_5", sector: "Finance", salaryMin: 1100, salaryMax: 1500, sourceSite: "indeed.com", daysAgo: 12, missions: ["Suivre les budgets des BU e-commerce", "Produire les reportings mensuels", "Analyser les écarts et alerter"], profil: ["Master CCA ou contrôle de gestion", "Excel avancé", "Esprit de synthèse"] }),
+  O({ title: "Stage — Chargé·e de Recrutement Tech", company: "Doctolib", city: "Paris", contract: "STAGE", remote: "HYBRID", education: "BAC_5", sector: "Ressources humaines", salaryMin: 1200, salaryMax: 1500, sourceSite: "welcometothejungle.com", daysAgo: 2, missions: ["Sourcer des profils ingénieurs (LinkedIn Recruiter)", "Conduire les premiers entretiens", "Améliorer l'expérience candidat"], profil: ["Master RH ou école de commerce", "Intérêt pour la tech", "Excellent relationnel"] }),
+  O({ title: "Juriste Droit Numérique — CDI", company: "Ledger", city: "Paris", contract: "CDI", remote: "HYBRID", education: "BAC_5", sector: "Juridique", salaryMin: 50000, salaryMax: 65000, sourceSite: "linkedin.com", daysAgo: 16, missions: ["Accompagner les lancements produit (MiCA, RGPD)", "Négocier les contrats partenaires internationaux", "Assurer la veille réglementaire crypto"], profil: ["Master 2 droit du numérique ou des affaires", "3+ ans d'expérience (cabinet ou entreprise)", "Anglais juridique courant"] }),
+  O({ title: "Alternance — Chargé·e de missions RH", company: "ManoMano", city: "Paris", contract: "ALTERNANCE", remote: "HYBRID", education: "BAC_3", sector: "Ressources humaines", salaryMin: 900, salaryMax: 1300, sourceSite: "jobteaser.com", daysAgo: 8, missions: ["Participer à l'onboarding des nouveaux collaborateurs", "Administrer les formations", "Contribuer aux projets marque employeur"], profil: ["Licence/Master RH", "Polyvalence et discrétion", "Bonne humeur communicative"] }),
+  O({ title: "Stage — Supply Chain Analyst", company: "Decathlon Digital", city: "Lille", contract: "STAGE", remote: "ONSITE", education: "BAC_5", sector: "Supply Chain", salaryMin: 1100, salaryMax: 1400, sourceSite: "indeed.com", daysAgo: 5, missions: ["Optimiser les prévisions de stock des entrepôts européens", "Analyser les ruptures et proposer des plans d'action", "Automatiser les reportings (Python/SQL)"], profil: ["École d'ingénieur ou master supply chain", "SQL et Excel avancés", "Esprit analytique"] }),
+  O({ title: "Stage — Chef de Projet Logistique", company: "Veepee", city: "Lyon", contract: "STAGE", remote: "ONSITE", education: "BAC_5", sector: "Supply Chain", salaryMin: 1000, salaryMax: 1300, sourceSite: "jobteaser.com", daysAgo: 11, missions: ["Piloter l'amélioration continue d'un entrepôt (400 personnes)", "Chronométrer et optimiser les flux de préparation", "Déployer les standards lean"], profil: ["École d'ingénieur généraliste ou logistique", "Terrain, pragmatisme", "Premières notions lean/6-sigma"] }),
+
+  // --- Autres villes / diversité géographique ---
+  O({ title: "Stage — Développeur Web PHP/Symfony", company: "Veepee", city: "Nice", contract: "STAGE", remote: "HYBRID", education: "BAC_3", sector: "Tech / Développement", salaryMin: 1000, salaryMax: 1300, sourceSite: "indeed.com", daysAgo: 7, missions: ["Développer des modules du back-office logistique", "Corriger des anomalies en production", "Écrire des tests unitaires (PHPUnit)"], profil: ["Bac+2/3 informatique", "Bases PHP et SQL", "Envie d'apprendre"], stack: "PHP 8, Symfony, MySQL, Docker." }),
+  O({ title: "Alternance — Technicien Support IT", company: "OVHcloud", city: "Rennes", contract: "ALTERNANCE", remote: "ONSITE", education: "BAC_2", sector: "Tech / Support", salaryMin: 800, salaryMax: 1200, sourceSite: "indeed.com", daysAgo: 14, missions: ["Assister les collaborateurs sur les incidents poste de travail", "Préparer et déployer le matériel", "Documenter les procédures"], profil: ["BTS SIO ou équivalent en cours", "Sens du service", "Bases réseaux et Windows/Linux"] }),
+  O({ title: "Stage — Data Scientist NLP", company: "Contentsquare", city: "Grenoble", contract: "STAGE", remote: "HYBRID", education: "BAC_5", sector: "Data / IA", salaryMin: 1300, salaryMax: 1700, sourceSite: "welcometothejungle.com", daysAgo: 3, missions: ["Expérimenter des LLMs pour le résumé automatique de sessions", "Évaluer la qualité des modèles (benchmarks internes)", "Présenter vos résultats à l'équipe research"], profil: ["Master IA/maths appliquées", "Python, PyTorch ou équivalent", "Publications ou projets NLP appréciés"], stack: "Python, PyTorch, HuggingFace, GCP." }),
+  O({ title: "Chef de Projet CRM — CDD 6 mois", company: "Decathlon Digital", city: "Strasbourg", contract: "CDD", remote: "HYBRID", education: "BAC_5", sector: "Marketing", salaryMin: 32000, salaryMax: 38000, sourceSite: "indeed.com", daysAgo: 9, missions: ["Déployer les campagnes CRM locales (email, push)", "Segmenter les bases clients", "Mesurer la performance des campagnes"], profil: ["Première expérience CRM (Braze, Salesforce MC...)", "Analytique et organisé·e", "Disponible immédiatement"] }),
+  O({ title: "Stage — Assistant·e Chef de Produit E-commerce", company: "ManoMano", city: "Toulouse", contract: "STAGE", remote: "HYBRID", education: "BAC_3", sector: "Produit", salaryMin: 900, salaryMax: 1200, sourceSite: "jobteaser.com", daysAgo: 6, missions: ["Enrichir le catalogue jardin (fiches produit, photos)", "Analyser les performances des catégories", "Coordonner avec les marchands partenaires"], profil: ["Bac+3 commerce/marketing", "Excel opérationnel", "Curiosité produit"] }),
+  O({ title: "Alternance — Développeur Java/Kotlin Android", company: "Swile", city: "Montpellier", contract: "ALTERNANCE", remote: "HYBRID", education: "BAC_5", sector: "Tech / Développement", salaryMin: 1100, salaryMax: 1600, sourceSite: "welcometothejungle.com", daysAgo: 4, missions: ["Développer des features de l'app Android (paiement, cantine)", "Participer aux code reviews", "Améliorer la couverture de tests"], profil: ["Master informatique en cours", "Bases Kotlin ou Java", "Appétence UX mobile"], stack: "Kotlin, Jetpack Compose, GraphQL." }),
+  O({ title: "Stage — Ingénieur Réseaux", company: "OVHcloud", city: "Strasbourg", contract: "STAGE", remote: "ONSITE", education: "BAC_5", sector: "Tech / Infrastructure", salaryMin: 1100, salaryMax: 1500, sourceSite: "linkedin.com", daysAgo: 13, missions: ["Participer à l'exploitation du backbone (100 Tbps)", "Automatiser les configurations réseau (Python)", "Analyser les incidents de peering"], profil: ["École d'ingénieur réseaux/télécoms", "Bases BGP/OSPF", "Scripting Python"], stack: "Python, BGP, Juniper, Arista." }),
+  O({ title: "Stage — Analyste Cybersécurité SOC", company: "Ledger", city: "Paris", contract: "STAGE", remote: "ONSITE", education: "BAC_5", sector: "Cybersécurité", salaryMin: 1300, salaryMax: 1600, sourceSite: "jobteaser.com", daysAgo: 1, missions: ["Analyser les alertes de sécurité (SIEM)", "Participer aux investigations d'incidents", "Améliorer les règles de détection"], profil: ["Master cybersécurité", "Connaissances réseaux et systèmes", "Esprit d'investigation"] }),
+  O({ title: "Product Manager Marketplace — CDI", company: "Mirakl", city: "Bordeaux", contract: "CDI", remote: "HYBRID", education: "BAC_5", sector: "Produit", salaryMin: 50000, salaryMax: 65000, sourceSite: "welcometothejungle.com", daysAgo: 10, missions: ["Porter la roadmap du module catalogue", "Recueillir les besoins clients (450 marketplaces)", "Arbitrer avec les équipes engineering"], profil: ["3+ ans en product management B2B", "Aisance technique (APIs)", "Anglais courant"] }),
+  O({ title: "Alternance — Assistant·e Juridique", company: "Veepee", city: "Paris", contract: "ALTERNANCE", remote: "HYBRID", education: "BAC_5", sector: "Juridique", salaryMin: 900, salaryMax: 1300, sourceSite: "jobteaser.com", daysAgo: 15, missions: ["Rédiger les CGV des ventes événementielles", "Suivre les litiges consommateurs", "Participer à la conformité RGPD"], profil: ["Master 1/2 droit des affaires", "Rigueur rédactionnelle", "Esprit pratique"] }),
+  O({ title: "Stage — Ops / Expérience Membre", company: "Alan", city: "Paris", contract: "STAGE", remote: "FULL", education: "BAC_3", sector: "Opérations", salaryMin: 1200, salaryMax: 1500, sourceSite: "welcometothejungle.com", daysAgo: 5, missions: ["Répondre aux questions santé des membres (chat)", "Améliorer les process de remboursement", "Documenter la base de connaissances"], profil: ["Bac+3 minimum", "Empathie et clarté écrite", "Full remote France possible"] }),
+  O({ title: "Stage — Chargé·e d'Études Actuarielles", company: "Alan", city: "Paris", contract: "STAGE", remote: "HYBRID", education: "BAC_5", sector: "Finance", salaryMin: 1500, salaryMax: 1900, sourceSite: "linkedin.com", daysAgo: 8, missions: ["Modéliser la sinistralité santé du portefeuille", "Contribuer au pricing des nouveaux produits", "Automatiser les études récurrentes en Python"], profil: ["Formation actuariat (ISUP, ENSAE, ISFA...)", "Python et statistiques solides", "Esprit critique"] }),
+  O({ title: "Ingénieur Data Platform — CDI", company: "Back Market", city: "Paris", contract: "CDI", remote: "FULL", education: "BAC_5", sector: "Data", salaryMin: 55000, salaryMax: 72000, sourceSite: "welcometothejungle.com", daysAgo: 17, missions: ["Faire évoluer la plateforme data self-service", "Industrialiser l'ingestion temps réel (Kafka)", "Accompagner les équipes analytics"], profil: ["4+ ans en data engineering", "Kafka, Spark ou équivalents en production", "Leadership technique"], stack: "Kafka, Spark, dbt, BigQuery, Terraform." }),
+  O({ title: "Alternance — Motion Designer", company: "Back Market", city: "Paris", contract: "ALTERNANCE", remote: "HYBRID", education: "BAC_3", sector: "Design", salaryMin: 900, salaryMax: 1300, sourceSite: "jobteaser.com", daysAgo: 12, missions: ["Produire les animations des campagnes sociales", "Décliner la direction artistique horizon 2026", "Participer aux shootings produit"], profil: ["Formation motion/animation", "After Effects maîtrisé", "Portfolio exigé"] }),
+  O({ title: "Stage — Consultant·e Déploiement SaaS", company: "Mirakl", city: "Paris", contract: "STAGE", remote: "HYBRID", education: "BAC_5", sector: "Consulting", salaryMin: 1300, salaryMax: 1700, sourceSite: "jobteaser.com", daysAgo: 3, missions: ["Configurer les marketplaces des nouveaux clients", "Former les opérateurs aux workflows", "Suivre les KPIs de lancement"], profil: ["École de commerce ou d'ingénieur", "Goût du contact client", "Anglais courant, 2e langue appréciée"] }),
+  O({ title: "Stage — Ingénieur Embarqué Hardware", company: "Ledger", city: "Grenoble", contract: "STAGE", remote: "ONSITE", education: "BAC_5", sector: "Hardware", salaryMin: 1200, salaryMax: 1600, sourceSite: "linkedin.com", daysAgo: 11, missions: ["Participer au design des futurs wallets (schématique, layout)", "Tester les prototypes en labo", "Documenter les choix de composants"], profil: ["École d'ingénieur électronique", "Bases en conception PCB", "Curiosité sécurité matérielle"] }),
+  O({ title: "Alternance — Chargé·e de Clientèle", company: "Qonto", city: "Marseille", contract: "ALTERNANCE", remote: "ONSITE", education: "BAC_2", sector: "Customer Success", salaryMin: 900, salaryMax: 1300, sourceSite: "indeed.com", daysAgo: 7, missions: ["Répondre aux demandes clients (chat, téléphone)", "Résoudre les problèmes de paiement et de carte", "Faire remonter les irritants produit"], profil: ["Bac+2 minimum", "Excellente expression écrite et orale", "Empathie naturelle"] }),
+  O({ title: "Stage — Assistant·e Production Jeu Vidéo", company: "Ubisoft", city: "Paris", contract: "STAGE", remote: "ONSITE", education: "BAC_5", sector: "Jeu vidéo", salaryMin: 1100, salaryMax: 1400, sourceSite: "jobteaser.com", daysAgo: 2, missions: ["Suivre le planning de production d'une équipe de 60 devs", "Préparer les rituels (dailies, reviews)", "Tenir à jour les outils de suivi (Jira)"], profil: ["Master production/gestion de projet", "Organisation irréprochable", "Passion jeu vidéo"] }),
+  O({ title: "Développeur Salesforce — CDI", company: "Veepee", city: "Nantes", contract: "CDI", remote: "HYBRID", education: "BAC_5", sector: "Tech / Développement", salaryMin: 42000, salaryMax: 52000, sourceSite: "linkedin.com", daysAgo: 18, missions: ["Développer sur Sales et Service Cloud (Apex, LWC)", "Intégrer Salesforce au SI (APIs REST)", "Accompagner les équipes CRM"], profil: ["2+ ans sur Salesforce", "Certifications appréciées", "Esprit d'équipe"], stack: "Apex, Lightning Web Components, REST." }),
+  O({ title: "Stage — Analyste KYC/Conformité", company: "Qonto", city: "Paris", contract: "STAGE", remote: "HYBRID", education: "BAC_5", sector: "Finance", salaryMin: 1200, salaryMax: 1500, sourceSite: "indeed.com", daysAgo: 9, missions: ["Analyser les dossiers d'onboarding des entreprises", "Détecter les signaux de fraude documentaire", "Contribuer à l'amélioration des règles de scoring"], profil: ["Master finance/droit/conformité", "Rigueur et discernement", "Intérêt pour la lutte anti-blanchiment"] }),
+  O({ title: "Alternance — DevOps Junior", company: "Pennylane", city: "Paris", contract: "ALTERNANCE", remote: "HYBRID", education: "BAC_5", sector: "Tech / Infrastructure", salaryMin: 1200, salaryMax: 1700, sourceSite: "welcometothejungle.com", daysAgo: 6, missions: ["Améliorer les pipelines CI/CD (GitHub Actions)", "Monter en compétence sur Kubernetes (EKS)", "Participer au monitoring (Datadog)"], profil: ["Master informatique en cours", "Bases Linux et Docker", "Envie de progresser en infra"], stack: "AWS, Kubernetes, GitHub Actions, Datadog." }),
+  O({ title: "Stage — Chef de Projet RSE", company: "Back Market", city: "Paris", contract: "STAGE", remote: "HYBRID", education: "BAC_5", sector: "RSE / Impact", salaryMin: 1200, salaryMax: 1500, sourceSite: "welcometothejungle.com", daysAgo: 4, missions: ["Mesurer l'impact carbone du reconditionné (ACV)", "Préparer le reporting CSRD", "Sensibiliser les équipes internes"], profil: ["Master RSE/environnement ou école d'ingénieur", "Connaissance des référentiels (GHG Protocol, CSRD)", "Conviction et pédagogie"] }),
+  O({ title: "Data Analyst Senior — CDI", company: "Swile", city: "Paris", contract: "CDI", remote: "HYBRID", education: "BAC_5", sector: "Data", salaryMin: 48000, salaryMax: 60000, sourceSite: "linkedin.com", daysAgo: 20, missions: ["Piloter l'analytics du produit paiement", "Modéliser les données dans dbt", "Évangéliser la culture data-driven"], profil: ["4+ ans en data analytics", "SQL expert, dbt en production", "Excellente communication"], stack: "SQL, dbt, Snowflake, Metabase." }),
+  O({ title: "Stage — Ingénieur Test & Validation", company: "Ubisoft", city: "Lyon", contract: "STAGE", remote: "ONSITE", education: "BAC_3", sector: "Jeu vidéo", salaryMin: 1000, salaryMax: 1300, sourceSite: "indeed.com", daysAgo: 16, missions: ["Concevoir des plans de test sur une prod non annoncée", "Automatiser des scénarios de test in-game", "Qualifier et prioriser les bugs"], profil: ["Bac+3 informatique/QA", "Méthode et précision", "Culture jeu vidéo"] }),
+  O({ title: "VIE — Data Analyst (Barcelone)", company: "ManoMano", city: "Paris", contract: "VIE", remote: "ONSITE", education: "BAC_5", sector: "Data", salaryMin: 2200, salaryMax: 2500, sourceSite: "civiweb.com", daysAgo: 13, missions: ["Rejoindre l'équipe data espagnole (12 mois, Barcelone)", "Analyser la performance du marché ibérique", "Harmoniser les KPIs avec la France"], profil: ["Éligible VIE", "SQL solide, espagnol apprécié", "Master data/commerce"] }),
+  // Offres expirées (pour la page « offre expirée » et les stats admin)
+  O({ title: "Stage — Développeur Python Backend", company: "Doctolib", city: "Nantes", contract: "STAGE", remote: "HYBRID", education: "BAC_5", sector: "Tech / Développement", salaryMin: 1200, salaryMax: 1500, sourceSite: "welcometothejungle.com", daysAgo: 45, expired: true, missions: ["Développer des services internes en Python", "Écrire des tests", "Participer aux rituels agiles"], profil: ["Master informatique", "Python solide", "Esprit d'équipe"] }),
+  O({ title: "Alternance — Graphiste Print & Digital", company: "Decathlon Digital", city: "Lille", contract: "ALTERNANCE", remote: "ONSITE", education: "BAC_2", sector: "Design", salaryMin: 800, salaryMax: 1100, sourceSite: "jobteaser.com", daysAgo: 60, expired: true, missions: ["Créer les visuels des campagnes magasin", "Décliner la charte graphique", "Préparer les fichiers pour l'impression"], profil: ["BTS design graphique", "Suite Adobe maîtrisée", "Créativité"] }),
+  O({ title: "Stage — Community & Events", company: "BlaBlaCar", city: "Paris", contract: "STAGE", remote: "HYBRID", education: "BAC_3", sector: "Communication", salaryMin: 1000, salaryMax: 1200, sourceSite: "jobteaser.com", daysAgo: 50, expired: true, missions: ["Organiser les événements internes", "Animer la communauté des ambassadeurs", "Gérer les goodies et partenariats"], profil: ["Bac+3 communication/événementiel", "Énergie et organisation", "Esprit d'initiative"] }),
+];
+
+async function main(): Promise<void> {
+  console.log("🌱 Seed NextStep…");
+
+  // ---------- Users ----------
+  const passwordHash = await bcrypt.hash("nextstep123", 10);
+  const usersData = [
+    { email: "admin@nextstep.test", name: "Alex Martin", role: Role.ADMIN, school: null, graduationYear: null, headline: "Admin NextStep", city: "Paris" },
+    { email: "camille@nextstep.test", name: "Camille Dubois", role: Role.USER, school: "EDHEC Business School", graduationYear: 2026, headline: "Étudiante en M2 Marketing Digital", city: "Lille" },
+    { email: "theo@nextstep.test", name: "Théo Lefèvre", role: Role.USER, school: "INSA Lyon", graduationYear: 2025, headline: "Ingénieur logiciel junior — à la recherche d'un premier CDI", city: "Lyon" },
+  ];
+  for (const u of usersData) {
+    await prisma.user.upsert({
+      where: { email: u.email },
+      update: {},
+      create: { ...u, passwordHash, emailVerified: new Date() },
+    });
+  }
+  console.log(`  ✔ ${usersData.length} utilisateurs`);
+
+  // ---------- Companies ----------
+  const companyIds = new Map<string, string>();
+  for (const c of COMPANIES) {
+    const slug = slugifyFr(c.name);
+    const company = await prisma.company.upsert({
+      where: { slug },
+      update: { description: c.description, sector: c.sector, size: c.size, featured: c.featured },
+      create: {
+        name: c.name,
+        slug,
+        description: c.description,
+        sector: c.sector,
+        size: c.size,
+        website: c.website,
+        featured: c.featured,
+      },
+    });
+    companyIds.set(c.name, company.id);
+  }
+  console.log(`  ✔ ${COMPANIES.length} entreprises`);
+
+  // ---------- Offers ----------
+  const now = Date.now();
+  let created = 0;
+  for (const [i, o] of OFFERS.entries()) {
+    const companyId = companyIds.get(o.company);
+    if (!companyId) throw new Error(`Entreprise inconnue : ${o.company}`);
+    const geo = CITIES[o.city];
+    const publishedAt = new Date(now - o.daysAgo * 86_400_000);
+    const lastSeenAt = o.expired ? new Date(now - 30 * 86_400_000) : new Date(now - Math.min(o.daysAgo, 1) * 43_200_000);
+    const dedupHash = computeDedupHash(o.title, o.company, o.city);
+    const slug = `${slugifyFr(o.title)}-${slugifyFr(o.company)}-${slugifyFr(o.city)}`;
+
+    await prisma.jobOffer.upsert({
+      where: { dedupHash },
+      update: { status: o.expired ? "EXPIRED" : "ACTIVE" },
+      create: {
+        title: o.title,
+        slug,
+        description: buildDescription({
+          title: o.title,
+          company: o.company,
+          city: o.city,
+          contract: o.contract,
+          missions: o.missions,
+          profil: o.profil,
+          stack: o.stack,
+        }),
+        companyId,
+        contractType: o.contract,
+        city: o.city,
+        latitude: geo.lat,
+        longitude: geo.lng,
+        remotePolicy: o.remote,
+        salaryMin: o.salaryMin ?? null,
+        salaryMax: o.salaryMax ?? null,
+        educationLevel: o.education,
+        sector: o.sector,
+        sourceUrl: `https://www.${o.sourceSite}/jobs/${slugifyFr(o.company)}-${slugifyFr(o.title)}-${1000 + i}`,
+        sourceSite: o.sourceSite,
+        scrapedAt: publishedAt,
+        lastSeenAt,
+        dedupHash,
+        status: o.expired ? "EXPIRED" : "ACTIVE",
+        publishedAt,
+      },
+    });
+    created++;
+  }
+  console.log(`  ✔ ${created} offres (${OFFERS.filter((o) => o.expired).length} expirées)`);
+
+  console.log("🌱 Seed terminé.");
+}
+
+main()
+  .catch((e) => {
+    console.error(e);
+    process.exit(1);
+  })
+  .finally(() => prisma.$disconnect());

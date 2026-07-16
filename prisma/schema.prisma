@@ -1,0 +1,243 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ---------- Enums ----------
+
+enum Role {
+  USER
+  ADMIN
+}
+
+enum ContractType {
+  CDI
+  CDD
+  STAGE
+  ALTERNANCE
+  VIE
+}
+
+enum RemotePolicy {
+  ONSITE
+  HYBRID
+  FULL
+}
+
+enum EducationLevel {
+  BAC
+  BAC_2
+  BAC_3
+  BAC_5
+  DOCTORAT
+  INDIFFERENT
+}
+
+enum OfferStatus {
+  ACTIVE
+  EXPIRED
+}
+
+enum AlertFrequency {
+  DAILY
+  WEEKLY
+  NEVER
+}
+
+enum IngestResult {
+  CREATED
+  UPDATED
+  DUPLICATE
+  REJECTED
+}
+
+// ---------- Auth (Auth.js) ----------
+
+model User {
+  id             String    @id @default(cuid())
+  name           String?
+  email          String    @unique
+  emailVerified  DateTime?
+  image          String?
+  passwordHash   String?
+  role           Role      @default(USER)
+
+  // Profil candidat
+  school         String?
+  graduationYear Int?
+  headline       String?
+  city           String?
+  cvKey          String?   // clé S3 du CV
+  cvFilename     String?
+  cvUploadedAt   DateTime?
+
+  accounts       Account[]
+  sessions       Session[]
+  savedOffers    SavedOffer[]
+  savedSearches  SavedSearch[]
+  applyClicks    ApplyClick[]
+
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+
+  @@map("users")
+}
+
+model Account {
+  id                String  @id @default(cuid())
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String?
+  access_token      String?
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String?
+  session_state     String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+  @@map("accounts")
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("sessions")
+}
+
+model VerificationToken {
+  identifier String
+  token      String   @unique
+  expires    DateTime
+
+  @@unique([identifier, token])
+  @@map("verification_tokens")
+}
+
+// ---------- Métier ----------
+
+model Company {
+  id          String     @id @default(cuid())
+  name        String
+  slug        String     @unique
+  logoUrl     String?
+  description String
+  sector      String
+  size        String // ex. "1-10", "11-50", "51-200", "201-1000", "1000+"
+  website     String?
+  featured    Boolean    @default(false)
+
+  offers      JobOffer[]
+
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
+
+  @@map("companies")
+}
+
+model JobOffer {
+  id             String         @id @default(cuid())
+  title          String
+  slug           String         @unique
+  description    String // markdown/HTML riche
+  companyId      String
+  company        Company        @relation(fields: [companyId], references: [id], onDelete: Cascade)
+
+  contractType   ContractType
+  city           String
+  latitude       Float?
+  longitude      Float?
+  remotePolicy   RemotePolicy   @default(ONSITE)
+  salaryMin      Int?
+  salaryMax      Int?
+  educationLevel EducationLevel @default(INDIFFERENT)
+  sector         String
+
+  // Provenance scraping
+  sourceUrl      String
+  sourceSite     String
+  scrapedAt      DateTime
+  lastSeenAt     DateTime
+  dedupHash      String         @unique
+  status         OfferStatus    @default(ACTIVE)
+
+  publishedAt    DateTime       @default(now())
+
+  savedBy        SavedOffer[]
+  applyClicks    ApplyClick[]
+
+  createdAt      DateTime       @default(now())
+  updatedAt      DateTime       @updatedAt
+
+  @@index([status, publishedAt])
+  @@index([companyId, status])
+  @@index([lastSeenAt])
+  @@map("job_offers")
+}
+
+model SavedOffer {
+  id        String   @id @default(cuid())
+  userId    String
+  offerId   String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  offer     JobOffer @relation(fields: [offerId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+
+  @@unique([userId, offerId])
+  @@map("saved_offers")
+}
+
+model SavedSearch {
+  id         String         @id @default(cuid())
+  userId     String
+  user       User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  name       String
+  // Query params sérialisés de la recherche (q, ville, contrat, remote, etc.)
+  params     Json
+  frequency  AlertFrequency @default(DAILY)
+  lastSentAt DateTime?
+  createdAt  DateTime       @default(now())
+
+  @@map("saved_searches")
+}
+
+model ApplyClick {
+  id        String   @id @default(cuid())
+  offerId   String
+  offer     JobOffer @relation(fields: [offerId], references: [id], onDelete: Cascade)
+  userId    String?
+  user      User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
+  clickedAt DateTime @default(now())
+  referer   String?
+
+  @@index([offerId, clickedAt])
+  @@index([userId])
+  @@map("apply_clicks")
+}
+
+model IngestLog {
+  id         String       @id @default(cuid())
+  sourceSite String
+  result     IngestResult
+  offerId    String?
+  dedupHash  String?
+  rawTitle   String?
+  message    String?
+  createdAt  DateTime     @default(now())
+
+  @@index([sourceSite, createdAt])
+  @@index([result, createdAt])
+  @@map("ingest_logs")
+}

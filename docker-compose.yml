@@ -1,0 +1,110 @@
+services:
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "3000:3000"
+    environment:
+      DATABASE_URL: postgresql://nextstep:nextstep@postgres:5432/nextstep?schema=public
+      REDIS_URL: redis://redis:6379
+      MEILISEARCH_HOST: http://meilisearch:7700
+      MEILISEARCH_API_KEY: nextstep_meili_master_key
+      INGEST_API_KEY: change-me-ingest-key
+      OFFER_FRESHNESS_DAYS: "7"
+      AUTH_SECRET: docker-dev-secret-change-in-prod
+      AUTH_URL: http://localhost:3000
+      NEXT_PUBLIC_APP_URL: http://localhost:3000
+      S3_ENDPOINT: http://minio:9000
+      S3_REGION: us-east-1
+      S3_ACCESS_KEY: nextstep
+      S3_SECRET_KEY: nextstep-secret
+      S3_BUCKET_CV: nextstep-cv
+      EMAIL_PROVIDER: console
+      EMAIL_FROM: NextStep <no-reply@nextstep.example>
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      meilisearch:
+        condition: service_healthy
+      minio:
+        condition: service_healthy
+    command: sh -c "npx prisma migrate deploy && npm run db:seed && npm run search:sync && npm run start:all"
+
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: nextstep
+      POSTGRES_PASSWORD: nextstep
+      POSTGRES_DB: nextstep
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U nextstep"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+    volumes:
+      - redisdata:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  meilisearch:
+    image: getmeili/meilisearch:v1.8
+    environment:
+      MEILI_MASTER_KEY: nextstep_meili_master_key
+      MEILI_ENV: development
+    ports:
+      - "7700:7700"
+    volumes:
+      - meilidata:/meili_data
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fs http://localhost:7700/health || exit 1"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  minio:
+    image: minio/minio:latest
+    command: server /data --console-address ":9001"
+    environment:
+      MINIO_ROOT_USER: nextstep
+      MINIO_ROOT_PASSWORD: nextstep-secret
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+    volumes:
+      - miniodata:/data
+    healthcheck:
+      test: ["CMD", "mc", "ready", "local"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  # Crée le bucket CV au démarrage
+  minio-init:
+    image: minio/mc:latest
+    depends_on:
+      minio:
+        condition: service_healthy
+    entrypoint: >
+      sh -c "mc alias set local http://minio:9000 nextstep nextstep-secret &&
+             mc mb --ignore-existing local/nextstep-cv"
+
+volumes:
+  pgdata:
+  redisdata:
+  meilidata:
+  miniodata:
