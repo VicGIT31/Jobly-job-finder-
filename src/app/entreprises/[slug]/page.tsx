@@ -46,12 +46,10 @@ export default async function EntreprisePage({ params }: { params: { slug: strin
         / <span aria-current="page">{company.name}</span>
       </nav>
 
-      <header className="mt-4 border-b border-ink pb-8">
+      <header className="mt-4 border-b border-ink/10 pb-8">
         <div className="flex items-center gap-3">
-          <h1 className="font-display text-4xl font-black tracking-tight">{company.name}</h1>
-          {company.featured && (
-            <span className="stamp !border-[#141414] bg-signal text-[#141414]">À la une</span>
-          )}
+          <h1 className="font-display text-4xl font-bold tracking-tight">{company.name}</h1>
+          {company.featured && <span className="stamp">À la une</span>}
         </div>
         <p className="mt-2 text-sm uppercase tracking-wider text-ink/60">
           {company.sector} · {company.size} salariés
@@ -79,12 +77,12 @@ export default async function EntreprisePage({ params }: { params: { slug: strin
         </h2>
         {company.offers.length > 0 ? (
           <div className="mt-5 grid gap-3 md:grid-cols-2">
-            {company.offers.map((offer, i) => (
-              <OfferCard key={offer.id} offer={offerToDocument(offer)} index={i} />
+            {company.offers.map((offer) => (
+              <OfferCard key={offer.id} offer={offerToDocument(offer)} />
             ))}
           </div>
         ) : (
-          <p className="mt-4 border border-dashed border-ink/40 p-8 text-center text-ink/70">
+          <p className="mt-4 rounded-xl border border-dashed border-ink/20 p-8 text-center text-ink/70">
             Aucune offre active pour le moment —{" "}
             <Link
               href="/offres"

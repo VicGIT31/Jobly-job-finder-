@@ -48,18 +48,18 @@ export default async function AdminSourcesPage() {
   return (
     <div>
       <div className="grid gap-3 sm:grid-cols-3">
-        <div className="border border-ink p-4">
-          <p className="font-display text-3xl font-black tabular-nums">{rows.length}</p>
+        <div className="card p-4">
+          <p className="font-display text-3xl font-bold tabular-nums">{rows.length}</p>
           <p className="mt-1 text-xs uppercase tracking-wider text-ink/60">Sources actives</p>
         </div>
-        <div className="border border-ink p-4">
-          <p className="font-display text-3xl font-black tabular-nums">{totalClicks}</p>
+        <div className="card p-4">
+          <p className="font-display text-3xl font-bold tabular-nums">{totalClicks}</p>
           <p className="mt-1 text-xs uppercase tracking-wider text-ink/60">
             Clics « Postuler » (total)
           </p>
         </div>
-        <div className="border border-ink p-4">
-          <p className="font-display text-3xl font-black tabular-nums">{last30d}</p>
+        <div className="card p-4">
+          <p className="font-display text-3xl font-bold tabular-nums">{last30d}</p>
           <p className="mt-1 text-xs uppercase tracking-wider text-ink/60">Clics sur 30 jours</p>
         </div>
       </div>
@@ -71,20 +71,35 @@ export default async function AdminSourcesPage() {
         <div className="mt-3 overflow-x-auto">
           <table className="w-full min-w-[560px] border-collapse text-sm">
             <thead>
-              <tr className="border-b-2 border-ink text-left">
-                <th scope="col" className="py-2 pr-4 font-bold uppercase tracking-wider">
+              <tr className="border-b border-ink/15 text-left">
+                <th
+                  scope="col"
+                  className="py-2 pr-4 text-xs font-semibold uppercase tracking-wide text-ink/50"
+                >
                   Source
                 </th>
-                <th scope="col" className="py-2 pr-4 font-bold uppercase tracking-wider">
+                <th
+                  scope="col"
+                  className="py-2 pr-4 text-xs font-semibold uppercase tracking-wide text-ink/50"
+                >
                   Offres actives
                 </th>
-                <th scope="col" className="py-2 pr-4 font-bold uppercase tracking-wider">
+                <th
+                  scope="col"
+                  className="py-2 pr-4 text-xs font-semibold uppercase tracking-wide text-ink/50"
+                >
                   Expirées
                 </th>
-                <th scope="col" className="py-2 pr-4 font-bold uppercase tracking-wider">
+                <th
+                  scope="col"
+                  className="py-2 pr-4 text-xs font-semibold uppercase tracking-wide text-ink/50"
+                >
                   Clics Postuler
                 </th>
-                <th scope="col" className="py-2 font-bold uppercase tracking-wider">
+                <th
+                  scope="col"
+                  className="py-2 text-xs font-semibold uppercase tracking-wide text-ink/50"
+                >
                   Clics / offre
                 </th>
               </tr>

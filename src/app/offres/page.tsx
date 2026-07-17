@@ -7,9 +7,9 @@ import { SearchClient } from "@/components/offers/search-client";
 export const dynamic = "force-dynamic";
 
 export const metadata: Metadata = {
-  title: "Offres de stage, alternance, CDI et VIE",
+  title: "Offres de stage et d'alternance",
   description:
-    "Recherchez parmi des centaines d'offres pour étudiants et jeunes diplômés : stages, alternances, CDI, VIE. Filtres par ville, contrat, secteur, télétravail.",
+    "Recherchez parmi des centaines d'offres de stage et d'alternance pour étudiants et jeunes diplômés. Filtres par ville, contrat, secteur, télétravail.",
 };
 
 /**
@@ -26,7 +26,7 @@ export default async function OffresPage({
 
   return (
     <div className="mx-auto max-w-6xl px-4 py-8">
-      <h1 className="font-display text-4xl font-black tracking-tight">
+      <h1 className="font-display text-4xl font-bold tracking-tight">
         Les offres<span className="text-cobalt">.</span>
       </h1>
       <p className="mt-1 text-ink/70">

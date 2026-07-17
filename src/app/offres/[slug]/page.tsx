@@ -110,7 +110,7 @@ export default async function OffrePage({ params }: { params: { slug: string } }
       </nav>
 
       {isExpired && (
-        <div className="mt-4 border-2 border-ink bg-signal p-4 text-[#141414]" role="alert">
+        <div className="mt-4 rounded-lg border border-cobalt/20 bg-cobalt-soft p-4" role="alert">
           <p className="font-display text-lg font-bold">Cette offre a expiré</p>
           <p className="text-sm">
             Elle n'a plus été vue sur {offer.sourceSite} depuis le{" "}
@@ -122,7 +122,7 @@ export default async function OffrePage({ params }: { params: { slug: string } }
 
       <div className="mt-6 grid gap-10 lg:grid-cols-[1fr_320px]">
         <article>
-          <p className="text-sm font-semibold uppercase tracking-wider text-ink/60">
+          <p className="text-sm font-medium text-ink/60">
             <Link
               href={`/entreprises/${offer.company.slug}`}
               className="underline-offset-4 hover:underline"
@@ -130,7 +130,7 @@ export default async function OffrePage({ params }: { params: { slug: string } }
               {offer.company.name}
             </Link>
           </p>
-          <h1 className="mt-1 font-display text-3xl font-black leading-tight sm:text-4xl">
+          <h1 className="mt-1 font-display text-3xl font-bold leading-tight sm:text-4xl">
             {offer.title}
           </h1>
 
@@ -148,7 +148,7 @@ export default async function OffrePage({ params }: { params: { slug: string } }
         </article>
 
         <aside className="lg:sticky lg:top-6 lg:self-start">
-          <div className="border border-ink p-5">
+          <div className="card p-5">
             {!isExpired ? (
               <>
                 <a
@@ -198,7 +198,7 @@ export default async function OffrePage({ params }: { params: { slug: string } }
             </dl>
           </div>
 
-          <div className="mt-4 border border-ink/30 p-5">
+          <div className="card mt-4 p-5">
             <h2 className="font-display text-lg font-bold">{offer.company.name}</h2>
             <p className="mt-2 line-clamp-4 text-sm text-ink/75">{offer.company.description}</p>
             <Link

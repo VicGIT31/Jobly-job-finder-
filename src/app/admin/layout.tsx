@@ -12,10 +12,10 @@ export default async function AdminLayout({ children }: { children: React.ReactN
   return (
     <div className="mx-auto max-w-6xl px-4 py-8">
       <div className="flex items-baseline gap-3">
-        <h1 className="font-display text-3xl font-black tracking-tight">
+        <h1 className="font-display text-3xl font-bold tracking-tight">
           Admin<span className="text-cobalt">.</span>
         </h1>
-        <span className="stamp !border-[#141414] bg-signal text-[#141414]">Accès restreint</span>
+        <span className="stamp">Accès restreint</span>
       </div>
 
       <nav aria-label="Navigation admin" className="rule mt-4 flex flex-wrap gap-1 pt-3">

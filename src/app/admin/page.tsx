@@ -51,21 +51,30 @@ export default async function AdminIngestionPage() {
           Ingestion des 7 derniers jours
         </h2>
         {perDay.length === 0 ? (
-          <p className="mt-3 border border-dashed border-ink/40 p-6 text-center text-sm text-ink/60">
+          <p className="mt-3 rounded-xl border border-dashed border-ink/20 p-6 text-center text-sm text-ink/60">
             Aucune ingestion sur la période. Envoyez des offres sur{" "}
             <code className="bg-ink/10 px-1">POST /internal/ingest</code>.
           </p>
         ) : (
           <table className="mt-3 w-full max-w-lg border-collapse text-sm">
             <thead>
-              <tr className="border-b-2 border-ink text-left">
-                <th scope="col" className="py-2 pr-4 font-bold uppercase tracking-wider">
+              <tr className="border-b border-ink/15 text-left">
+                <th
+                  scope="col"
+                  className="py-2 pr-4 text-xs font-semibold uppercase tracking-wide text-ink/50"
+                >
                   Jour
                 </th>
-                <th scope="col" className="py-2 pr-4 font-bold uppercase tracking-wider">
+                <th
+                  scope="col"
+                  className="py-2 pr-4 text-xs font-semibold uppercase tracking-wide text-ink/50"
+                >
                   Créées
                 </th>
-                <th scope="col" className="py-2 font-bold uppercase tracking-wider">
+                <th
+                  scope="col"
+                  className="py-2 text-xs font-semibold uppercase tracking-wide text-ink/50"
+                >
                   Doublons
                 </th>
               </tr>
@@ -90,17 +99,29 @@ export default async function AdminIngestionPage() {
         <div className="mt-3 overflow-x-auto">
           <table className="w-full min-w-[640px] border-collapse text-sm">
             <thead>
-              <tr className="border-b-2 border-ink text-left">
-                <th scope="col" className="py-2 pr-4 font-bold uppercase tracking-wider">
+              <tr className="border-b border-ink/15 text-left">
+                <th
+                  scope="col"
+                  className="py-2 pr-4 text-xs font-semibold uppercase tracking-wide text-ink/50"
+                >
                   Date
                 </th>
-                <th scope="col" className="py-2 pr-4 font-bold uppercase tracking-wider">
+                <th
+                  scope="col"
+                  className="py-2 pr-4 text-xs font-semibold uppercase tracking-wide text-ink/50"
+                >
                   Source
                 </th>
-                <th scope="col" className="py-2 pr-4 font-bold uppercase tracking-wider">
+                <th
+                  scope="col"
+                  className="py-2 pr-4 text-xs font-semibold uppercase tracking-wide text-ink/50"
+                >
                   Résultat
                 </th>
-                <th scope="col" className="py-2 font-bold uppercase tracking-wider">
+                <th
+                  scope="col"
+                  className="py-2 text-xs font-semibold uppercase tracking-wide text-ink/50"
+                >
                   Détail
                 </th>
               </tr>
@@ -144,8 +165,8 @@ export default async function AdminIngestionPage() {
 
 function StatCard({ label, value }: { label: string; value: number }) {
   return (
-    <div className="border border-ink p-4">
-      <p className="font-display text-3xl font-black tabular-nums">{value}</p>
+    <div className="card p-4">
+      <p className="font-display text-3xl font-bold tabular-nums">{value}</p>
       <p className="mt-1 text-xs uppercase tracking-wider text-ink/60">{label}</p>
     </div>
   );

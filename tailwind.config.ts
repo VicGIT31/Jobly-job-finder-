@@ -8,28 +8,36 @@ const config: Config = {
       colors: {
         paper: "rgb(var(--paper) / <alpha-value>)",
         ink: "rgb(var(--ink) / <alpha-value>)",
+        // Accent unique du design sobre : indigo profond.
         cobalt: {
-          DEFAULT: "#2743F0",
-          dark: "#1D33C4",
+          DEFAULT: "#4F46E5",
+          dark: "#4338CA",
+          soft: "rgb(var(--accent-soft) / <alpha-value>)",
         },
-        signal: "#FFD84D",
+        // Ancien jaune "signal" recyclé en teinte d'appui discrète.
+        signal: "#EEF2FF",
+        surface: "rgb(var(--surface) / <alpha-value>)",
       },
       fontFamily: {
-        display: ["var(--font-fraunces)", "Georgia", "serif"],
+        display: ["var(--font-inter)", "system-ui", "sans-serif"],
         sans: ["var(--font-inter)", "system-ui", "sans-serif"],
       },
       borderRadius: {
-        none: "0",
-        sm: "2px",
-        DEFAULT: "4px",
-        md: "4px",
-        lg: "4px",
+        sm: "6px",
+        DEFAULT: "8px",
+        md: "10px",
+        lg: "12px",
+        xl: "16px",
+        "2xl": "20px",
         full: "9999px",
       },
       boxShadow: {
-        hard: "4px 4px 0 0 rgb(var(--ink))",
-        "hard-sm": "2px 2px 0 0 rgb(var(--ink))",
-        "hard-cobalt": "4px 4px 0 0 #2743F0",
+        card: "0 1px 2px 0 rgb(0 0 0 / 0.05)",
+        lift: "0 4px 16px -2px rgb(0 0 0 / 0.08), 0 2px 4px -2px rgb(0 0 0 / 0.04)",
+        // Alias historiques ("Ink & Signal") conservés pour compat : adoucis.
+        hard: "0 4px 16px -2px rgb(0 0 0 / 0.08), 0 2px 4px -2px rgb(0 0 0 / 0.04)",
+        "hard-sm": "0 1px 2px 0 rgb(0 0 0 / 0.05)",
+        "hard-cobalt": "0 4px 16px -2px rgb(79 70 229 / 0.25)",
       },
       transitionDuration: {
         DEFAULT: "150ms",

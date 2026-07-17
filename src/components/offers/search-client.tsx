@@ -172,7 +172,11 @@ export function SearchClient({
           <ul className="mt-3 flex flex-wrap gap-2" aria-label="Filtres actifs">
             {activeTickets.map((ticket) => (
               <li key={ticket.key}>
-                <button type="button" className="ticket hover:border-ink" onClick={ticket.remove}>
+                <button
+                  type="button"
+                  className="ticket hover:border-ink/30"
+                  onClick={ticket.remove}
+                >
                   {ticket.label}
                   <span aria-hidden="true">×</span>
                   <span className="sr-only">Retirer le filtre {ticket.label}</span>
@@ -220,8 +224,8 @@ export function SearchClient({
             />
           ) : (
             <div className={`grid gap-3 ${isPlaceholderData ? "opacity-60" : ""}`}>
-              {result.hits.map((offer, i) => (
-                <OfferCard key={offer.id} offer={offer} index={(result.page - 1) * 12 + i} />
+              {result.hits.map((offer) => (
+                <OfferCard key={offer.id} offer={offer} />
               ))}
             </div>
           )}
@@ -257,7 +261,7 @@ export function SearchClient({
 
 function EmptyState({ onReset }: { onReset: () => void }) {
   return (
-    <div className="border border-dashed border-ink/40 p-10 text-center">
+    <div className="rounded-xl border border-dashed border-ink/20 p-10 text-center">
       <p className="font-display text-2xl font-bold">Aucune offre ne correspond</p>
       <p className="mx-auto mt-2 max-w-md text-sm text-ink/70">
         Essayez d'élargir votre recherche : moins de filtres, un rayon plus grand, ou un mot-clé

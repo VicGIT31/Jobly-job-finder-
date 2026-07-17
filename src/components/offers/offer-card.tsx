@@ -20,28 +20,28 @@ export function timeAgo(ts: number): string {
   return `il y a ${months} mois`;
 }
 
-export function OfferCard({ offer, index }: { offer: OfferDocument; index?: number }) {
+export function OfferCard({ offer }: { offer: OfferDocument }) {
   const salary = formatSalary(offer.salaryMin, offer.salaryMax);
   const isNew = Date.now() - offer.publishedAtTs < 3 * 86_400_000;
 
   return (
-    <article className="group relative border border-ink/30 bg-paper p-4 transition-all duration-150 hover:border-ink hover:shadow-hard">
+    <article className="card group relative p-5 hover:shadow-lift">
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0">
-          <p className="text-xs font-semibold uppercase tracking-wider text-ink/60">
+          <p className="text-sm font-medium text-ink/60">
             {offer.companyName}
-            {index != null && (
-              <span className="ml-2 font-normal normal-case text-ink/35">
-                № {String(index + 1).padStart(2, "0")}
+            {isNew && (
+              <span className="ml-2 rounded-full bg-emerald-50 px-2 py-0.5 text-xs font-semibold text-emerald-700 dark:bg-emerald-950 dark:text-emerald-300">
+                Nouveau
               </span>
             )}
           </p>
-          <h3 className="mt-1 font-display text-xl font-bold leading-tight">
+          <h3 className="mt-1 text-lg font-semibold leading-snug">
             <Link
               href={`/offres/${offer.slug}`}
               className="after:absolute after:inset-0 group-hover:text-cobalt"
             >
-              {isNew ? <span className="highlight-marker">{offer.title}</span> : offer.title}
+              {offer.title}
             </Link>
           </h3>
         </div>
@@ -54,7 +54,7 @@ export function OfferCard({ offer, index }: { offer: OfferDocument; index?: numb
         </span>
       </div>
 
-      <dl className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-ink/75">
+      <dl className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-ink/70">
         <div>
           <dt className="sr-only">Ville</dt>
           <dd>{offer.city}</dd>

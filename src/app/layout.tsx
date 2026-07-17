@@ -1,16 +1,10 @@
 import type { Metadata } from "next";
-import { Fraunces, Inter } from "next/font/google";
+import { Inter } from "next/font/google";
 import { NuqsAdapter } from "nuqs/adapters/next/app";
 import "./globals.css";
 import { Providers } from "@/components/providers";
 import { SiteHeader } from "@/components/site-header";
 import { SiteFooter } from "@/components/site-footer";
-
-const fraunces = Fraunces({
-  subsets: ["latin"],
-  variable: "--font-fraunces",
-  axes: ["opsz"],
-});
 
 const inter = Inter({
   subsets: ["latin"],
@@ -24,7 +18,7 @@ export const metadata: Metadata = {
     template: "%s · NextStep",
   },
   description:
-    "Stages, alternances, CDI, VIE : NextStep agrège les meilleures offres pour étudiants et jeunes diplômés et vous redirige directement vers la source.",
+    "Stages et alternances : NextStep agrège les meilleures offres pour étudiants et jeunes diplômés et vous redirige directement vers la source.",
 };
 
 export default function RootLayout({
@@ -33,7 +27,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="fr" className={`${fraunces.variable} ${inter.variable}`} suppressHydrationWarning>
+    <html lang="fr" className={inter.variable} suppressHydrationWarning>
       <head>
         {/* Anti-FOUC : applique le thème avant le premier rendu */}
         <script

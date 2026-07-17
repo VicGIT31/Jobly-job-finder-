@@ -27,7 +27,7 @@ export default async function ClicsPage() {
       </p>
 
       {clicks.length === 0 ? (
-        <div className="mt-4 border border-dashed border-ink/40 p-10 text-center">
+        <div className="mt-4 rounded-xl border border-dashed border-ink/20 p-10 text-center">
           <p className="text-ink/70">Aucun clic pour le moment.</p>
           <Link href="/offres" className="btn-cobalt mt-4">
             Explorer les offres
@@ -37,17 +37,29 @@ export default async function ClicsPage() {
         <div className="mt-4 overflow-x-auto">
           <table className="w-full min-w-[560px] border-collapse text-sm">
             <thead>
-              <tr className="border-b-2 border-ink text-left">
-                <th scope="col" className="py-2 pr-4 font-bold uppercase tracking-wider">
+              <tr className="border-b border-ink/15 text-left">
+                <th
+                  scope="col"
+                  className="py-2 pr-4 text-xs font-semibold uppercase tracking-wide text-ink/50"
+                >
                   Offre
                 </th>
-                <th scope="col" className="py-2 pr-4 font-bold uppercase tracking-wider">
+                <th
+                  scope="col"
+                  className="py-2 pr-4 text-xs font-semibold uppercase tracking-wide text-ink/50"
+                >
                   Entreprise
                 </th>
-                <th scope="col" className="py-2 pr-4 font-bold uppercase tracking-wider">
+                <th
+                  scope="col"
+                  className="py-2 pr-4 text-xs font-semibold uppercase tracking-wide text-ink/50"
+                >
                   Source
                 </th>
-                <th scope="col" className="py-2 font-bold uppercase tracking-wider">
+                <th
+                  scope="col"
+                  className="py-2 text-xs font-semibold uppercase tracking-wide text-ink/50"
+                >
                   Date
                 </th>
               </tr>

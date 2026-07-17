@@ -92,23 +92,41 @@ export default async function AdminOffresPage({
       <div className="mt-2 overflow-x-auto">
         <table className="w-full min-w-[760px] border-collapse text-sm">
           <thead>
-            <tr className="border-b-2 border-ink text-left">
-              <th scope="col" className="py-2 pr-4 font-bold uppercase tracking-wider">
+            <tr className="border-b border-ink/15 text-left">
+              <th
+                scope="col"
+                className="py-2 pr-4 text-xs font-semibold uppercase tracking-wide text-ink/50"
+              >
                 Offre
               </th>
-              <th scope="col" className="py-2 pr-4 font-bold uppercase tracking-wider">
+              <th
+                scope="col"
+                className="py-2 pr-4 text-xs font-semibold uppercase tracking-wide text-ink/50"
+              >
                 Contrat
               </th>
-              <th scope="col" className="py-2 pr-4 font-bold uppercase tracking-wider">
+              <th
+                scope="col"
+                className="py-2 pr-4 text-xs font-semibold uppercase tracking-wide text-ink/50"
+              >
                 Source
               </th>
-              <th scope="col" className="py-2 pr-4 font-bold uppercase tracking-wider">
+              <th
+                scope="col"
+                className="py-2 pr-4 text-xs font-semibold uppercase tracking-wide text-ink/50"
+              >
                 Clics
               </th>
-              <th scope="col" className="py-2 pr-4 font-bold uppercase tracking-wider">
+              <th
+                scope="col"
+                className="py-2 pr-4 text-xs font-semibold uppercase tracking-wide text-ink/50"
+              >
                 Statut
               </th>
-              <th scope="col" className="py-2 font-bold uppercase tracking-wider">
+              <th
+                scope="col"
+                className="py-2 text-xs font-semibold uppercase tracking-wide text-ink/50"
+              >
                 Action
               </th>
             </tr>

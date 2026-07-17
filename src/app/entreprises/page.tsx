@@ -20,7 +20,7 @@ export default async function EntreprisesPage() {
 
   return (
     <div className="mx-auto max-w-6xl px-4 py-8">
-      <h1 className="font-display text-4xl font-black tracking-tight">
+      <h1 className="font-display text-4xl font-bold tracking-tight">
         Les entreprises<span className="text-cobalt">.</span>
       </h1>
       <p className="mt-1 text-ink/70">
@@ -32,15 +32,13 @@ export default async function EntreprisesPage() {
           <Link
             key={company.id}
             href={`/entreprises/${company.slug}`}
-            className="group border border-ink/30 p-5 transition-all duration-150 hover:border-ink hover:shadow-hard"
+            className="card group p-5 hover:shadow-lift"
           >
             <div className="flex items-start justify-between gap-2">
               <h2 className="font-display text-xl font-bold group-hover:text-cobalt">
                 {company.name}
               </h2>
-              {company.featured && (
-                <span className="stamp !border-[#141414] bg-signal text-[#141414]">À la une</span>
-              )}
+              {company.featured && <span className="stamp">À la une</span>}
             </div>
             <p className="mt-1 text-xs uppercase tracking-wider text-ink/60">
               {company.sector} · {company.size} salariés

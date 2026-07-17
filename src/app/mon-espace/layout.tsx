@@ -14,7 +14,7 @@ export default async function MonEspaceLayout({ children }: { children: React.Re
   return (
     <div className="mx-auto max-w-6xl px-4 py-8">
       <div className="flex flex-wrap items-baseline justify-between gap-3">
-        <h1 className="font-display text-3xl font-black tracking-tight">
+        <h1 className="font-display text-3xl font-bold tracking-tight">
           Mon espace<span className="text-cobalt">.</span>
         </h1>
         <form action={logout}>

@@ -78,7 +78,7 @@ export default async function AlertesPage() {
       </p>
 
       {alerts.length === 0 ? (
-        <div className="mt-4 border border-dashed border-ink/40 p-10 text-center">
+        <div className="mt-4 rounded-xl border border-dashed border-ink/20 p-10 text-center">
           <p className="text-ink/70">Aucune alerte pour le moment.</p>
           <Link href="/offres" className="btn-cobalt mt-4">
             Lancer une recherche
@@ -91,7 +91,7 @@ export default async function AlertesPage() {
             return (
               <li
                 key={alert.id}
-                className="flex flex-wrap items-center justify-between gap-3 border border-ink/30 p-4"
+                className="card flex flex-wrap items-center justify-between gap-3 p-4"
               >
                 <div className="min-w-0">
                   <p className="font-display text-lg font-bold">{alert.name}</p>

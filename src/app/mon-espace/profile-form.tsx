@@ -100,7 +100,7 @@ export function ProfileForm({
 
       {result && (
         <p
-          className={`border border-ink p-2 text-sm ${result.ok ? "bg-signal text-[#141414]" : ""}`}
+          className={`rounded-lg border p-2 text-sm ${result.ok ? "border-emerald-200 bg-emerald-50 text-emerald-800 dark:border-emerald-900 dark:bg-emerald-950 dark:text-emerald-300" : "border-ink/15"}`}
           role={result.ok ? "status" : "alert"}
         >
           {result.ok ? `✓ ${result.message}` : result.error}

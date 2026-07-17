@@ -36,12 +36,15 @@ export function LoginForm() {
   return (
     <div>
       {verification === "ok" && (
-        <p className="mb-4 border border-ink bg-signal p-3 text-sm text-[#141414]" role="status">
+        <p
+          className="mb-4 rounded-lg border border-cobalt/20 bg-cobalt-soft p-3 text-sm"
+          role="status"
+        >
           ✓ Adresse email confirmée, vous pouvez vous connecter.
         </p>
       )}
       {verification === "erreur" && (
-        <p className="mb-4 border border-ink p-3 text-sm" role="alert">
+        <p className="mb-4 rounded-lg border border-ink/15 p-3 text-sm" role="alert">
           Lien de vérification invalide ou expiré.
         </p>
       )}
@@ -77,7 +80,7 @@ export function LoginForm() {
         </div>
 
         {error && (
-          <p className="border border-ink p-2 text-sm" role="alert">
+          <p className="rounded-lg border border-ink/15 p-2 text-sm" role="alert">
             {error}
           </p>
         )}

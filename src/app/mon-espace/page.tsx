@@ -23,7 +23,7 @@ export default async function ProfilPage() {
         <p className="mt-1 text-sm text-ink/60">
           Ces informations personnalisent vos alertes et votre expérience.
         </p>
-        <div className="mt-4 border border-ink/30 p-5">
+        <div className="card mt-4 p-5">
           <ProfileForm
             initial={{
               name: user.name ?? "",
@@ -45,7 +45,7 @@ export default async function ProfilPage() {
         <p className="mt-1 text-sm text-ink/60">
           PDF uniquement, 5 Mo maximum. Votre CV reste privé.
         </p>
-        <div className="mt-4 border border-ink/30 p-5">
+        <div className="card mt-4 p-5">
           <CvSection
             cvFilename={user.cvFilename}
             cvUploadedAt={user.cvUploadedAt?.toLocaleDateString("fr-FR") ?? null}

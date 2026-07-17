@@ -87,14 +87,14 @@ export function CityAutocomplete({
         <ul
           id={listboxId}
           role="listbox"
-          className="absolute z-20 mt-1 w-full border border-ink bg-paper shadow-hard-sm"
+          className="absolute z-20 mt-1 w-full overflow-hidden rounded-lg border border-ink/15 bg-paper shadow-lift"
         >
           {suggestions.map((s, i) => (
             <li key={s.city} role="option" aria-selected={i === activeIndex}>
               <button
                 type="button"
-                className={`flex w-full items-center justify-between px-3 py-2 text-left text-sm hover:bg-signal hover:text-[#141414] ${
-                  i === activeIndex ? "bg-signal text-[#141414]" : ""
+                className={`flex w-full items-center justify-between px-3 py-2 text-left text-sm hover:bg-surface ${
+                  i === activeIndex ? "bg-surface" : ""
                 }`}
                 onClick={() => select(s.city)}
               >

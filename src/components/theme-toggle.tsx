@@ -21,7 +21,7 @@ export function ThemeToggle() {
     <button
       type="button"
       onClick={toggle}
-      className="flex h-10 w-10 items-center justify-center border border-transparent text-lg hover:border-ink"
+      className="flex h-10 w-10 items-center justify-center rounded-lg text-lg hover:bg-surface"
       aria-label={dark ? "Passer en mode clair" : "Passer en mode sombre"}
       title={dark ? "Mode clair" : "Mode sombre"}
     >

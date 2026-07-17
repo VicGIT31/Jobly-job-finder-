@@ -11,7 +11,7 @@ export default function OffreIntrouvablePage() {
   return (
     <div className="mx-auto max-w-6xl px-4 py-24 text-center">
       <p className="stamp">Lien expiré</p>
-      <h1 className="mt-4 font-display text-3xl font-black">Cette offre n'existe plus</h1>
+      <h1 className="mt-4 font-display text-3xl font-bold">Cette offre n'existe plus</h1>
       <p className="mx-auto mt-3 max-w-md text-ink/70">
         Le lien que vous avez suivi pointe vers une offre qui a été retirée de NextStep.
       </p>

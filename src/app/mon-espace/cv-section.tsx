@@ -27,7 +27,7 @@ export function CvSection({
   return (
     <div className="flex flex-col gap-4">
       {cvFilename ? (
-        <div className="flex flex-wrap items-center justify-between gap-3 border border-ink/30 p-3">
+        <div className="card flex flex-wrap items-center justify-between gap-3 p-3">
           <div>
             <p className="text-sm font-semibold">{cvFilename}</p>
             <p className="text-xs text-ink/55">Importé le {cvUploadedAt}</p>
@@ -52,7 +52,7 @@ export function CvSection({
           </div>
         </div>
       ) : (
-        <p className="border border-dashed border-ink/40 p-4 text-center text-sm text-ink/60">
+        <p className="rounded-xl border border-dashed border-ink/20 p-4 text-center text-sm text-ink/60">
           Aucun CV importé pour le moment.
         </p>
       )}
@@ -68,7 +68,7 @@ export function CvSection({
           type="file"
           accept="application/pdf"
           required
-          className="text-sm file:mr-3 file:cursor-pointer file:border file:border-ink file:bg-paper file:px-3 file:py-2 file:font-semibold file:text-ink"
+          className="text-sm file:mr-3 file:cursor-pointer file:rounded-lg file:border file:border-ink/15 file:bg-paper file:px-3 file:py-2 file:font-semibold file:text-ink"
         />
         <button type="submit" className="btn-cobalt self-start" disabled={pending}>
           {pending ? "Import…" : "Importer"}
@@ -77,7 +77,7 @@ export function CvSection({
 
       {result && (
         <p
-          className={`border border-ink p-2 text-sm ${result.ok ? "bg-signal text-[#141414]" : ""}`}
+          className={`rounded-lg border p-2 text-sm ${result.ok ? "border-emerald-200 bg-emerald-50 text-emerald-800 dark:border-emerald-900 dark:bg-emerald-950 dark:text-emerald-300" : "border-ink/15"}`}
           role={result.ok ? "status" : "alert"}
         >
           {result.ok ? `✓ ${result.message}` : result.error}

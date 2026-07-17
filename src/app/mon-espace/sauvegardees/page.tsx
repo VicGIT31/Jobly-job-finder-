@@ -26,7 +26,7 @@ export default async function SauvegardeesPage() {
       </h2>
 
       {saved.length === 0 ? (
-        <div className="mt-4 border border-dashed border-ink/40 p-10 text-center">
+        <div className="mt-4 rounded-xl border border-dashed border-ink/20 p-10 text-center">
           <p className="text-ink/70">
             Sauvegardez des offres depuis leur page pour les retrouver ici.
           </p>

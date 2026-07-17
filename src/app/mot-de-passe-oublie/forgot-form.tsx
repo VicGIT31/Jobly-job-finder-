@@ -17,7 +17,7 @@ export function ForgotForm() {
 
   if (result?.ok) {
     return (
-      <p className="border border-ink bg-signal p-4 text-sm text-[#141414]" role="status">
+      <p className="rounded-lg border border-cobalt/20 bg-cobalt-soft p-4 text-sm" role="status">
         ✓ {result.message}
       </p>
     );
@@ -42,7 +42,7 @@ export function ForgotForm() {
         />
       </div>
       {result && !result.ok && (
-        <p className="border border-ink p-2 text-sm" role="alert">
+        <p className="rounded-lg border border-ink/15 p-2 text-sm" role="alert">
           {result.error}
         </p>
       )}

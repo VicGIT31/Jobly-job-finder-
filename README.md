@@ -117,8 +117,8 @@ Offre expirée → page dédiée avec 6 offres similaires.
 npm run test
 ```
 
-## Design system — « Ink & Signal »
+## Design system — sobre & épuré
 
-Direction éditoriale façon presse papier moderne : fond papier chaud `#FAF7F2`, encre `#141414`, accent cobalt `#2743F0`, jaune signal `#FFD84D` en surlignage marqueur. Serif à personnalité pour les titres (Fraunces), grotesque neutre pour le corps (Inter). Angles vifs, filets 1px façon journal, cards « petites annonces » numérotées avec tampon de contrat, bouton Postuler cobalt avec flèche ↗ et ombre dure. Mode sombre encre inversée (`#111` / `#EDEAE3`) avec bascule dans le header. Contrastes AA, focus visibles, navigation clavier complète, touch targets ≥ 44 px, `prefers-reduced-motion` respecté.
+Fond blanc, encre neutre (`#171717`), un seul accent indigo (`#4F46E5`), gris de soutien pour les surfaces (`neutral-50`). Typographie unique (Inter) avec hiérarchie par la graisse, cards arrondies à bordure légère et ombre douce au survol, badges arrondis pour les contrats, boutons pleins/contours arrondis. Mode sombre neutre (`neutral-950` / `neutral-200`) avec bascule dans le header. Contrastes AA, focus visibles, navigation clavier complète, touch targets ≥ 44 px, `prefers-reduced-motion` respecté.
 
 Voir `DECISIONS.md` pour les choix techniques documentés.

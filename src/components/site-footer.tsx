@@ -2,16 +2,16 @@ import Link from "next/link";
 
 export function SiteFooter() {
   return (
-    <footer className="mt-16 border-t border-ink">
-      <div className="mx-auto max-w-6xl px-4 py-8">
+    <footer className="mt-16 border-t border-ink/10 bg-surface">
+      <div className="mx-auto max-w-6xl px-4 py-10">
         <div className="flex flex-col justify-between gap-6 sm:flex-row">
           <div>
-            <p className="font-display text-xl font-black">
+            <p className="text-lg font-bold">
               NextStep<span className="text-cobalt">.</span>
             </p>
             <p className="mt-2 max-w-sm text-sm text-ink/70">
-              Le job board qui vous ramène toujours à la source. Stages, alternances, CDI et VIE
-              pour étudiants et jeunes diplômés.
+              Le job board qui vous ramène toujours à la source. Stages et alternances pour
+              étudiants et jeunes diplômés.
             </p>
           </div>
           <nav

@@ -25,9 +25,9 @@ export default async function OffreExpireePage({ params }: { params: { slug: str
 
   return (
     <div className="mx-auto max-w-6xl px-4 py-12">
-      <div className="mx-auto max-w-xl border-2 border-ink bg-signal p-8 text-center text-[#141414]">
+      <div className="mx-auto max-w-xl rounded-xl border border-cobalt/20 bg-cobalt-soft p-8 text-center">
         <p className="stamp !border-[#141414] bg-transparent">Offre expirée</p>
-        <h1 className="mt-4 font-display text-3xl font-black leading-tight">{offer.title}</h1>
+        <h1 className="mt-4 font-display text-3xl font-bold leading-tight">{offer.title}</h1>
         <p className="mt-2 text-sm">
           {offer.company.name} — {offer.city}. Cette offre n'est plus disponible sur{" "}
           {offer.sourceSite}.
