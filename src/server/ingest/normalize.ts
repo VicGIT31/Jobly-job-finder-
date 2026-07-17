@@ -16,6 +16,9 @@ export const rawOfferSchema = z.object({
   latitude: z.number().min(-90).max(90).optional(),
   longitude: z.number().min(-180).max(180).optional(),
   sourceUrl: z.string().url(),
+  // Attribution par offre : un connecteur agrégateur (JSearch) peut remonter des
+  // offres de plusieurs sites (Indeed, Glassdoor…) → chacune garde sa vraie source.
+  sourceSite: z.string().min(3).max(120).optional(),
   scrapedAt: z.coerce.date().optional(),
 });
 
@@ -40,6 +43,7 @@ export type NormalizedOffer = {
   latitude: number | null;
   longitude: number | null;
   sourceUrl: string;
+  sourceSite: string | null;
   scrapedAt: Date;
 };
 
@@ -182,6 +186,7 @@ export function normalizeOffer(raw: RawOffer): NormalizedOffer {
     latitude: raw.latitude ?? null,
     longitude: raw.longitude ?? null,
     sourceUrl: raw.sourceUrl,
+    sourceSite: raw.sourceSite ?? null,
     scrapedAt: raw.scrapedAt ?? new Date(),
   };
 }
