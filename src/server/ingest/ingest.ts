@@ -64,6 +64,8 @@ export async function processIngest(
     }
 
     const dedupHash = computeDedupHash(normalized.title, normalized.companyName, normalized.city);
+    // Attribution : la source portée par l'offre prime (agrégateur multi-sites).
+    const offerSourceSite = normalized.sourceSite ?? sourceSite;
 
     // Offre déjà connue ? → rafraîchir last_seen_at (et réactiver si besoin)
     const existing = await prisma.jobOffer.findUnique({ where: { dedupHash } });
@@ -75,6 +77,7 @@ export async function processIngest(
           scrapedAt: normalized.scrapedAt,
           status: "ACTIVE",
           sourceUrl: normalized.sourceUrl,
+          sourceSite: offerSourceSite,
         },
         include: { company: true },
       });
@@ -126,7 +129,7 @@ export async function processIngest(
           educationLevel: normalized.educationLevel,
           sector: normalized.sector,
           sourceUrl: normalized.sourceUrl,
-          sourceSite,
+          sourceSite: offerSourceSite,
           scrapedAt: normalized.scrapedAt,
           lastSeenAt: new Date(),
           dedupHash,
