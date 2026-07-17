@@ -12,6 +12,11 @@ services:
       MEILISEARCH_API_KEY: nextstep_meili_master_key
       INGEST_API_KEY: change-me-ingest-key
       OFFER_FRESHNESS_DAYS: "7"
+      INGESTION_INTERVAL_MINUTES: "30"
+      # Sources d'offres réelles (The Muse marche sans clé ; France Travail via .env)
+      FRANCE_TRAVAIL_CLIENT_ID: ${FRANCE_TRAVAIL_CLIENT_ID:-}
+      FRANCE_TRAVAIL_CLIENT_SECRET: ${FRANCE_TRAVAIL_CLIENT_SECRET:-}
+      THEMUSE_API_KEY: ${THEMUSE_API_KEY:-}
       AUTH_SECRET: docker-dev-secret-change-in-prod
       AUTH_URL: http://localhost:3000
       NEXT_PUBLIC_APP_URL: http://localhost:3000
