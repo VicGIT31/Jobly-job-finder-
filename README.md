@@ -38,18 +38,32 @@ npm run worker     # crons BullMQ (ingestion 30 min + fraîcheur + alertes)
 
 Les offres proviennent de connecteurs branchés sur le pipeline commun
 (`processIngest` : normalisation, déduplication SHA-256, **rejet de tout ce qui
-n'est pas stage/alternance**, indexation Meilisearch). Un cron BullMQ relance
-l'ingestion toutes les 30 min (`INGESTION_INTERVAL_MINUTES`), plus une passe au
-démarrage du worker. Lancement manuel : `npm run ingest:now`.
+n'est pas stage/alternance**, indexation Meilisearch). Chaque connecteur balaie
+une large liste de métiers tech (`TECH_KEYWORDS`) croisée avec « stage » et
+« alternance » pour maximiser le volume. Chaque offre pointe vers **le lien réel
+de l'annonce** sur sa source.
 
-| Source                         | Clé requise | Couverture                                               |
-| ------------------------------ | ----------- | -------------------------------------------------------- |
-| **France Travail** (Offres v2) | Oui (OAuth) | Exhaustive France — stages + alternance, codes ROME tech |
-| **The Muse**                   | Non         | Repli zéro-config — stages tech en France                |
+**Automatisation temps réel** : un cron BullMQ relance l'ingestion toutes les
+30 min (`INGESTION_INTERVAL_MINUTES`) plus une passe au démarrage du worker ; un
+cron quotidien **supprime définitivement** (base + index) les offres publiées il
+y a plus de 2 mois (`OFFER_MAX_AGE_DAYS`), et un cron horaire marque `EXPIRED`
+les offres qui ont disparu de leur source. Lancement manuel : `npm run ingest:now`.
 
-France Travail : créez une application gratuite sur [francetravail.io](https://francetravail.io),
-souscrivez à « Offres d'emploi v2 », puis renseignez `FRANCE_TRAVAIL_CLIENT_ID`
-et `FRANCE_TRAVAIL_CLIENT_SECRET`. Sans ces clés, seul The Muse est utilisé.
+| Source                         | Clé requise    | Couverture                                               |
+| ------------------------------ | -------------- | -------------------------------------------------------- |
+| **LinkedIn**                   | Non            | Endpoint invité public — stages + alternance tech FR     |
+| **Indeed**                     | Non            | Recherche publique fr.indeed.com — stages + alternance   |
+| **France Travail** (Offres v2) | Oui (OAuth)    | Exhaustive France — codes ROME tech                      |
+| **Glassdoor** (via JSearch)    | Oui (RapidAPI) | Google for Jobs, éditeur Glassdoor                        |
+| **The Muse**                   | Non            | Repli — stages tech localisés en France                  |
+
+- **France Travail** : application gratuite sur [francetravail.io](https://francetravail.io),
+  souscrire à « Offres d'emploi v2 » → `FRANCE_TRAVAIL_CLIENT_ID` / `_SECRET`.
+- **Glassdoor** : clé gratuite [JSearch sur RapidAPI](https://rapidapi.com/letscrape-6bRBa3QguO5/api/jsearch) → `RAPIDAPI_KEY`.
+
+LinkedIn et Indeed s'appuient sur des endpoints publics non contractuels : le
+parsing est défensif et une source en échec (throttling, changement de HTML)
+n'interrompt pas les autres.
 
 Ajouter une source = implémenter `SourceConnector` dans
 `src/server/ingest/sources/` et l'enregistrer dans `run-ingestion.ts`.
@@ -83,13 +97,15 @@ src/
 ├── components/             # UI (design sobre & épuré)
 ├── lib/                    # Prisma, Redis, Meilisearch, S3, emails, utils
 ├── server/                 # Logique métier
-│   └── ingest/sources/     # Connecteurs d'offres réelles (France Travail, The Muse)
-└── workers/                # Crons BullMQ (ingestion, fraîcheur, alertes)
+│   └── ingest/sources/     # Connecteurs de scraping (LinkedIn, Indeed, France Travail, Glassdoor, The Muse)
+└── workers/                # Crons BullMQ (ingestion, fraîcheur, purge, alertes)
 ```
 
 ## Le pipeline d'ingestion
 
-Le scraping lui-même est hors scope. L'ingestion se fait via :
+Les connecteurs (`src/server/ingest/sources/`) récupèrent les offres réelles et
+les poussent dans `processIngest`. Une API interne reste disponible pour pousser
+des offres manuellement :
 
 ```
 POST /internal/ingest
@@ -98,9 +114,11 @@ Body: { "sourceSite": "...", "offers": [ { titre, entreprise, ville, ... } ] }
 ```
 
 1. **Normalisation** des champs bruts (titres, villes, types de contrat).
-2. **Déduplication** par hash SHA-256 sur `titre + entreprise + ville` normalisés (`dedup_hash` unique en base). Un doublon met à jour `last_seen_at` et est loggé `DUPLICATE`.
-3. **Indexation** dans Meilisearch à chaque écriture.
-4. **Expiration** : un cron BullMQ marque `EXPIRED` toute offre non revue depuis `OFFER_FRESHNESS_DAYS` jours.
+2. **Rejet hors périmètre** : tout ce qui n'est pas stage/alternance est refusé et loggé.
+3. **Déduplication** par hash SHA-256 sur `titre + entreprise + ville` normalisés (`dedup_hash` unique en base). Un doublon met à jour `last_seen_at` et est loggé `DUPLICATE`.
+4. **Indexation** dans Meilisearch à chaque écriture.
+5. **Expiration** : un cron horaire marque `EXPIRED` toute offre non revue depuis `OFFER_FRESHNESS_DAYS` jours.
+6. **Purge** : un cron quotidien supprime définitivement les offres de plus de `OFFER_MAX_AGE_DAYS` jours (2 mois).
 
 Chaque opération est tracée dans `ingest_logs` (visible dans `/admin`).
 
