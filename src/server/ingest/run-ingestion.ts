@@ -1,5 +1,6 @@
 import { processIngest, type IngestSummary } from "./ingest";
 import { FranceTravailConnector } from "./sources/france-travail";
+import { JSearchConnector } from "./sources/jsearch";
 import { LinkedInConnector } from "./sources/linkedin";
 import { TheMuseConnector } from "./sources/themuse";
 import type { SourceConnector } from "./sources/types";
@@ -7,6 +8,7 @@ import type { SourceConnector } from "./sources/types";
 const CONNECTORS: SourceConnector[] = [
   new FranceTravailConnector(),
   new LinkedInConnector(),
+  new JSearchConnector(),
   new TheMuseConnector(),
 ];
 
