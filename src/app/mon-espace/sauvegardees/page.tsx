@@ -1,0 +1,62 @@
+import type { Metadata } from "next";
+import Link from "next/link";
+import { redirect } from "next/navigation";
+import { auth } from "@/lib/auth";
+import { prisma } from "@/lib/prisma";
+import { OfferCard } from "@/components/offers/offer-card";
+import { offerToDocument } from "@/server/search/sync";
+import { removeSavedOffer } from "@/server/account/actions";
+
+export const metadata: Metadata = { title: "Offres sauvegardées" };
+
+export default async function SauvegardeesPage() {
+  const session = await auth();
+  if (!session?.user?.id) redirect("/connexion");
+
+  const saved = await prisma.savedOffer.findMany({
+    where: { userId: session.user.id },
+    include: { offer: { include: { company: true } } },
+    orderBy: { createdAt: "desc" },
+  });
+
+  return (
+    <section aria-labelledby="sauvegardees-titre">
+      <h2 id="sauvegardees-titre" className="font-display text-xl font-bold">
+        {saved.length} offre{saved.length > 1 ? "s" : ""} sauvegardée{saved.length > 1 ? "s" : ""}
+      </h2>
+
+      {saved.length === 0 ? (
+        <div className="mt-4 border border-dashed border-ink/40 p-10 text-center">
+          <p className="text-ink/70">
+            Sauvegardez des offres depuis leur page pour les retrouver ici.
+          </p>
+          <Link href="/offres" className="btn-cobalt mt-4">
+            Explorer les offres
+          </Link>
+        </div>
+      ) : (
+        <div className="mt-4 grid gap-3 md:grid-cols-2">
+          {saved.map(({ offer, id }) => (
+            <div key={id} className="relative">
+              <OfferCard offer={offerToDocument(offer)} />
+              {offer.status === "EXPIRED" && (
+                <span className="stamp absolute right-3 top-3 bg-paper">Expirée</span>
+              )}
+              <form
+                action={removeSavedOffer.bind(null, offer.id)}
+                className="absolute bottom-3 right-3 z-10"
+              >
+                <button
+                  type="submit"
+                  className="text-xs text-ink/50 underline-offset-4 hover:text-ink hover:underline"
+                >
+                  Retirer
+                </button>
+              </form>
+            </div>
+          ))}
+        </div>
+      )}
+    </section>
+  );
+}
