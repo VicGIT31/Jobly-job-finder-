@@ -1,6 +1,6 @@
 import type { RawOffer } from "@/server/ingest/normalize";
 import { geocodeCity } from "./geocode";
-import { TECH_SECTOR, type SourceConnector } from "./types";
+import { TECH_KEYWORDS, TECH_SECTOR, type SourceConnector } from "./types";
 
 /**
  * Connecteur LinkedIn — endpoint public « invité » (jobs-guest), celui qui
@@ -18,19 +18,16 @@ const DETAIL_URL = "https://www.linkedin.com/jobs-guest/jobs/api/jobPosting";
 const UA =
   "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0 Safari/537.36";
 
-// Requêtes ciblées tech FR. f_JT=I = Internship (stage) ; l'alternance n'a pas
-// de type LinkedIn dédié → on la cible par mots-clés (le pipeline rejette le reste).
-const QUERIES: Array<{ keywords: string; internshipType: boolean }> = [
-  { keywords: "stage développeur", internshipType: true },
-  { keywords: "stage data", internshipType: true },
-  { keywords: "stage informatique", internshipType: true },
-  { keywords: "stage cybersécurité", internshipType: true },
-  { keywords: "alternance développeur", internshipType: false },
-  { keywords: "alternance data", internshipType: false },
-  { keywords: "alternance informatique", internshipType: false },
-  { keywords: "alternance devops", internshipType: false },
-];
-const PAGES_PER_QUERY = 3;
+// Requêtes ciblées tech FR, générées depuis TECH_KEYWORDS pour maximiser le
+// volume. f_JT=I = Internship (stage) ; l'alternance n'a pas de type LinkedIn
+// dédié → ciblée par mot-clé (le pipeline rejette ensuite le hors périmètre).
+const QUERIES: Array<{ keywords: string; internshipType: boolean }> = TECH_KEYWORDS.flatMap(
+  (kw) => [
+    { keywords: `stage ${kw}`, internshipType: true },
+    { keywords: `alternance ${kw}`, internshipType: false },
+  ],
+);
+const PAGES_PER_QUERY = 2;
 const PAGE_SIZE = 25;
 
 type Card = { id: string; title: string; company: string; city: string; url: string };
