@@ -62,6 +62,13 @@ const CONTRACT_MAP: Record<string, ContractType> = {
   "volontariat international": "VIE",
 };
 
+/**
+ * NextStep ne référence que les stages et alternances. Les autres contrats
+ * (CDI, CDD, VIE…) sont reconnus par CONTRACT_MAP mais rejetés à l'ingestion,
+ * pour distinguer « hors périmètre » de « vocabulaire inconnu » dans les logs.
+ */
+const ACCEPTED_CONTRACTS: ReadonlySet<ContractType> = new Set(["STAGE", "ALTERNANCE"]);
+
 const REMOTE_MAP: Record<string, RemotePolicy> = {
   onsite: "ONSITE",
   "sur site": "ONSITE",
@@ -131,6 +138,12 @@ export function normalizeOffer(raw: RawOffer): NormalizedOffer {
   const contractType = CONTRACT_MAP[contractKey];
   if (!contractType) {
     throw new NormalizationError(`Type de contrat inconnu : "${raw.contractType}"`, "contractType");
+  }
+  if (!ACCEPTED_CONTRACTS.has(contractType)) {
+    throw new NormalizationError(
+      `Contrat hors périmètre : "${raw.contractType}" (seuls stage et alternance sont référencés)`,
+      "contractType",
+    );
   }
 
   const remoteKey = cleanWhitespace(raw.remotePolicy ?? "onsite").toLowerCase();

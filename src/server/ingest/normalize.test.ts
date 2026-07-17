@@ -61,6 +61,14 @@ describe("normalizeOffer", () => {
     ).toThrow(NormalizationError);
   });
 
+  it("rejette les contrats hors périmètre (CDI, CDD, VIE)", () => {
+    for (const contractType of ["cdi", "full-time", "cdd", "vie"]) {
+      expect(() => normalizeOffer(rawOfferSchema.parse({ ...validRaw, contractType }))).toThrow(
+        /hors périmètre/,
+      );
+    }
+  });
+
   it("rejette salaryMin > salaryMax", () => {
     expect(() =>
       normalizeOffer(rawOfferSchema.parse({ ...validRaw, salaryMin: 2000, salaryMax: 1000 })),

@@ -249,30 +249,6 @@ const OFFERS: SeedOffer[] = [
     stack: "TypeScript, React, Node.js, PostgreSQL, AWS.",
   }),
   O({
-    title: "Développeur Backend Ruby — CDI",
-    company: "Doctolib",
-    city: "Paris",
-    contract: "CDI",
-    remote: "HYBRID",
-    education: "BAC_5",
-    sector: "Tech / Développement",
-    salaryMin: 48000,
-    salaryMax: 62000,
-    sourceSite: "linkedin.com",
-    daysAgo: 5,
-    missions: [
-      "Concevoir et faire évoluer les APIs du produit patient",
-      "Garantir la scalabilité d'une plateforme à 90 M d'utilisateurs",
-      "Encadrer techniquement les juniors de l'équipe",
-    ],
-    profil: [
-      "3+ ans d'expérience backend (Ruby on Rails apprécié)",
-      "Culture forte du test et de la revue de code",
-      "Français et anglais courants",
-    ],
-    stack: "Ruby on Rails, PostgreSQL, Kafka, Kubernetes.",
-  }),
-  O({
     title: "Alternance — Développeur Mobile React Native",
     company: "BlaBlaCar",
     city: "Paris",
@@ -321,30 +297,6 @@ const OFFERS: SeedOffer[] = [
     stack: "BigQuery, dbt, Airflow, Python.",
   }),
   O({
-    title: "Ingénieur DevOps — CDI",
-    company: "OVHcloud",
-    city: "Lille",
-    contract: "CDI",
-    remote: "ONSITE",
-    education: "BAC_5",
-    sector: "Tech / Infrastructure",
-    salaryMin: 42000,
-    salaryMax: 55000,
-    sourceSite: "indeed.com",
-    daysAgo: 8,
-    missions: [
-      "Automatiser le déploiement de milliers de serveurs bare-metal",
-      "Améliorer l'observabilité (Prometheus, Grafana)",
-      "Participer à l'astreinte (1 semaine / 8)",
-    ],
-    profil: [
-      "Expérience Linux et infra as code (Ansible, Terraform)",
-      "À l'aise en environnement à très grande échelle",
-      "Esprit d'équipe",
-    ],
-    stack: "Linux, Ansible, Terraform, Go, Prometheus.",
-  }),
-  O({
     title: "Stage — Développeur Gameplay C++",
     company: "Ubisoft",
     city: "Montpellier",
@@ -367,30 +319,6 @@ const OFFERS: SeedOffer[] = [
       "Passion du jeu vidéo et sens du détail",
     ],
     stack: "C++, moteur propriétaire, Perforce.",
-  }),
-  O({
-    title: "Développeur Frontend Vue.js — CDI",
-    company: "ManoMano",
-    city: "Paris",
-    contract: "CDI",
-    remote: "FULL",
-    education: "BAC_3",
-    sector: "Tech / Développement",
-    salaryMin: 45000,
-    salaryMax: 58000,
-    sourceSite: "welcometothejungle.com",
-    daysAgo: 6,
-    missions: [
-      "Développer les parcours d'achat de la marketplace",
-      "Améliorer les Core Web Vitals",
-      "Contribuer au design system interne",
-    ],
-    profil: [
-      "2+ ans d'expérience front moderne (Vue ou React)",
-      "Sensibilité performance et accessibilité",
-      "Full remote possible depuis la France",
-    ],
-    stack: "Vue 3, Nuxt, TypeScript, Node.js.",
   }),
   O({
     title: "Alternance — Ingénieur QA Automatisation",
@@ -441,54 +369,6 @@ const OFFERS: SeedOffer[] = [
     stack: "C, Rust, outils de reverse (Ghidra, IDA).",
   }),
   O({
-    title: "Ingénieur Machine Learning — CDI",
-    company: "Contentsquare",
-    city: "Paris",
-    contract: "CDI",
-    remote: "HYBRID",
-    education: "BAC_5",
-    sector: "Data / IA",
-    salaryMin: 55000,
-    salaryMax: 70000,
-    sourceSite: "welcometothejungle.com",
-    daysAgo: 12,
-    missions: [
-      "Développer des modèles de détection de frustration utilisateur",
-      "Industrialiser les pipelines ML (feature store, monitoring)",
-      "Collaborer avec les équipes produit sur l'IA générative",
-    ],
-    profil: [
-      "3+ ans en ML appliqué",
-      "Python solide, expérience production",
-      "Anglais courant (équipe internationale)",
-    ],
-    stack: "Python, PyTorch, Spark, Databricks, AWS.",
-  }),
-  O({
-    title: "VIE — Développeur Cloud (Montréal)",
-    company: "OVHcloud",
-    city: "Paris",
-    contract: "VIE",
-    remote: "ONSITE",
-    education: "BAC_5",
-    sector: "Tech / Infrastructure",
-    salaryMin: 2600,
-    salaryMax: 2900,
-    sourceSite: "civiweb.com",
-    daysAgo: 9,
-    missions: [
-      "Rejoindre l'équipe produit Public Cloud à Montréal (18 mois)",
-      "Développer des APIs OpenStack en Go",
-      "Faire le pont avec les équipes françaises",
-    ],
-    profil: [
-      "Diplômé·e d'école d'ingénieur (éligible VIE, 18-28 ans)",
-      "Bon niveau Go ou Python",
-      "Anglais professionnel",
-    ],
-    stack: "Go, OpenStack, Kubernetes.",
-  }),
-  O({
     title: "Stage — Développeur Backend Java",
     company: "Decathlon Digital",
     city: "Lille",
@@ -531,26 +411,6 @@ const OFFERS: SeedOffer[] = [
       "Bon relationnel avec les équipes métier",
     ],
     stack: "SQL, dbt, Metabase, Python.",
-  }),
-  O({
-    title: "Développeur Fullstack — CDD 12 mois",
-    company: "Pennylane",
-    city: "Paris",
-    contract: "CDD",
-    remote: "HYBRID",
-    education: "BAC_5",
-    sector: "Tech / Développement",
-    salaryMin: 45000,
-    salaryMax: 55000,
-    sourceSite: "linkedin.com",
-    daysAgo: 11,
-    missions: [
-      "Renforcer l'équipe facturation pour la réforme e-invoicing 2026",
-      "Développer côté Rails et React",
-      "Participer au support technique niveau 2",
-    ],
-    profil: ["2+ ans fullstack", "Intérêt pour les sujets fintech/compta", "Disponible rapidement"],
-    stack: "Ruby on Rails, React, PostgreSQL.",
   }),
   O({
     title: "Stage — SRE / Plateforme",
@@ -599,29 +459,6 @@ const OFFERS: SeedOffer[] = [
       "École de commerce ou d'ingénieur, fibre produit",
       "Aisance avec les données (SQL est un plus)",
       "Excellente communication écrite",
-    ],
-  }),
-  O({
-    title: "Product Designer — CDI",
-    company: "Alan",
-    city: "Paris",
-    contract: "CDI",
-    remote: "FULL",
-    education: "BAC_3",
-    sector: "Design",
-    salaryMin: 50000,
-    salaryMax: 65000,
-    sourceSite: "welcometothejungle.com",
-    daysAgo: 14,
-    missions: [
-      "Concevoir les parcours santé de l'app (10 M d'écrans vus/jour)",
-      "Faire évoluer le design system",
-      "Tester vos hypothèses avec la recherche utilisateur",
-    ],
-    profil: [
-      "3+ ans en design produit",
-      "Portfolio démontrant un process complet",
-      "Anglais courant",
     ],
   }),
   O({
@@ -738,29 +575,6 @@ const OFFERS: SeedOffer[] = [
     ],
   }),
   O({
-    title: "Content Manager — CDI",
-    company: "ManoMano",
-    city: "Bordeaux",
-    contract: "CDI",
-    remote: "HYBRID",
-    education: "BAC_3",
-    sector: "Marketing / Contenu",
-    salaryMin: 34000,
-    salaryMax: 42000,
-    sourceSite: "indeed.com",
-    daysAgo: 13,
-    missions: [
-      "Piloter la production de contenus conseils bricolage/jardin",
-      "Manager un pool de freelances",
-      "Optimiser le SEO éditorial",
-    ],
-    profil: [
-      "3 ans d'expérience en content marketing",
-      "Excellente plume française",
-      "Bases SEO solides",
-    ],
-  }),
-  O({
     title: "Alternance — Community Manager",
     company: "Ubisoft",
     city: "Paris",
@@ -832,25 +646,6 @@ const OFFERS: SeedOffer[] = [
     ],
   }),
   O({
-    title: "Account Executive Mid-Market — CDI",
-    company: "Mirakl",
-    city: "Paris",
-    contract: "CDI",
-    remote: "HYBRID",
-    education: "BAC_5",
-    sector: "Commercial",
-    salaryMin: 55000,
-    salaryMax: 85000,
-    sourceSite: "linkedin.com",
-    daysAgo: 7,
-    missions: [
-      "Gérer un cycle de vente complexe (6-9 mois) auprès des retailers",
-      "Construire vos business cases avec les équipes avant-vente",
-      "Dépasser un objectif annuel ambitieux",
-    ],
-    profil: ["4+ ans en vente SaaS B2B", "Track record démontrable", "Anglais courant"],
-  }),
-  O({
     title: "Alternance — Sales Development Representative",
     company: "Pennylane",
     city: "Paris",
@@ -868,29 +663,6 @@ const OFFERS: SeedOffer[] = [
       "Alimenter le CRM (HubSpot)",
     ],
     profil: ["Bac+3/5 commerce", "Aisance téléphonique", "Résilience et esprit d'équipe"],
-  }),
-  O({
-    title: "VIE — Business Developer (Berlin)",
-    company: "Back Market",
-    city: "Paris",
-    contract: "VIE",
-    remote: "ONSITE",
-    education: "BAC_5",
-    sector: "Commercial",
-    salaryMin: 2400,
-    salaryMax: 2700,
-    sourceSite: "civiweb.com",
-    daysAgo: 10,
-    missions: [
-      "Développer le portefeuille de marchands allemands (12 mois, Berlin)",
-      "Négocier les conditions commerciales",
-      "Coordonner l'onboarding avec les équipes françaises",
-    ],
-    profil: [
-      "Éligible VIE, allemand courant obligatoire",
-      "Formation commerce/international",
-      "Autonomie forte",
-    ],
   }),
   O({
     title: "Stage — Customer Success",
@@ -973,29 +745,6 @@ const OFFERS: SeedOffer[] = [
       "Améliorer l'expérience candidat",
     ],
     profil: ["Master RH ou école de commerce", "Intérêt pour la tech", "Excellent relationnel"],
-  }),
-  O({
-    title: "Juriste Droit Numérique — CDI",
-    company: "Ledger",
-    city: "Paris",
-    contract: "CDI",
-    remote: "HYBRID",
-    education: "BAC_5",
-    sector: "Juridique",
-    salaryMin: 50000,
-    salaryMax: 65000,
-    sourceSite: "linkedin.com",
-    daysAgo: 16,
-    missions: [
-      "Accompagner les lancements produit (MiCA, RGPD)",
-      "Négocier les contrats partenaires internationaux",
-      "Assurer la veille réglementaire crypto",
-    ],
-    profil: [
-      "Master 2 droit du numérique ou des affaires",
-      "3+ ans d'expérience (cabinet ou entreprise)",
-      "Anglais juridique courant",
-    ],
   }),
   O({
     title: "Alternance — Chargé·e de missions RH",
@@ -1128,29 +877,6 @@ const OFFERS: SeedOffer[] = [
     stack: "Python, PyTorch, HuggingFace, GCP.",
   }),
   O({
-    title: "Chef de Projet CRM — CDD 6 mois",
-    company: "Decathlon Digital",
-    city: "Strasbourg",
-    contract: "CDD",
-    remote: "HYBRID",
-    education: "BAC_5",
-    sector: "Marketing",
-    salaryMin: 32000,
-    salaryMax: 38000,
-    sourceSite: "indeed.com",
-    daysAgo: 9,
-    missions: [
-      "Déployer les campagnes CRM locales (email, push)",
-      "Segmenter les bases clients",
-      "Mesurer la performance des campagnes",
-    ],
-    profil: [
-      "Première expérience CRM (Braze, Salesforce MC...)",
-      "Analytique et organisé·e",
-      "Disponible immédiatement",
-    ],
-  }),
-  O({
     title: "Stage — Assistant·e Chef de Produit E-commerce",
     company: "ManoMano",
     city: "Toulouse",
@@ -1229,25 +955,6 @@ const OFFERS: SeedOffer[] = [
     profil: ["Master cybersécurité", "Connaissances réseaux et systèmes", "Esprit d'investigation"],
   }),
   O({
-    title: "Product Manager Marketplace — CDI",
-    company: "Mirakl",
-    city: "Bordeaux",
-    contract: "CDI",
-    remote: "HYBRID",
-    education: "BAC_5",
-    sector: "Produit",
-    salaryMin: 50000,
-    salaryMax: 65000,
-    sourceSite: "welcometothejungle.com",
-    daysAgo: 10,
-    missions: [
-      "Porter la roadmap du module catalogue",
-      "Recueillir les besoins clients (450 marketplaces)",
-      "Arbitrer avec les équipes engineering",
-    ],
-    profil: ["3+ ans en product management B2B", "Aisance technique (APIs)", "Anglais courant"],
-  }),
-  O({
     title: "Alternance — Assistant·e Juridique",
     company: "Veepee",
     city: "Paris",
@@ -1307,30 +1014,6 @@ const OFFERS: SeedOffer[] = [
       "Python et statistiques solides",
       "Esprit critique",
     ],
-  }),
-  O({
-    title: "Ingénieur Data Platform — CDI",
-    company: "Back Market",
-    city: "Paris",
-    contract: "CDI",
-    remote: "FULL",
-    education: "BAC_5",
-    sector: "Data",
-    salaryMin: 55000,
-    salaryMax: 72000,
-    sourceSite: "welcometothejungle.com",
-    daysAgo: 17,
-    missions: [
-      "Faire évoluer la plateforme data self-service",
-      "Industrialiser l'ingestion temps réel (Kafka)",
-      "Accompagner les équipes analytics",
-    ],
-    profil: [
-      "4+ ans en data engineering",
-      "Kafka, Spark ou équivalents en production",
-      "Leadership technique",
-    ],
-    stack: "Kafka, Spark, dbt, BigQuery, Terraform.",
   }),
   O({
     title: "Alternance — Motion Designer",
@@ -1440,26 +1123,6 @@ const OFFERS: SeedOffer[] = [
     ],
   }),
   O({
-    title: "Développeur Salesforce — CDI",
-    company: "Veepee",
-    city: "Nantes",
-    contract: "CDI",
-    remote: "HYBRID",
-    education: "BAC_5",
-    sector: "Tech / Développement",
-    salaryMin: 42000,
-    salaryMax: 52000,
-    sourceSite: "linkedin.com",
-    daysAgo: 18,
-    missions: [
-      "Développer sur Sales et Service Cloud (Apex, LWC)",
-      "Intégrer Salesforce au SI (APIs REST)",
-      "Accompagner les équipes CRM",
-    ],
-    profil: ["2+ ans sur Salesforce", "Certifications appréciées", "Esprit d'équipe"],
-    stack: "Apex, Lightning Web Components, REST.",
-  }),
-  O({
     title: "Stage — Analyste KYC/Conformité",
     company: "Qonto",
     city: "Paris",
@@ -1530,30 +1193,6 @@ const OFFERS: SeedOffer[] = [
     ],
   }),
   O({
-    title: "Data Analyst Senior — CDI",
-    company: "Swile",
-    city: "Paris",
-    contract: "CDI",
-    remote: "HYBRID",
-    education: "BAC_5",
-    sector: "Data",
-    salaryMin: 48000,
-    salaryMax: 60000,
-    sourceSite: "linkedin.com",
-    daysAgo: 20,
-    missions: [
-      "Piloter l'analytics du produit paiement",
-      "Modéliser les données dans dbt",
-      "Évangéliser la culture data-driven",
-    ],
-    profil: [
-      "4+ ans en data analytics",
-      "SQL expert, dbt en production",
-      "Excellente communication",
-    ],
-    stack: "SQL, dbt, Snowflake, Metabase.",
-  }),
-  O({
     title: "Stage — Ingénieur Test & Validation",
     company: "Ubisoft",
     city: "Lyon",
@@ -1571,25 +1210,6 @@ const OFFERS: SeedOffer[] = [
       "Qualifier et prioriser les bugs",
     ],
     profil: ["Bac+3 informatique/QA", "Méthode et précision", "Culture jeu vidéo"],
-  }),
-  O({
-    title: "VIE — Data Analyst (Barcelone)",
-    company: "ManoMano",
-    city: "Paris",
-    contract: "VIE",
-    remote: "ONSITE",
-    education: "BAC_5",
-    sector: "Data",
-    salaryMin: 2200,
-    salaryMax: 2500,
-    sourceSite: "civiweb.com",
-    daysAgo: 13,
-    missions: [
-      "Rejoindre l'équipe data espagnole (12 mois, Barcelone)",
-      "Analyser la performance du marché ibérique",
-      "Harmoniser les KPIs avec la France",
-    ],
-    profil: ["Éligible VIE", "SQL solide, espagnol apprécié", "Master data/commerce"],
   }),
   // Offres expirées (pour la page « offre expirée » et les stats admin)
   O({
@@ -1699,6 +1319,7 @@ async function main(): Promise<void> {
 
   // ---------- Companies ----------
   const companyIds = new Map<string, string>();
+  const companyWebsites = new Map<string, string>();
   for (const c of COMPANIES) {
     const slug = slugifyFr(c.name);
     const company = await prisma.company.upsert({
@@ -1715,13 +1336,14 @@ async function main(): Promise<void> {
       },
     });
     companyIds.set(c.name, company.id);
+    companyWebsites.set(c.name, c.website);
   }
   console.log(`  ✔ ${COMPANIES.length} entreprises`);
 
   // ---------- Offers ----------
   const now = Date.now();
   let created = 0;
-  for (const [i, o] of OFFERS.entries()) {
+  for (const o of OFFERS) {
     const companyId = companyIds.get(o.company);
     if (!companyId) throw new Error(`Entreprise inconnue : ${o.company}`);
     const geo = CITIES[o.city];
@@ -1757,7 +1379,9 @@ async function main(): Promise<void> {
         salaryMax: o.salaryMax ?? null,
         educationLevel: o.education,
         sector: o.sector,
-        sourceUrl: `https://www.${o.sourceSite}/jobs/${slugifyFr(o.company)}-${slugifyFr(o.title)}-${1000 + i}`,
+        // URL réelle et stable : le site carrière de l'entreprise (les URLs
+        // d'offres fabriquées sur les job boards renvoyaient des 404).
+        sourceUrl: companyWebsites.get(o.company) ?? `https://www.${o.sourceSite}`,
         sourceSite: o.sourceSite,
         scrapedAt: publishedAt,
         lastSeenAt,

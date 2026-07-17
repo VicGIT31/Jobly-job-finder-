@@ -1,6 +1,8 @@
 import { z } from "zod";
+import type { ContractType } from "@prisma/client";
 
-export const CONTRACT_TYPES = ["CDI", "CDD", "STAGE", "ALTERNANCE", "VIE"] as const;
+/** Contrats exposés au public : NextStep ne référence que stage et alternance. */
+export const CONTRACT_TYPES = ["STAGE", "ALTERNANCE"] as const;
 export const REMOTE_POLICIES = ["ONSITE", "HYBRID", "FULL"] as const;
 export const EDUCATION_LEVELS = [
   "BAC",
@@ -16,7 +18,9 @@ export const RADII = [5, 10, 25, 50, 100] as const;
 
 export const PAGE_SIZE = 12;
 
-export const CONTRACT_LABELS: Record<(typeof CONTRACT_TYPES)[number], string> = {
+// Couvre tout l'enum Prisma : d'anciennes offres hors périmètre peuvent
+// subsister en base (admin) même si seuls stage/alternance sont exposés.
+export const CONTRACT_LABELS: Record<ContractType, string> = {
   CDI: "CDI",
   CDD: "CDD",
   STAGE: "Stage",
