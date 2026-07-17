@@ -77,8 +77,22 @@ export function OfferCard({ offer }: { offer: OfferDocument }) {
         </div>
       </dl>
 
-      <div className="rule mt-3 pt-2 text-xs text-ink/50">
-        {offer.sector} · Source : {offer.sourceSite}
+      <div className="rule mt-3 flex items-center justify-between gap-2 pt-2 text-xs text-ink/50">
+        <span className="min-w-0 truncate">
+          {offer.sector} · Source : {offer.sourceSite}
+        </span>
+        {/* z-10 pour passer au-dessus de l'overlay de la carte ; nouvel onglet vers la source. */}
+        <a
+          href={`/go/${offer.id}`}
+          target="_blank"
+          rel="nofollow noopener"
+          className="relative z-10 shrink-0 font-semibold text-cobalt hover:underline"
+        >
+          Postuler <span aria-hidden="true">↗</span>
+          <span className="sr-only">
+            {offer.title} sur {offer.sourceSite}, nouvel onglet
+          </span>
+        </a>
       </div>
     </article>
   );
