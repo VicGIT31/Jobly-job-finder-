@@ -47,7 +47,10 @@ export async function register(formData: FormData): Promise<ActionResult> {
     html: `<p>Bonjour ${parsed.data.name},</p><p>Bienvenue sur NextStep ! <a href="${APP_URL()}/offres">Explorez les offres</a>, créez vos alertes et sauvegardez vos favorites.</p><p>À très vite.</p>`,
   });
 
-  return { ok: true, message: "Compte créé. Vérifiez votre boîte mail pour confirmer votre adresse." };
+  return {
+    ok: true,
+    message: "Compte créé. Vérifiez votre boîte mail pour confirmer votre adresse.",
+  };
 }
 
 /** Génère un token de vérification et envoie l'email. */

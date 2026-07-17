@@ -53,7 +53,14 @@ export function LoginForm() {
           <label htmlFor="email" className="mb-1 block text-sm font-semibold">
             Email
           </label>
-          <input id="email" name="email" type="email" autoComplete="email" required className="input-ink" />
+          <input
+            id="email"
+            name="email"
+            type="email"
+            autoComplete="email"
+            required
+            className="input-ink"
+          />
         </div>
         <div>
           <label htmlFor="password" className="mb-1 block text-sm font-semibold">
@@ -81,12 +88,18 @@ export function LoginForm() {
       </form>
 
       <div className="rule mt-5 flex flex-col gap-1 pt-4 text-sm">
-        <Link href="/mot-de-passe-oublie" className="text-cobalt underline-offset-4 hover:underline">
+        <Link
+          href="/mot-de-passe-oublie"
+          className="text-cobalt underline-offset-4 hover:underline"
+        >
           Mot de passe oublié ?
         </Link>
         <p className="text-ink/70">
           Pas encore de compte ?{" "}
-          <Link href="/inscription" className="font-semibold text-cobalt underline-offset-4 hover:underline">
+          <Link
+            href="/inscription"
+            className="font-semibold text-cobalt underline-offset-4 hover:underline"
+          >
             Inscrivez-vous
           </Link>
         </p>

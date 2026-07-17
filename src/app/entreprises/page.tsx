@@ -38,7 +38,9 @@ export default async function EntreprisesPage() {
               <h2 className="font-display text-xl font-bold group-hover:text-cobalt">
                 {company.name}
               </h2>
-              {company.featured && <span className="stamp bg-signal text-[#141414] !border-[#141414]">À la une</span>}
+              {company.featured && (
+                <span className="stamp !border-[#141414] bg-signal text-[#141414]">À la une</span>
+              )}
             </div>
             <p className="mt-1 text-xs uppercase tracking-wider text-ink/60">
               {company.sector} · {company.size} salariés

@@ -31,7 +31,9 @@ export function SaveOfferButton({
       <button
         type="button"
         className="btn-outline w-full"
-        onClick={() => router.push(`/connexion?callbackUrl=${encodeURIComponent(window.location.pathname)}`)}
+        onClick={() =>
+          router.push(`/connexion?callbackUrl=${encodeURIComponent(window.location.pathname)}`)
+        }
       >
         ☆ Sauvegarder (connexion)
       </button>

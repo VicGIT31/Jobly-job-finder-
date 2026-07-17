@@ -17,8 +17,16 @@ async function main(): Promise<void> {
   const queue = new Queue(QUEUE_NAME, { connection });
 
   // Fraîcheur : toutes les heures. Alertes : tous les jours à 8 h.
-  await queue.upsertJobScheduler("offer-freshness", { pattern: "0 * * * *" }, { name: "offer-freshness" });
-  await queue.upsertJobScheduler("daily-alerts", { pattern: "0 8 * * *" }, { name: "daily-alerts" });
+  await queue.upsertJobScheduler(
+    "offer-freshness",
+    { pattern: "0 * * * *" },
+    { name: "offer-freshness" },
+  );
+  await queue.upsertJobScheduler(
+    "daily-alerts",
+    { pattern: "0 8 * * *" },
+    { name: "daily-alerts" },
+  );
 
   const worker = new Worker(
     QUEUE_NAME,

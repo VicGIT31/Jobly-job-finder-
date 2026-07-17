@@ -5,11 +5,7 @@ import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { parseSearchParams } from "@/server/alerts/match";
 import { deleteAlert, updateAlertFrequency } from "@/server/account/actions";
-import {
-  CONTRACT_LABELS,
-  EDUCATION_LABELS,
-  REMOTE_LABELS,
-} from "@/lib/search-params";
+import { CONTRACT_LABELS, EDUCATION_LABELS, REMOTE_LABELS } from "@/lib/search-params";
 
 export const metadata: Metadata = { title: "Mes alertes" };
 
@@ -43,7 +39,9 @@ function describeAlert(params: ReturnType<typeof parseSearchParams>): string[] {
   if (params.city) parts.push(params.city);
   if (params.remotePolicy?.length) {
     parts.push(
-      params.remotePolicy.map((r) => REMOTE_LABELS[r as keyof typeof REMOTE_LABELS] ?? r).join(", "),
+      params.remotePolicy
+        .map((r) => REMOTE_LABELS[r as keyof typeof REMOTE_LABELS] ?? r)
+        .join(", "),
     );
   }
   if (params.educationLevel?.length) {
@@ -138,7 +136,10 @@ export default async function AlertesPage() {
                         </option>
                       ))}
                     </select>
-                    <button type="submit" className="ml-1 text-sm text-cobalt underline-offset-4 hover:underline">
+                    <button
+                      type="submit"
+                      className="ml-1 text-sm text-cobalt underline-offset-4 hover:underline"
+                    >
                       OK
                     </button>
                   </form>

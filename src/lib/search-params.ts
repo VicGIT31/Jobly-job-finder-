@@ -2,7 +2,14 @@ import { z } from "zod";
 
 export const CONTRACT_TYPES = ["CDI", "CDD", "STAGE", "ALTERNANCE", "VIE"] as const;
 export const REMOTE_POLICIES = ["ONSITE", "HYBRID", "FULL"] as const;
-export const EDUCATION_LEVELS = ["BAC", "BAC_2", "BAC_3", "BAC_5", "DOCTORAT", "INDIFFERENT"] as const;
+export const EDUCATION_LEVELS = [
+  "BAC",
+  "BAC_2",
+  "BAC_3",
+  "BAC_5",
+  "DOCTORAT",
+  "INDIFFERENT",
+] as const;
 export const DATE_RANGES = ["24h", "7j", "30j"] as const;
 export const SORTS = ["pertinence", "date"] as const;
 export const RADII = [5, 10, 25, 50, 100] as const;
@@ -78,7 +85,10 @@ export function parseOfferSearchParams(
   return parsed.success ? parsed.data : offerSearchParamsSchema.parse({});
 }
 
-export function dateRangeToTimestamp(range: (typeof DATE_RANGES)[number], now = Date.now()): number {
+export function dateRangeToTimestamp(
+  range: (typeof DATE_RANGES)[number],
+  now = Date.now(),
+): number {
   const hours = range === "24h" ? 24 : range === "7j" ? 24 * 7 : 24 * 30;
   return now - hours * 3600 * 1000;
 }

@@ -32,6 +32,18 @@ Interface `FileStorage` (put/getSignedUrl/delete) avec implémentation S3 SDK v3
 
 Fenêtre glissante Redis (INCR + EXPIRE) sur `/internal/ingest` et `/go/:offerId` pour absorber les abus sans dépendance supplémentaire.
 
+## Repli PostgreSQL pour la recherche
+
+`searchOffers` interroge Meilisearch en premier ; si le moteur est indisponible (dev sans Docker, incident), la même requête bascule sur PostgreSQL (filtres Prisma + facettes via `groupBy`, géo par boîte englobante). Le site reste fonctionnel en mode dégradé, et `search:sync` ré-indexe à la reprise.
+
+## Protection des routes privées
+
+La garde d'accès est faite dans les layouts serveur (`/mon-espace`, `/admin`) via `auth()` : c'est le point d'entrée obligatoire de toutes les pages enfants, y compris en navigation client. Pas de middleware edge : l'adaptateur Prisma n'y est pas compatible et la garde serveur suffit (les routes API vérifient leur session individuellement).
+
+## Mode sombre
+
+Classe `dark` sur `<html>`, persistée en localStorage, initialisée par un script inline anti-FOUC qui respecte `prefers-color-scheme`. Les couleurs papier/encre sont des variables CSS inversées, le reste du design ne change pas.
+
 ## IDs vs slugs
 
 Slugs uniques pour les URLs publiques SEO (`/offres/[slug]`, `/entreprises/[slug]`), cuid interne pour les relations. `/go/:offerId` utilise l'id (non-SEO, volontairement opaque).

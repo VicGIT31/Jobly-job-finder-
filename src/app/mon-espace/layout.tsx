@@ -24,11 +24,17 @@ export default async function MonEspaceLayout({ children }: { children: React.Re
         </form>
       </div>
 
-      <nav aria-label="Navigation de l'espace candidat" className="rule mt-4 flex flex-wrap gap-1 pt-3">
+      <nav
+        aria-label="Navigation de l'espace candidat"
+        className="rule mt-4 flex flex-wrap gap-1 pt-3"
+      >
         <Link href="/mon-espace" className="px-3 py-2 text-sm font-semibold hover:bg-ink/5">
           Profil & CV
         </Link>
-        <Link href="/mon-espace/sauvegardees" className="px-3 py-2 text-sm font-semibold hover:bg-ink/5">
+        <Link
+          href="/mon-espace/sauvegardees"
+          className="px-3 py-2 text-sm font-semibold hover:bg-ink/5"
+        >
           Offres sauvegardées
         </Link>
         <Link href="/mon-espace/alertes" className="px-3 py-2 text-sm font-semibold hover:bg-ink/5">

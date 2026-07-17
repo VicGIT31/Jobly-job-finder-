@@ -8,11 +8,7 @@ import { OfferCard, formatSalary, timeAgo } from "@/components/offers/offer-card
 import { SaveOfferButton } from "@/components/offers/save-offer-button";
 import { findSimilarOffers } from "@/server/offers/similar";
 import { offerToDocument } from "@/server/search/sync";
-import {
-  CONTRACT_LABELS,
-  EDUCATION_LABELS,
-  REMOTE_LABELS,
-} from "@/lib/search-params";
+import { CONTRACT_LABELS, EDUCATION_LABELS, REMOTE_LABELS } from "@/lib/search-params";
 
 export const dynamic = "force-dynamic";
 

@@ -50,7 +50,7 @@ export default async function EntreprisePage({ params }: { params: { slug: strin
         <div className="flex items-center gap-3">
           <h1 className="font-display text-4xl font-black tracking-tight">{company.name}</h1>
           {company.featured && (
-            <span className="stamp bg-signal text-[#141414] !border-[#141414]">À la une</span>
+            <span className="stamp !border-[#141414] bg-signal text-[#141414]">À la une</span>
           )}
         </div>
         <p className="mt-2 text-sm uppercase tracking-wider text-ink/60">
@@ -86,7 +86,10 @@ export default async function EntreprisePage({ params }: { params: { slug: strin
         ) : (
           <p className="mt-4 border border-dashed border-ink/40 p-8 text-center text-ink/70">
             Aucune offre active pour le moment —{" "}
-            <Link href="/offres" className="font-semibold text-cobalt underline-offset-4 hover:underline">
+            <Link
+              href="/offres"
+              className="font-semibold text-cobalt underline-offset-4 hover:underline"
+            >
               voir toutes les offres
             </Link>
             .

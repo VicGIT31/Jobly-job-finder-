@@ -3,7 +3,8 @@ import { offerMatchesSearch, parseSearchParams, type MatchableOffer } from "./ma
 
 const offer: MatchableOffer = {
   title: "Stage — Growth Marketing",
-  description: "Pilotez des campagnes d'acquisition B2B à Lyon pour une fintech en hypercroissance.",
+  description:
+    "Pilotez des campagnes d'acquisition B2B à Lyon pour une fintech en hypercroissance.",
   city: "Lyon",
   contractType: "STAGE",
   remotePolicy: "HYBRID",
@@ -48,12 +49,12 @@ describe("offerMatchesSearch", () => {
   });
 
   it("combine plusieurs critères (ET logique)", () => {
-    expect(
-      offerMatchesSearch({ q: "growth", city: "Lyon", contractType: ["STAGE"] }, offer),
-    ).toBe(true);
-    expect(
-      offerMatchesSearch({ q: "growth", city: "Lyon", contractType: ["CDI"] }, offer),
-    ).toBe(false);
+    expect(offerMatchesSearch({ q: "growth", city: "Lyon", contractType: ["STAGE"] }, offer)).toBe(
+      true,
+    );
+    expect(offerMatchesSearch({ q: "growth", city: "Lyon", contractType: ["CDI"] }, offer)).toBe(
+      false,
+    );
   });
 
   it("matche tout quand aucun critère", () => {

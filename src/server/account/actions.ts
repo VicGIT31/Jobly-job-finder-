@@ -41,7 +41,8 @@ export async function updateProfile(formData: FormData): Promise<ActionResult> {
       name: parsed.data.name,
       headline: parsed.data.headline || null,
       school: parsed.data.school || null,
-      graduationYear: typeof parsed.data.graduationYear === "number" ? parsed.data.graduationYear : null,
+      graduationYear:
+        typeof parsed.data.graduationYear === "number" ? parsed.data.graduationYear : null,
       city: parsed.data.city || null,
     },
   });

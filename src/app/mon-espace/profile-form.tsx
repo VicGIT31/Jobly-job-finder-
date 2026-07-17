@@ -49,13 +49,25 @@ export function ProfileForm({
         <label htmlFor="name" className="mb-1 block text-sm font-semibold">
           Nom complet
         </label>
-        <input id="name" name="name" defaultValue={initial.name} required minLength={2} className="input-ink" />
+        <input
+          id="name"
+          name="name"
+          defaultValue={initial.name}
+          required
+          minLength={2}
+          className="input-ink"
+        />
       </div>
       <div>
         <label htmlFor="headline" className="mb-1 block text-sm font-semibold">
           Titre <span className="font-normal text-ink/50">(ex. « Étudiante en M2 Data »)</span>
         </label>
-        <input id="headline" name="headline" defaultValue={initial.headline} className="input-ink" />
+        <input
+          id="headline"
+          name="headline"
+          defaultValue={initial.headline}
+          className="input-ink"
+        />
       </div>
       <div className="grid gap-3 sm:grid-cols-2">
         <div>

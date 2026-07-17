@@ -14,7 +14,12 @@ export default async function AdminOffresPage({
   searchParams: { page?: string; statut?: string; q?: string };
 }) {
   const page = Math.max(1, Number(searchParams.page) || 1);
-  const statut = searchParams.statut === "EXPIRED" ? "EXPIRED" : searchParams.statut === "ACTIVE" ? "ACTIVE" : undefined;
+  const statut =
+    searchParams.statut === "EXPIRED"
+      ? "EXPIRED"
+      : searchParams.statut === "ACTIVE"
+        ? "ACTIVE"
+        : undefined;
   const q = searchParams.q?.trim() ?? "";
 
   const where = {
@@ -52,13 +57,24 @@ export default async function AdminOffresPage({
           <label htmlFor="q" className="mb-1 block text-sm font-semibold">
             Recherche
           </label>
-          <input id="q" name="q" defaultValue={q} className="input-ink" placeholder="Titre ou entreprise" />
+          <input
+            id="q"
+            name="q"
+            defaultValue={q}
+            className="input-ink"
+            placeholder="Titre ou entreprise"
+          />
         </div>
         <div>
           <label htmlFor="statut" className="mb-1 block text-sm font-semibold">
             Statut
           </label>
-          <select id="statut" name="statut" defaultValue={statut ?? ""} className="input-ink !w-auto">
+          <select
+            id="statut"
+            name="statut"
+            defaultValue={statut ?? ""}
+            className="input-ink !w-auto"
+          >
             <option value="">Tous</option>
             <option value="ACTIVE">Actives</option>
             <option value="EXPIRED">Expirées</option>
@@ -77,12 +93,24 @@ export default async function AdminOffresPage({
         <table className="w-full min-w-[760px] border-collapse text-sm">
           <thead>
             <tr className="border-b-2 border-ink text-left">
-              <th scope="col" className="py-2 pr-4 font-bold uppercase tracking-wider">Offre</th>
-              <th scope="col" className="py-2 pr-4 font-bold uppercase tracking-wider">Contrat</th>
-              <th scope="col" className="py-2 pr-4 font-bold uppercase tracking-wider">Source</th>
-              <th scope="col" className="py-2 pr-4 font-bold uppercase tracking-wider">Clics</th>
-              <th scope="col" className="py-2 pr-4 font-bold uppercase tracking-wider">Statut</th>
-              <th scope="col" className="py-2 font-bold uppercase tracking-wider">Action</th>
+              <th scope="col" className="py-2 pr-4 font-bold uppercase tracking-wider">
+                Offre
+              </th>
+              <th scope="col" className="py-2 pr-4 font-bold uppercase tracking-wider">
+                Contrat
+              </th>
+              <th scope="col" className="py-2 pr-4 font-bold uppercase tracking-wider">
+                Source
+              </th>
+              <th scope="col" className="py-2 pr-4 font-bold uppercase tracking-wider">
+                Clics
+              </th>
+              <th scope="col" className="py-2 pr-4 font-bold uppercase tracking-wider">
+                Statut
+              </th>
+              <th scope="col" className="py-2 font-bold uppercase tracking-wider">
+                Action
+              </th>
             </tr>
           </thead>
           <tbody>
@@ -133,7 +161,10 @@ export default async function AdminOffresPage({
       </div>
 
       {totalPages > 1 && (
-        <nav aria-label="Pagination admin" className="rule mt-4 flex items-center gap-4 pt-3 text-sm">
+        <nav
+          aria-label="Pagination admin"
+          className="rule mt-4 flex items-center gap-4 pt-3 text-sm"
+        >
           {page > 1 && (
             <Link
               href={`/admin/offres?${new URLSearchParams({ ...Object.fromEntries(baseParams), page: String(page - 1) })}`}

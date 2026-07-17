@@ -9,7 +9,9 @@ const APP_URL = () => process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000"
  * d'envoi depuis 20 h), matche les offres publiées dans les dernières 24 h
  * et envoie un email récapitulatif.
  */
-export async function sendDailyAlerts(now = new Date()): Promise<{ sent: number; matchedOffers: number }> {
+export async function sendDailyAlerts(
+  now = new Date(),
+): Promise<{ sent: number; matchedOffers: number }> {
   const since = new Date(now.getTime() - 24 * 3600 * 1000);
   const resendThreshold = new Date(now.getTime() - 20 * 3600 * 1000);
 

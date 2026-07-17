@@ -1,12 +1,7 @@
 "use client";
 
 import { keepPreviousData, useQuery } from "@tanstack/react-query";
-import {
-  parseAsInteger,
-  parseAsString,
-  parseAsStringLiteral,
-  useQueryStates,
-} from "nuqs";
+import { parseAsInteger, parseAsString, parseAsStringLiteral, useQueryStates } from "nuqs";
 import { useCallback, useMemo } from "react";
 import type { OfferSearchResult } from "@/server/search/query";
 import {
@@ -216,7 +211,13 @@ export function SearchClient({
           {showSkeleton ? (
             <ResultsSkeleton />
           ) : result.hits.length === 0 ? (
-            <EmptyState onReset={() => void setState(Object.fromEntries(Object.keys(searchStateParsers).map((k) => [k, null])))} />
+            <EmptyState
+              onReset={() =>
+                void setState(
+                  Object.fromEntries(Object.keys(searchStateParsers).map((k) => [k, null])),
+                )
+              }
+            />
           ) : (
             <div className={`grid gap-3 ${isPlaceholderData ? "opacity-60" : ""}`}>
               {result.hits.map((offer, i) => (

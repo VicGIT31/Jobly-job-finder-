@@ -106,7 +106,9 @@ function normalizeCity(raw: string): string {
   const cleaned = cleanWhitespace(raw).toLowerCase();
   return cleaned
     .split(/([\s-])/)
-    .map((part) => (part === " " || part === "-" ? part : part.charAt(0).toUpperCase() + part.slice(1)))
+    .map((part) =>
+      part === " " || part === "-" ? part : part.charAt(0).toUpperCase() + part.slice(1),
+    )
     .join("");
 }
 
@@ -134,7 +136,10 @@ export function normalizeOffer(raw: RawOffer): NormalizedOffer {
   const remoteKey = cleanWhitespace(raw.remotePolicy ?? "onsite").toLowerCase();
   const remotePolicy = REMOTE_MAP[remoteKey];
   if (!remotePolicy) {
-    throw new NormalizationError(`Politique remote inconnue : "${raw.remotePolicy}"`, "remotePolicy");
+    throw new NormalizationError(
+      `Politique remote inconnue : "${raw.remotePolicy}"`,
+      "remotePolicy",
+    );
   }
 
   const educationKey = cleanWhitespace(raw.educationLevel ?? "indifférent").toLowerCase();

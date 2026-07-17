@@ -59,9 +59,15 @@ export default async function AdminIngestionPage() {
           <table className="mt-3 w-full max-w-lg border-collapse text-sm">
             <thead>
               <tr className="border-b-2 border-ink text-left">
-                <th scope="col" className="py-2 pr-4 font-bold uppercase tracking-wider">Jour</th>
-                <th scope="col" className="py-2 pr-4 font-bold uppercase tracking-wider">Créées</th>
-                <th scope="col" className="py-2 font-bold uppercase tracking-wider">Doublons</th>
+                <th scope="col" className="py-2 pr-4 font-bold uppercase tracking-wider">
+                  Jour
+                </th>
+                <th scope="col" className="py-2 pr-4 font-bold uppercase tracking-wider">
+                  Créées
+                </th>
+                <th scope="col" className="py-2 font-bold uppercase tracking-wider">
+                  Doublons
+                </th>
               </tr>
             </thead>
             <tbody>
@@ -85,10 +91,18 @@ export default async function AdminIngestionPage() {
           <table className="w-full min-w-[640px] border-collapse text-sm">
             <thead>
               <tr className="border-b-2 border-ink text-left">
-                <th scope="col" className="py-2 pr-4 font-bold uppercase tracking-wider">Date</th>
-                <th scope="col" className="py-2 pr-4 font-bold uppercase tracking-wider">Source</th>
-                <th scope="col" className="py-2 pr-4 font-bold uppercase tracking-wider">Résultat</th>
-                <th scope="col" className="py-2 font-bold uppercase tracking-wider">Détail</th>
+                <th scope="col" className="py-2 pr-4 font-bold uppercase tracking-wider">
+                  Date
+                </th>
+                <th scope="col" className="py-2 pr-4 font-bold uppercase tracking-wider">
+                  Source
+                </th>
+                <th scope="col" className="py-2 pr-4 font-bold uppercase tracking-wider">
+                  Résultat
+                </th>
+                <th scope="col" className="py-2 font-bold uppercase tracking-wider">
+                  Détail
+                </th>
               </tr>
             </thead>
             <tbody>
@@ -96,11 +110,16 @@ export default async function AdminIngestionPage() {
                 <tr key={log.id} className="border-b border-ink/15">
                   <td className="py-2 pr-4 tabular-nums text-ink/70">
                     {log.createdAt.toLocaleDateString("fr-FR")}{" "}
-                    {log.createdAt.toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" })}
+                    {log.createdAt.toLocaleTimeString("fr-FR", {
+                      hour: "2-digit",
+                      minute: "2-digit",
+                    })}
                   </td>
                   <td className="py-2 pr-4">{log.sourceSite}</td>
                   <td className="py-2 pr-4">
-                    <span className="stamp !text-[10px]">{RESULT_LABELS[log.result] ?? log.result}</span>
+                    <span className="stamp !text-[10px]">
+                      {RESULT_LABELS[log.result] ?? log.result}
+                    </span>
                   </td>
                   <td className="max-w-[280px] truncate py-2 text-ink/70">
                     {log.rawTitle ?? "—"}

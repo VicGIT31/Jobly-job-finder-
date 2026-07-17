@@ -47,7 +47,12 @@
   }
   .dark .highlight-marker {
     color: inherit;
-    background: linear-gradient(transparent 55%, rgba(255, 216, 77, 0.35) 55%, rgba(255, 216, 77, 0.35) 92%, transparent 92%);
+    background: linear-gradient(
+      transparent 55%,
+      rgba(255, 216, 77, 0.35) 55%,
+      rgba(255, 216, 77, 0.35) 92%,
+      transparent 92%
+    );
   }
 
   /* Tampon type de contrat */

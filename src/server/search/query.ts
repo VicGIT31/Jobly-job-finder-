@@ -1,11 +1,7 @@
 import { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { getMeili, OFFERS_INDEX } from "@/lib/meilisearch";
-import {
-  dateRangeToTimestamp,
-  PAGE_SIZE,
-  type OfferSearchInput,
-} from "@/lib/search-params";
+import { dateRangeToTimestamp, PAGE_SIZE, type OfferSearchInput } from "@/lib/search-params";
 import type { OfferDocument } from "./sync";
 import { offerToDocument } from "./sync";
 
@@ -57,9 +53,7 @@ async function searchWithMeilisearch(input: OfferSearchInput): Promise<OfferSear
     filters.push(`educationLevel IN [${input.niveau.map((n) => `"${n}"`).join(", ")}]`);
   }
   if (input.secteur.length) {
-    filters.push(
-      `sector IN [${input.secteur.map((s) => `"${s.replace(/"/g, "")}"`).join(", ")}]`,
-    );
+    filters.push(`sector IN [${input.secteur.map((s) => `"${s.replace(/"/g, "")}"`).join(", ")}]`);
   }
   if (input.datePub) {
     filters.push(`publishedAtTs >= ${dateRangeToTimestamp(input.datePub)}`);
@@ -163,8 +157,10 @@ async function searchWithPostgres(input: OfferSearchInput): Promise<OfferSearchR
       prisma.jobOffer.groupBy({ by: ["educationLevel"], where, _count: true }),
     ]);
 
-  const toRecord = <K extends string>(rows: Array<{ _count: number } & Record<K, string>>, key: K) =>
-    Object.fromEntries(rows.map((row) => [row[key], row._count]));
+  const toRecord = <K extends string>(
+    rows: Array<{ _count: number } & Record<K, string>>,
+    key: K,
+  ) => Object.fromEntries(rows.map((row) => [row[key], row._count]));
 
   return {
     hits: offers.map(offerToDocument),

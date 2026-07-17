@@ -15,11 +15,11 @@ Le site est disponible sur [http://localhost:3000](http://localhost:3000) avec l
 
 ### Comptes de démonstration
 
-| Rôle  | Email                  | Mot de passe |
-| ----- | ---------------------- | ------------ |
-| Admin | admin@nextstep.test    | nextstep123  |
-| User  | camille@nextstep.test  | nextstep123  |
-| User  | theo@nextstep.test     | nextstep123  |
+| Rôle  | Email                 | Mot de passe |
+| ----- | --------------------- | ------------ |
+| Admin | admin@nextstep.test   | nextstep123  |
+| User  | camille@nextstep.test | nextstep123  |
+| User  | theo@nextstep.test    | nextstep123  |
 
 ### Développement local (sans Docker pour l'app)
 
@@ -35,9 +35,9 @@ npm run worker     # crons BullMQ (fraîcheur des offres + alertes email)
 
 ## Stack
 
-| Domaine        | Choix                                                          |
-| -------------- | -------------------------------------------------------------- |
-| Frontend       | Next.js 14 (App Router), TypeScript strict, Tailwind CSS       |
+| Domaine        | Choix                                                           |
+| -------------- | --------------------------------------------------------------- |
+| Frontend       | Next.js 14 (App Router), TypeScript strict, Tailwind CSS        |
 | Data-fetching  | TanStack Query (client) + Server Components, filtres URL (nuqs) |
 | Backend        | Route handlers Next.js (voir `DECISIONS.md`)                    |
 | Base           | PostgreSQL + Prisma                                             |
@@ -94,19 +94,31 @@ Offre expirée → page dédiée avec 6 offres similaires.
 
 ## Scripts
 
-| Commande              | Effet                                            |
-| --------------------- | ------------------------------------------------ |
-| `npm run dev`         | App Next.js en développement                     |
-| `npm run build`       | Build de production                              |
-| `npm run start:all`   | App + worker (utilisé par Docker)                |
-| `npm run worker`      | Worker BullMQ seul (crons)                       |
-| `npm run db:seed`     | Seed (60+ offres, 15 entreprises, 3 users)       |
-| `npm run search:sync` | Ré-indexation complète Postgres → Meilisearch    |
-| `npm run test`        | Tests Vitest                                     |
-| `npm run lint`        | ESLint                                           |
+| Commande              | Effet                                         |
+| --------------------- | --------------------------------------------- |
+| `npm run dev`         | App Next.js en développement                  |
+| `npm run build`       | Build de production                           |
+| `npm run start:all`   | App + worker (utilisé par Docker)             |
+| `npm run worker`      | Worker BullMQ seul (crons)                    |
+| `npm run db:seed`     | Seed (60+ offres, 15 entreprises, 3 users)    |
+| `npm run search:sync` | Ré-indexation complète Postgres → Meilisearch |
+| `npm run test`        | Tests Vitest                                  |
+| `npm run lint`        | ESLint                                        |
+
+## Tests
+
+30 tests Vitest couvrent les trois zones critiques :
+
+- **Déduplication** (`src/server/ingest/dedup.test.ts`, `normalize.test.ts`) — normalisation accents/casse/ponctuation, hash stable, mapping des enums, rejets ;
+- **Redirection `/go/`** (`src/server/apply/redirect.test.ts`) — 302 vers la source, clic loggé (connecté et anonyme), offre expirée → page dédiée sans clic compté ;
+- **Matching d'alertes** (`src/server/alerts/match.test.ts`) — mots-clés multi-termes insensibles aux accents, filtres combinés, salaires.
+
+```bash
+npm run test
+```
 
 ## Design system — « Ink & Signal »
 
-Direction éditoriale façon presse papier moderne : fond papier chaud `#FAF7F2`, encre `#141414`, accent cobalt `#2743F0`, jaune signal `#FFD84D` en surlignage marqueur. Serif à personnalité pour les titres (Fraunces), grotesque neutre pour le corps (Inter). Angles vifs, filets 1px, ombres dures sans blur. Contrastes AA, navigation clavier complète, `prefers-reduced-motion` respecté.
+Direction éditoriale façon presse papier moderne : fond papier chaud `#FAF7F2`, encre `#141414`, accent cobalt `#2743F0`, jaune signal `#FFD84D` en surlignage marqueur. Serif à personnalité pour les titres (Fraunces), grotesque neutre pour le corps (Inter). Angles vifs, filets 1px façon journal, cards « petites annonces » numérotées avec tampon de contrat, bouton Postuler cobalt avec flèche ↗ et ombre dure. Mode sombre encre inversée (`#111` / `#EDEAE3`) avec bascule dans le header. Contrastes AA, focus visibles, navigation clavier complète, touch targets ≥ 44 px, `prefers-reduced-motion` respecté.
 
 Voir `DECISIONS.md` pour les choix techniques documentés.

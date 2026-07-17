@@ -18,7 +18,10 @@ export type IngestSummary = {
  * Pipeline d'ingestion aval : normalise, déduplique (hash unique en base),
  * indexe dans Meilisearch et trace chaque opération dans ingest_logs.
  */
-export async function processIngest(sourceSite: string, rawOffers: unknown[]): Promise<IngestSummary> {
+export async function processIngest(
+  sourceSite: string,
+  rawOffers: unknown[],
+): Promise<IngestSummary> {
   const summary: IngestSummary = {
     received: rawOffers.length,
     created: 0,

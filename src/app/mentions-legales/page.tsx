@@ -15,8 +15,8 @@ export default function MentionsLegalesPage() {
         <section>
           <h2 className="rule pt-4 font-display text-xl font-bold">Éditeur</h2>
           <p className="mt-2">
-            NextStep — projet de démonstration. 42 rue de l'Exemple, 75000 Paris.
-            Directeur de la publication : NextStep. Contact : contact@nextstep.example.
+            NextStep — projet de démonstration. 42 rue de l'Exemple, 75000 Paris. Directeur de la
+            publication : NextStep. Contact : contact@nextstep.example.
           </p>
         </section>
 

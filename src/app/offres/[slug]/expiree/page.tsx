@@ -36,9 +36,7 @@ export default async function OffreExpireePage({ params }: { params: { slug: str
 
       <section className="mt-12" aria-labelledby="similaires">
         <h2 id="similaires" className="rule pt-6 text-center font-display text-2xl font-bold">
-          {similar.length > 0
-            ? "Ces offres pourraient vous plaire"
-            : "Explorez les offres actives"}
+          {similar.length > 0 ? "Ces offres pourraient vous plaire" : "Explorez les offres actives"}
         </h2>
         {similar.length > 0 ? (
           <div className="mt-6 grid gap-3 md:grid-cols-2 lg:grid-cols-3">

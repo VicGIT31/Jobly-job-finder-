@@ -14,7 +14,10 @@ export function SiteFooter() {
               pour étudiants et jeunes diplômés.
             </p>
           </div>
-          <nav aria-label="Liens de pied de page" className="grid grid-cols-2 gap-x-12 gap-y-2 text-sm">
+          <nav
+            aria-label="Liens de pied de page"
+            className="grid grid-cols-2 gap-x-12 gap-y-2 text-sm"
+          >
             <Link href="/offres" className="py-1 underline-offset-4 hover:underline">
               Toutes les offres
             </Link>
@@ -30,8 +33,8 @@ export function SiteFooter() {
           </nav>
         </div>
         <div className="rule mt-6 pt-4 text-xs text-ink/50">
-          © {new Date().getFullYear()} NextStep — Les offres proviennent de sites partenaires ;
-          les candidatures se font toujours à la source.
+          © {new Date().getFullYear()} NextStep — Les offres proviennent de sites partenaires ; les
+          candidatures se font toujours à la source.
         </div>
       </div>
     </footer>

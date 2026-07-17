@@ -39,13 +39,28 @@ export function RegisterForm() {
           <label htmlFor="name" className="mb-1 block text-sm font-semibold">
             Nom complet
           </label>
-          <input id="name" name="name" type="text" autoComplete="name" required minLength={2} className="input-ink" />
+          <input
+            id="name"
+            name="name"
+            type="text"
+            autoComplete="name"
+            required
+            minLength={2}
+            className="input-ink"
+          />
         </div>
         <div>
           <label htmlFor="email" className="mb-1 block text-sm font-semibold">
             Email
           </label>
-          <input id="email" name="email" type="email" autoComplete="email" required className="input-ink" />
+          <input
+            id="email"
+            name="email"
+            type="email"
+            autoComplete="email"
+            required
+            className="input-ink"
+          />
         </div>
         <div>
           <label htmlFor="password" className="mb-1 block text-sm font-semibold">
@@ -75,7 +90,10 @@ export function RegisterForm() {
 
       <p className="rule mt-5 pt-4 text-sm text-ink/70">
         Déjà inscrit·e ?{" "}
-        <Link href="/connexion" className="font-semibold text-cobalt underline-offset-4 hover:underline">
+        <Link
+          href="/connexion"
+          className="font-semibold text-cobalt underline-offset-4 hover:underline"
+        >
           Connectez-vous
         </Link>
       </p>

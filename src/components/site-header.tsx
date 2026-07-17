@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { auth } from "@/lib/auth";
+import { ThemeToggle } from "@/components/theme-toggle";
 
 export async function SiteHeader() {
   const session = await auth();
@@ -18,6 +19,7 @@ export async function SiteHeader() {
           NextStep<span className="text-cobalt">.</span>
         </Link>
         <nav aria-label="Navigation principale" className="flex items-center gap-1 sm:gap-4">
+          <ThemeToggle />
           <Link
             href="/offres"
             className="px-2 py-2 text-sm font-semibold underline-offset-4 hover:underline"

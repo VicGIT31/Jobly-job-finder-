@@ -18,7 +18,12 @@ export function HomeSearch() {
   }
 
   return (
-    <form onSubmit={submit} role="search" aria-label="Recherche d'offres" className="flex flex-col gap-2 sm:flex-row">
+    <form
+      onSubmit={submit}
+      role="search"
+      aria-label="Recherche d'offres"
+      className="flex flex-col gap-2 sm:flex-row"
+    >
       <div className="flex-1">
         <label htmlFor="home-q" className="sr-only">
           Métier ou mot-clé

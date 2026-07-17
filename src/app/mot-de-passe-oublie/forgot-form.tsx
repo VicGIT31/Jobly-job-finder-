@@ -32,7 +32,14 @@ export function ForgotForm() {
         <label htmlFor="email" className="mb-1 block text-sm font-semibold">
           Email
         </label>
-        <input id="email" name="email" type="email" autoComplete="email" required className="input-ink" />
+        <input
+          id="email"
+          name="email"
+          type="email"
+          autoComplete="email"
+          required
+          className="input-ink"
+        />
       </div>
       {result && !result.ok && (
         <p className="border border-ink p-2 text-sm" role="alert">

@@ -72,11 +72,21 @@ export default async function AdminSourcesPage() {
           <table className="w-full min-w-[560px] border-collapse text-sm">
             <thead>
               <tr className="border-b-2 border-ink text-left">
-                <th scope="col" className="py-2 pr-4 font-bold uppercase tracking-wider">Source</th>
-                <th scope="col" className="py-2 pr-4 font-bold uppercase tracking-wider">Offres actives</th>
-                <th scope="col" className="py-2 pr-4 font-bold uppercase tracking-wider">Expirées</th>
-                <th scope="col" className="py-2 pr-4 font-bold uppercase tracking-wider">Clics Postuler</th>
-                <th scope="col" className="py-2 font-bold uppercase tracking-wider">Clics / offre</th>
+                <th scope="col" className="py-2 pr-4 font-bold uppercase tracking-wider">
+                  Source
+                </th>
+                <th scope="col" className="py-2 pr-4 font-bold uppercase tracking-wider">
+                  Offres actives
+                </th>
+                <th scope="col" className="py-2 pr-4 font-bold uppercase tracking-wider">
+                  Expirées
+                </th>
+                <th scope="col" className="py-2 pr-4 font-bold uppercase tracking-wider">
+                  Clics Postuler
+                </th>
+                <th scope="col" className="py-2 font-bold uppercase tracking-wider">
+                  Clics / offre
+                </th>
               </tr>
             </thead>
             <tbody>
@@ -106,8 +116,8 @@ export default async function AdminSourcesPage() {
         </div>
         <p className="mt-3 text-xs text-ink/50">
           Les sources sont créées automatiquement à l'ingestion (champ <code>sourceSite</code> de{" "}
-          <code>POST /internal/ingest</code>). Pour couper une source, désactivez ses offres dans
-          la modération.
+          <code>POST /internal/ingest</code>). Pour couper une source, désactivez ses offres dans la
+          modération.
         </p>
       </section>
     </div>

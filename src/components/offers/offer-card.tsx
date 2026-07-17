@@ -45,8 +45,12 @@ export function OfferCard({ offer, index }: { offer: OfferDocument; index?: numb
             </Link>
           </h3>
         </div>
-        <span className="stamp shrink-0" aria-label={`Contrat : ${CONTRACT_LABELS[offer.contractType as keyof typeof CONTRACT_LABELS] ?? offer.contractType}`}>
-          {CONTRACT_LABELS[offer.contractType as keyof typeof CONTRACT_LABELS] ?? offer.contractType}
+        <span
+          className="stamp shrink-0"
+          aria-label={`Contrat : ${CONTRACT_LABELS[offer.contractType as keyof typeof CONTRACT_LABELS] ?? offer.contractType}`}
+        >
+          {CONTRACT_LABELS[offer.contractType as keyof typeof CONTRACT_LABELS] ??
+            offer.contractType}
         </span>
       </div>
 
@@ -57,7 +61,9 @@ export function OfferCard({ offer, index }: { offer: OfferDocument; index?: numb
         </div>
         <div>
           <dt className="sr-only">Télétravail</dt>
-          <dd>{REMOTE_LABELS[offer.remotePolicy as keyof typeof REMOTE_LABELS] ?? offer.remotePolicy}</dd>
+          <dd>
+            {REMOTE_LABELS[offer.remotePolicy as keyof typeof REMOTE_LABELS] ?? offer.remotePolicy}
+          </dd>
         </div>
         {salary && (
           <div>

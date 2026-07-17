@@ -18,7 +18,5 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
     take: 8,
   });
 
-  return NextResponse.json(
-    cities.map((c) => ({ city: c.city, count: c._count })),
-  );
+  return NextResponse.json(cities.map((c) => ({ city: c.city, count: c._count })));
 }

@@ -20,9 +20,7 @@ export type ApplyDeps = {
 };
 
 export type ApplyResolution =
-  | { kind: "redirect"; url: string }
-  | { kind: "expired"; slug: string }
-  | { kind: "not_found" };
+  { kind: "redirect"; url: string } | { kind: "expired"; slug: string } | { kind: "not_found" };
 
 /**
  * (1) vérifie que l'offre est active, (2) enregistre le clic,
