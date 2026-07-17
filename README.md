@@ -1,8 +1,8 @@
 # NextStep — Job board étudiants & jeunes diplômés
 
-> Clone fonctionnel de JobTeaser avec un design original « Ink & Signal », construit avec Next.js 14, PostgreSQL, Meilisearch et Redis.
+> Agrégateur d'offres de **stage et d'alternance dans la tech en France**, construit avec Next.js 14, PostgreSQL, Meilisearch et Redis. Design sobre et épuré.
 >
-> **Particularité du modèle** : le site n'héberge aucune candidature. Chaque offre provient d'un scraping externe — le bouton « Postuler » redirige (302) vers le site source via `/go/:offerId`, en enregistrant le clic au passage.
+> **Particularité du modèle** : le site n'héberge aucune candidature. Les offres sont **ingérées en temps réel depuis des sources réelles** (France Travail, The Muse) ; le bouton « Postuler » redirige (302) vers le lien réel de l'annonce via `/go/:offerId`, en enregistrant le clic au passage.
 
 ## Démarrage rapide
 
@@ -11,7 +11,7 @@ cp .env.example .env
 docker compose up
 ```
 
-Le site est disponible sur [http://localhost:3000](http://localhost:3000) avec la base seedée (60+ offres, 15 entreprises, 3 comptes de test).
+Le site est disponible sur [http://localhost:3000](http://localhost:3000). Au démarrage, le worker ingère automatiquement de vraies offres (The Muse fonctionne sans clé ; ajoutez vos identifiants France Travail pour la couverture complète — voir ci-dessous). Trois comptes de démonstration sont créés par le seed.
 
 ### Comptes de démonstration
 
@@ -28,10 +28,31 @@ npm install
 docker compose up postgres redis meilisearch minio minio-init  # infra seule
 npx prisma migrate dev
 npm run db:seed
+npm run ingest:now # ingère de vraies offres tout de suite (ou attendre le worker)
 npm run search:sync
 npm run dev        # app Next.js
-npm run worker     # crons BullMQ (fraîcheur des offres + alertes email)
+npm run worker     # crons BullMQ (ingestion 30 min + fraîcheur + alertes)
 ```
+
+## Ingestion des offres réelles
+
+Les offres proviennent de connecteurs branchés sur le pipeline commun
+(`processIngest` : normalisation, déduplication SHA-256, **rejet de tout ce qui
+n'est pas stage/alternance**, indexation Meilisearch). Un cron BullMQ relance
+l'ingestion toutes les 30 min (`INGESTION_INTERVAL_MINUTES`), plus une passe au
+démarrage du worker. Lancement manuel : `npm run ingest:now`.
+
+| Source                         | Clé requise | Couverture                                               |
+| ------------------------------ | ----------- | -------------------------------------------------------- |
+| **France Travail** (Offres v2) | Oui (OAuth) | Exhaustive France — stages + alternance, codes ROME tech |
+| **The Muse**                   | Non         | Repli zéro-config — stages tech en France                |
+
+France Travail : créez une application gratuite sur [francetravail.io](https://francetravail.io),
+souscrivez à « Offres d'emploi v2 », puis renseignez `FRANCE_TRAVAIL_CLIENT_ID`
+et `FRANCE_TRAVAIL_CLIENT_SECRET`. Sans ces clés, seul The Muse est utilisé.
+
+Ajouter une source = implémenter `SourceConnector` dans
+`src/server/ingest/sources/` et l'enregistrer dans `run-ingestion.ts`.
 
 ## Stack
 
@@ -59,10 +80,11 @@ src/
 │   ├── admin/              # Back-office admin
 │   ├── go/[offerId]/       # Redirection "Postuler" (302 + tracking)
 │   └── internal/ingest/    # API d'ingestion (protégée par clé API)
-├── components/             # UI (design system "Ink & Signal")
+├── components/             # UI (design sobre & épuré)
 ├── lib/                    # Prisma, Redis, Meilisearch, S3, emails, utils
-├── server/                 # Logique métier (ingestion, recherche, alertes)
-└── workers/                # Crons BullMQ (fraîcheur, alertes)
+├── server/                 # Logique métier
+│   └── ingest/sources/     # Connecteurs d'offres réelles (France Travail, The Muse)
+└── workers/                # Crons BullMQ (ingestion, fraîcheur, alertes)
 ```
 
 ## Le pipeline d'ingestion
@@ -99,8 +121,9 @@ Offre expirée → page dédiée avec 6 offres similaires.
 | `npm run dev`         | App Next.js en développement                  |
 | `npm run build`       | Build de production                           |
 | `npm run start:all`   | App + worker (utilisé par Docker)             |
-| `npm run worker`      | Worker BullMQ seul (crons)                    |
-| `npm run db:seed`     | Seed (60+ offres, 15 entreprises, 3 users)    |
+| `npm run worker`      | Worker BullMQ seul (crons + ingestion)        |
+| `npm run db:seed`     | Seed (3 comptes de démonstration)             |
+| `npm run ingest:now`  | Ingestion manuelle des offres réelles         |
 | `npm run search:sync` | Ré-indexation complète Postgres → Meilisearch |
 | `npm run test`        | Tests Vitest                                  |
 | `npm run lint`        | ESLint                                        |
