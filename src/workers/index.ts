@@ -5,6 +5,7 @@
 import { Queue, Worker } from "bullmq";
 import Redis from "ioredis";
 import { expireStaleOffers } from "@/server/ingest/freshness";
+import { runIngestion } from "@/server/ingest/run-ingestion";
 import { sendDailyAlerts } from "@/server/alerts/send";
 
 const connection = new Redis(process.env.REDIS_URL ?? "redis://localhost:6379", {
@@ -16,7 +17,14 @@ const QUEUE_NAME = "nextstep-crons";
 async function main(): Promise<void> {
   const queue = new Queue(QUEUE_NAME, { connection });
 
-  // Fraîcheur : toutes les heures. Alertes : tous les jours à 8 h.
+  // Ingestion temps réel : toutes les 30 min. Fraîcheur : toutes les heures.
+  // Alertes : tous les jours à 8 h.
+  const ingestionMinutes = Number(process.env.INGESTION_INTERVAL_MINUTES ?? "30");
+  await queue.upsertJobScheduler(
+    "ingest-offers",
+    { pattern: `*/${ingestionMinutes} * * * *` },
+    { name: "ingest-offers" },
+  );
   await queue.upsertJobScheduler(
     "offer-freshness",
     { pattern: "0 * * * *" },
@@ -31,7 +39,9 @@ async function main(): Promise<void> {
   const worker = new Worker(
     QUEUE_NAME,
     async (job) => {
-      if (job.name === "offer-freshness") {
+      if (job.name === "ingest-offers") {
+        await runIngestion();
+      } else if (job.name === "offer-freshness") {
         const expired = await expireStaleOffers();
         console.log(`[cron] offer-freshness : ${expired} offre(s) expirée(s)`);
       } else if (job.name === "daily-alerts") {
@@ -46,7 +56,13 @@ async function main(): Promise<void> {
     console.error(`[worker] Job ${job?.name} en échec :`, err.message);
   });
 
-  console.log("[worker] Démarré — crons offer-freshness (horaire) et daily-alerts (8h).");
+  console.log(
+    `[worker] Démarré — crons ingest-offers (${ingestionMinutes} min), ` +
+      "offer-freshness (horaire) et daily-alerts (8h).",
+  );
+
+  // Ingestion immédiate au démarrage pour peupler le site sans attendre le cron.
+  runIngestion().catch((err) => console.error("[worker] Ingestion initiale échouée :", err));
 }
 
 main().catch((err) => {
