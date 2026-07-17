@@ -13,6 +13,7 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "db:seed": "tsx prisma/seed.ts",
+    "ingest:now": "tsx scripts/ingest-now.ts",
     "search:sync": "tsx scripts/search-sync.ts",
     "postinstall": "prisma generate"
   },
