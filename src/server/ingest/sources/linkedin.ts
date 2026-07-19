@@ -1,5 +1,5 @@
 import type { RawOffer } from "@/server/ingest/normalize";
-import { geocodeCity } from "./geocode";
+import { geocodeCityFull } from "./geocode";
 import { TECH_KEYWORDS, TECH_SECTOR, type SourceConnector } from "./types";
 
 /**
@@ -153,7 +153,7 @@ export class LinkedInConnector implements SourceConnector {
     for (const card of cardsById.values()) {
       const description = await fetchDescription(card.id);
       if (!description) continue;
-      const geo = geocodeCity(card.city);
+      const geo = await geocodeCityFull(card.city);
       // Type déduit du titre en priorité (fiable), sinon de la requête d'origine.
       const isAlt = /alternance|apprentissage|alternant/i.test(card.title) || card.alternance;
       offers.push({
