@@ -36,7 +36,7 @@ type FTOffer = {
   id: string;
   intitule: string;
   description?: string;
-  entreprise?: { nom?: string };
+  entreprise?: { nom?: string; logo?: string };
   lieuTravail?: { libelle?: string; latitude?: number; longitude?: number };
   typeContrat?: string;
   typeContratLibelle?: string;
@@ -123,7 +123,9 @@ function toRawOffer(o: FTOffer): RawOffer | null {
     contractType,
     sector: TECH_SECTOR,
     sourceUrl: url,
-    scrapedAt: o.dateCreation ? new Date(o.dateCreation) : new Date(),
+    scrapedAt: new Date(),
+    ...(o.dateCreation ? { publishedAt: new Date(o.dateCreation) } : {}),
+    ...(o.entreprise?.logo?.startsWith("http") ? { companyLogoUrl: o.entreprise.logo } : {}),
     ...(geo.lat != null && geo.lng != null ? { latitude: geo.lat, longitude: geo.lng } : {}),
   };
 }
