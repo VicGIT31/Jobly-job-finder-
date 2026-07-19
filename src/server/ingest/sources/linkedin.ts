@@ -30,7 +30,15 @@ const QUERIES: Array<{ keywords: string; internshipType: boolean }> = TECH_KEYWO
 const PAGES_PER_QUERY = 2;
 const PAGE_SIZE = 25;
 
-type Card = { id: string; title: string; company: string; city: string; url: string };
+type Card = {
+  id: string;
+  title: string;
+  company: string;
+  city: string;
+  url: string;
+  postedAt: string | null;
+  logoUrl: string | null;
+};
 
 function decodeEntities(s: string): string {
   return s
@@ -62,7 +70,12 @@ function parseCards(html: string): Card[] {
     if (!url || !title || !company || !location) continue;
     const id = /\/view\/[^/]*-(\d+)(?:[/?]|$)/.exec(url)?.[1] ?? "";
     const city = location.split(",")[0].trim();
-    cards.push({ id, title, company, city, url: url.split("?")[0] });
+    // Date de publication réelle de l'annonce (attribut datetime du <time> de la carte).
+    const postedAt = firstMatch(block, /datetime="(\d{4}-\d{2}-\d{2})"/);
+    // Logo entreprise : media.licdn.com uniquement (static.licdn.com = placeholder).
+    const logoRaw = firstMatch(block, /data-delayed-url="([^"]+)"/);
+    const logoUrl = logoRaw && logoRaw.includes("company-logo") ? logoRaw : null;
+    cards.push({ id, title, company, city, url: url.split("?")[0], postedAt, logoUrl });
   }
   return cards;
 }
@@ -152,6 +165,8 @@ export class LinkedInConnector implements SourceConnector {
         sector: TECH_SECTOR,
         sourceUrl: card.url,
         scrapedAt: new Date(),
+        ...(card.postedAt ? { publishedAt: new Date(card.postedAt) } : {}),
+        ...(card.logoUrl ? { companyLogoUrl: card.logoUrl } : {}),
         ...(geo ? { latitude: geo.lat, longitude: geo.lng } : {}),
       });
     }
