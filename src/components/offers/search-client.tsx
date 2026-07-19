@@ -26,7 +26,7 @@ const searchStateParsers = {
   niveau: parseAsString.withDefault(""),
   secteur: parseAsString.withDefault(""),
   datePub: parseAsString,
-  tri: parseAsStringLiteral(SORTS).withDefault("pertinence"),
+  tri: parseAsStringLiteral(SORTS).withDefault("date"),
   page: parseAsInteger.withDefault(1),
 };
 
@@ -52,7 +52,7 @@ export function SearchClient({
     if (state.niveau) params.set("niveau", state.niveau);
     if (state.secteur) params.set("secteur", state.secteur);
     if (state.datePub) params.set("datePub", state.datePub);
-    if (state.tri !== "pertinence") params.set("tri", state.tri);
+    if (state.tri !== "date") params.set("tri", state.tri);
     if (state.page > 1) params.set("page", String(state.page));
     return params.toString();
   }, [state]);
@@ -205,8 +205,8 @@ export function SearchClient({
                 void setState({ tri: e.target.value as (typeof SORTS)[number], page: 1 })
               }
             >
-              <option value="pertinence">Pertinence</option>
               <option value="date">Plus récentes</option>
+              <option value="pertinence">Pertinence</option>
             </select>
           </div>
         </div>
