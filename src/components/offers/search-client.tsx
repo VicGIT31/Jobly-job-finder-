@@ -10,6 +10,7 @@ import {
   EDUCATION_LABELS,
   REMOTE_LABELS,
   SORTS,
+  TOP_CITY_RADIUS_KM,
 } from "@/lib/search-params";
 import { OfferCard } from "./offer-card";
 import { ResultsSkeleton } from "./skeletons";
@@ -141,6 +142,13 @@ export function SearchClient({
         onToggle={toggleFacet}
         onDatePub={(v) => void setState({ datePub: v ?? null, page: 1 })}
         onRayon={(v) => void setState({ rayon: v ?? null, page: 1 })}
+        onCity={(city) =>
+          void setState({
+            ville: city ?? null,
+            rayon: city ? TOP_CITY_RADIUS_KM : null,
+            page: 1,
+          })
+        }
       />
 
       <div>
