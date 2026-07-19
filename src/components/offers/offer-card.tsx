@@ -1,6 +1,7 @@
 import Link from "next/link";
 import type { OfferDocument } from "@/server/search/sync";
 import { CONTRACT_LABELS, REMOTE_LABELS } from "@/lib/search-params";
+import { CompanyLogo } from "./company-logo";
 
 export function formatSalary(min: number | null, max: number | null): string | null {
   if (min == null && max == null) return null;
@@ -9,6 +10,15 @@ export function formatSalary(min: number | null, max: number | null): string | n
   const unit = (min ?? max ?? 0) >= 10000 ? "/an" : "/mois";
   if (min != null && max != null) return `${fmt(min)}–${fmt(max)} ${unit}`;
   return `${fmt(min ?? max ?? 0)} ${unit}`;
+}
+
+/** Date de publication (site d'origine) au format court français : "17 juil. 2026". */
+export function formatDateFr(ts: number): string {
+  return new Date(ts).toLocaleDateString("fr-FR", {
+    day: "numeric",
+    month: "short",
+    year: "numeric",
+  });
 }
 
 export function timeAgo(ts: number): string {
@@ -27,7 +37,8 @@ export function OfferCard({ offer }: { offer: OfferDocument }) {
   return (
     <article className="card group relative p-5 hover:shadow-lift">
       <div className="flex items-start justify-between gap-3">
-        <div className="min-w-0">
+        <CompanyLogo name={offer.companyName} logoUrl={offer.companyLogo} />
+        <div className="min-w-0 flex-1">
           <p className="text-sm font-medium text-ink/60">
             {offer.companyName}
             {isNew && (
@@ -72,8 +83,13 @@ export function OfferCard({ offer }: { offer: OfferDocument }) {
           </div>
         )}
         <div>
-          <dt className="sr-only">Publiée</dt>
-          <dd className="text-ink/50">{timeAgo(offer.publishedAtTs)}</dd>
+          <dt className="sr-only">Publiée le</dt>
+          <dd className="text-ink/50">
+            <time dateTime={new Date(offer.publishedAtTs).toISOString()}>
+              {formatDateFr(offer.publishedAtTs)}
+            </time>{" "}
+            · {timeAgo(offer.publishedAtTs)}
+          </dd>
         </div>
       </dl>
 
