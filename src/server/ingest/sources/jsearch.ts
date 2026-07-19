@@ -1,5 +1,5 @@
 import type { RawOffer } from "@/server/ingest/normalize";
-import { geocodeCity } from "./geocode";
+import { geocodeCityFull } from "./geocode";
 import { TECH_SECTOR, techQueries, type SourceConnector } from "./types";
 
 /**
@@ -40,7 +40,7 @@ function targetSource(job: JSearchJob): string | null {
   return null;
 }
 
-function toRawOffer(job: JSearchJob, sourceSite: string): RawOffer | null {
+async function toRawOffer(job: JSearchJob, sourceSite: string): Promise<RawOffer | null> {
   const title = job.job_title?.trim();
   const company = job.employer_name?.trim();
   const city = job.job_city?.trim();
@@ -49,7 +49,7 @@ function toRawOffer(job: JSearchJob, sourceSite: string): RawOffer | null {
   if (!title || !company || !city || !url || !description || description.length < 20) return null;
 
   const isAlt = /alternance|apprentissage|alternant/i.test(title);
-  const geo = geocodeCity(city);
+  const geo = await geocodeCityFull(city);
   return {
     title: title.slice(0, 200),
     companyName: company.slice(0, 120),
@@ -109,7 +109,7 @@ export class JSearchConnector implements SourceConnector {
           const link = job.job_apply_link ?? "";
           if (seen.has(link)) continue;
           seen.add(link);
-          const mapped = toRawOffer(job, source);
+          const mapped = await toRawOffer(job, source);
           if (mapped) offers.push(mapped);
         }
       }
