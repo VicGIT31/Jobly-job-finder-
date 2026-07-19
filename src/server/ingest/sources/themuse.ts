@@ -1,5 +1,5 @@
 import type { RawOffer } from "@/server/ingest/normalize";
-import { geocodeCity } from "./geocode";
+import { geocodeCityFull } from "./geocode";
 import { TECH_SECTOR, type SourceConnector } from "./types";
 
 /**
@@ -78,7 +78,7 @@ function isTech(job: MuseJob): boolean {
   );
 }
 
-function toRawOffer(job: MuseJob): RawOffer | null {
+async function toRawOffer(job: MuseJob): Promise<RawOffer | null> {
   const company = job.company?.name?.trim();
   const url = job.refs?.landing_page;
   const city = frenchCity(job.locations);
@@ -90,7 +90,7 @@ function toRawOffer(job: MuseJob): RawOffer | null {
   const description = htmlToText(job.contents ?? "");
   if (description.length < 20) return null;
 
-  const geo = geocodeCity(city);
+  const geo = await geocodeCityFull(city);
   return {
     title: job.name.trim().slice(0, 200),
     companyName: company.slice(0, 120),
@@ -147,7 +147,7 @@ export class TheMuseConnector implements SourceConnector {
         for (const job of json.results ?? []) {
           if (seen.has(job.id)) continue;
           seen.add(job.id);
-          const mapped = toRawOffer(job);
+          const mapped = await toRawOffer(job);
           if (mapped) raw.push(mapped);
         }
         if (json.page_count != null && page >= json.page_count - 1) break;
