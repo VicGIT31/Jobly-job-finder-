@@ -14,7 +14,26 @@ export const EDUCATION_LEVELS = [
 ] as const;
 export const DATE_RANGES = ["24h", "7j", "30j"] as const;
 export const SORTS = ["pertinence", "date"] as const;
-export const RADII = [5, 10, 25, 50, 100] as const;
+export const RADII = [5, 10, 20, 25, 50, 100] as const;
+
+/**
+ * Les 10 plus grandes villes de France (population). Le filtre rapide « Grandes
+ * villes » cherche dans un rayon de TOP_CITY_RADIUS_KM autour du centre-ville,
+ * pour couvrir l'agglomération (ex. Toulouse inclut Blagnac, Labège, Colomiers).
+ */
+export const TOP_CITIES = [
+  "Paris",
+  "Marseille",
+  "Lyon",
+  "Toulouse",
+  "Nice",
+  "Nantes",
+  "Montpellier",
+  "Strasbourg",
+  "Bordeaux",
+  "Lille",
+] as const;
+export const TOP_CITY_RADIUS_KM = 20;
 
 export const PAGE_SIZE = 12;
 
