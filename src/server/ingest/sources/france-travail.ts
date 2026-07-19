@@ -1,5 +1,5 @@
 import type { RawOffer } from "@/server/ingest/normalize";
-import { geocodeCity } from "./geocode";
+import { geocodeCityFull } from "./geocode";
 import { TECH_SECTOR, type SourceConnector } from "./types";
 
 /**
@@ -95,7 +95,7 @@ async function searchPage(
   return { offers: json.resultats ?? [], total };
 }
 
-function toRawOffer(o: FTOffer): RawOffer | null {
+async function toRawOffer(o: FTOffer): Promise<RawOffer | null> {
   const company = o.entreprise?.nom?.trim();
   const city = o.lieuTravail?.libelle?.replace(/^\d{2,3}\s*-\s*/, "").trim();
   const url = o.origineOffre?.urlOrigine;
@@ -110,10 +110,11 @@ function toRawOffer(o: FTOffer): RawOffer | null {
   const isStage = o.typeContrat === "STG" || /stage/i.test(o.typeContratLibelle ?? "");
   const contractType = isAlt ? "alternance" : isStage ? "stage" : (o.typeContrat ?? "");
 
-  const geo = geocodeCity(city) ?? {
-    lat: o.lieuTravail?.latitude,
-    lng: o.lieuTravail?.longitude,
-  };
+  // Coordonnées de l'API France Travail en priorité, géocodage sinon.
+  const geo =
+    o.lieuTravail?.latitude != null && o.lieuTravail?.longitude != null
+      ? { lat: o.lieuTravail.latitude, lng: o.lieuTravail.longitude }
+      : ((await geocodeCityFull(city)) ?? { lat: undefined, lng: undefined });
 
   return {
     title: o.intitule.trim().slice(0, 200),
@@ -161,7 +162,7 @@ export class FranceTravailConnector implements SourceConnector {
           range: `${start}-${start + 149}`,
         });
         for (const o of offers) {
-          const mapped = toRawOffer(o);
+          const mapped = await toRawOffer(o);
           if (mapped) raw.push(mapped);
         }
         if (start + 150 >= total || offers.length === 0) break;
