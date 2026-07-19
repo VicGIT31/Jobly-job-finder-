@@ -88,6 +88,11 @@ export async function processIngest(
           // La date de publication réelle prime sur la date d'ingestion
           // enregistrée par défaut lors de la création.
           ...(normalized.publishedAt ? { publishedAt: normalized.publishedAt } : {}),
+          // Coordonnées : rétro-remplies quand le géocodage les a trouvées
+          // (indispensable au filtre « à moins de X km »).
+          ...(normalized.latitude != null && normalized.longitude != null
+            ? { latitude: normalized.latitude, longitude: normalized.longitude }
+            : {}),
         },
         include: { company: true },
       });
