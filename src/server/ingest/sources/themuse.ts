@@ -41,7 +41,7 @@ type MuseJob = {
   id: number;
   name: string;
   contents?: string;
-  company?: { name?: string };
+  company?: { id?: number; name?: string };
   locations?: Array<{ name?: string }>;
   categories?: Array<{ name?: string }>;
   levels?: Array<{ name?: string }>;
@@ -99,7 +99,14 @@ function toRawOffer(job: MuseJob): RawOffer | null {
     contractType: "stage",
     sector: TECH_SECTOR,
     sourceUrl: url,
-    scrapedAt: job.publication_date ? new Date(job.publication_date) : new Date(),
+    scrapedAt: new Date(),
+    ...(job.publication_date ? { publishedAt: new Date(job.publication_date) } : {}),
+    // Logos The Muse servis par convention d'URL ; l'UI retombe sur l'initiale si 404.
+    ...(job.company?.id
+      ? {
+          companyLogoUrl: `https://assets.themuse.com/uploaded/companies/${job.company.id}/small_logo.png`,
+        }
+      : {}),
     ...(geo ? { latitude: geo.lat, longitude: geo.lng } : {}),
   };
 }
