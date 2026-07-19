@@ -11,6 +11,8 @@ import {
   RADII,
   REMOTE_LABELS,
   REMOTE_POLICIES,
+  TOP_CITIES,
+  TOP_CITY_RADIUS_KM,
 } from "@/lib/search-params";
 
 type FacetGroupProps = {
@@ -64,12 +66,14 @@ export function FacetPanel({
   onToggle,
   onDatePub,
   onRayon,
+  onCity,
 }: {
   facets: FacetCounts;
   selection: FacetSelection;
   onToggle: (facet: "contrat" | "remote" | "niveau" | "secteur", value: string) => void;
   onDatePub: (value?: string) => void;
   onRayon: (value?: number) => void;
+  onCity: (city?: string) => void;
 }) {
   const contractOptions = CONTRACT_TYPES.filter(
     (c) => (facets.contractType?.[c] ?? 0) > 0 || selection.contrat.includes(c),
@@ -90,6 +94,35 @@ export function FacetPanel({
 
   return (
     <aside aria-label="Filtres" className="flex flex-col gap-4">
+      <fieldset>
+        <legend className="pb-2 text-xs font-bold uppercase tracking-widest">
+          Grandes villes
+          <span className="ml-1 font-normal normal-case tracking-normal text-ink/50">
+            (ville + {TOP_CITY_RADIUS_KM} km)
+          </span>
+        </legend>
+        <div className="flex flex-wrap gap-1.5">
+          {TOP_CITIES.map((city) => {
+            const active = selection.ville.toLowerCase() === city.toLowerCase();
+            return (
+              <button
+                key={city}
+                type="button"
+                aria-pressed={active}
+                className={
+                  active
+                    ? "ticket border-cobalt bg-cobalt text-white"
+                    : "ticket hover:border-ink/30"
+                }
+                onClick={() => onCity(active ? undefined : city)}
+              >
+                {city}
+              </button>
+            );
+          })}
+        </div>
+      </fieldset>
+
       <FacetGroup
         title="Type de contrat"
         options={contractOptions}
