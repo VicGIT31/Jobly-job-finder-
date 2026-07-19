@@ -71,7 +71,8 @@ export const offerSearchParamsSchema = z.object({
     .optional()
     .transform((v) => (v ? v.split(",").filter(Boolean).slice(0, 10) : [])),
   datePub: z.enum(DATE_RANGES).optional(),
-  tri: z.enum(SORTS).optional().default("pertinence"),
+  // Tri par date de publication réelle (site d'origine) par défaut.
+  tri: z.enum(SORTS).optional().default("date"),
   page: z.coerce.number().int().min(1).max(100).optional().default(1),
 });
 
