@@ -70,6 +70,13 @@ export async function processIngest(
     // Offre déjà connue ? → rafraîchir last_seen_at (et réactiver si besoin)
     const existing = await prisma.jobOffer.findUnique({ where: { dedupHash } });
     if (existing) {
+      // Le logo de l'entreprise peut arriver après la création de la fiche.
+      if (normalized.companyLogoUrl) {
+        await prisma.company.update({
+          where: { id: existing.companyId },
+          data: { logoUrl: normalized.companyLogoUrl },
+        });
+      }
       const updated = await prisma.jobOffer.update({
         where: { id: existing.id },
         data: {
@@ -78,6 +85,9 @@ export async function processIngest(
           status: "ACTIVE",
           sourceUrl: normalized.sourceUrl,
           sourceSite: offerSourceSite,
+          // La date de publication réelle prime sur la date d'ingestion
+          // enregistrée par défaut lors de la création.
+          ...(normalized.publishedAt ? { publishedAt: normalized.publishedAt } : {}),
         },
         include: { company: true },
       });
@@ -100,10 +110,11 @@ export async function processIngest(
     const companySlug = slugifyFr(normalized.companyName);
     const company = await prisma.company.upsert({
       where: { slug: companySlug },
-      update: {},
+      update: normalized.companyLogoUrl ? { logoUrl: normalized.companyLogoUrl } : {},
       create: {
         name: normalized.companyName,
         slug: companySlug,
+        logoUrl: normalized.companyLogoUrl,
         description: `${normalized.companyName} recrute sur NextStep. Cette fiche a été créée automatiquement lors de l'ingestion et sera enrichie par nos équipes.`,
         sector: normalized.sector,
         size: "Non renseigné",
@@ -134,6 +145,7 @@ export async function processIngest(
           lastSeenAt: new Date(),
           dedupHash,
           status: "ACTIVE",
+          ...(normalized.publishedAt ? { publishedAt: normalized.publishedAt } : {}),
         },
         include: { company: true },
       });
