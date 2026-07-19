@@ -9,7 +9,7 @@ exploiter le projet au quotidien.
 
 - **Docker Desktop** installé et démarré (vérifier : `docker --version`).
 - **Node.js 20+** et **npm** (uniquement pour le dev hors Docker et les scripts).
-- Le dépôt cloné dans `le dossier du projet`.
+- Le dépôt cloné localement (toutes les commandes se lancent à sa racine).
 
 ---
 
@@ -137,7 +137,7 @@ docker compose down -v                 # arrêter + effacer les données
 
 ## 8. Déploiement / commits
 
-- Dépôt : **https://github.com/***/Internship-finders** (branche `main`).
+- Dépôt : le remote Git `origin` (branche `main`).
 - **Norme de commit** : **1 commit par fichier**, avec préfixe
   **`MOD:`** (modifié), **`ADD:`** (ajouté), **`RM:`** (supprimé).
   Exemple : `ADD: src/server/ingest/sources/jsearch.ts — connecteur ...`
