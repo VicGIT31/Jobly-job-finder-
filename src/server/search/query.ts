@@ -2,6 +2,7 @@ import { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { getMeili, OFFERS_INDEX } from "@/lib/meilisearch";
 import { dateRangeToTimestamp, PAGE_SIZE, type OfferSearchInput } from "@/lib/search-params";
+import { geocodeCityFull } from "@/server/ingest/sources/geocode";
 import type { OfferDocument } from "./sync";
 import { offerToDocument } from "./sync";
 
@@ -16,8 +17,11 @@ export type OfferSearchResult = {
   engine: "meilisearch" | "postgres";
 };
 
-/** Coordonnées d'une ville connue (issues des offres en base). */
+/** Coordonnées d'une ville : géocodage (statique puis API, en cache), sinon offres en base. */
 async function resolveCityGeo(city: string): Promise<{ lat: number; lng: number } | null> {
+  const geocoded = await geocodeCityFull(city);
+  if (geocoded) return geocoded;
+
   const offer = await prisma.jobOffer.findFirst({
     where: { city: { equals: city, mode: "insensitive" }, latitude: { not: null } },
     select: { latitude: true, longitude: true },
