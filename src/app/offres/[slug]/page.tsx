@@ -4,7 +4,8 @@ import { notFound } from "next/navigation";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { Markdown } from "@/components/markdown";
-import { OfferCard, formatSalary, timeAgo } from "@/components/offers/offer-card";
+import { OfferCard, formatDateFr, formatSalary, timeAgo } from "@/components/offers/offer-card";
+import { CompanyLogo } from "@/components/offers/company-logo";
 import { SaveOfferButton } from "@/components/offers/save-offer-button";
 import { findSimilarOffers } from "@/server/offers/similar";
 import { offerToDocument } from "@/server/search/sync";
@@ -122,17 +123,22 @@ export default async function OffrePage({ params }: { params: { slug: string } }
 
       <div className="mt-6 grid gap-10 lg:grid-cols-[1fr_320px]">
         <article>
-          <p className="text-sm font-medium text-ink/60">
-            <Link
-              href={`/entreprises/${offer.company.slug}`}
-              className="underline-offset-4 hover:underline"
-            >
-              {offer.company.name}
-            </Link>
-          </p>
-          <h1 className="mt-1 font-display text-3xl font-bold leading-tight sm:text-4xl">
-            {offer.title}
-          </h1>
+          <div className="flex items-start gap-4">
+            <CompanyLogo name={offer.company.name} logoUrl={offer.company.logoUrl} size={56} />
+            <div className="min-w-0">
+              <p className="text-sm font-medium text-ink/60">
+                <Link
+                  href={`/entreprises/${offer.company.slug}`}
+                  className="underline-offset-4 hover:underline"
+                >
+                  {offer.company.name}
+                </Link>
+              </p>
+              <h1 className="mt-1 font-display text-3xl font-bold leading-tight sm:text-4xl">
+                {offer.title}
+              </h1>
+            </div>
+          </div>
 
           <div className="mt-4 flex flex-wrap items-center gap-2">
             <span className="stamp">{CONTRACT_LABELS[offer.contractType]}</span>
@@ -180,8 +186,13 @@ export default async function OffrePage({ params }: { params: { slug: string } }
 
             <dl className="rule mt-4 space-y-2 pt-4 text-sm">
               <div className="flex justify-between gap-2">
-                <dt className="text-ink/60">Publiée</dt>
-                <dd>{timeAgo(offer.publishedAt.getTime())}</dd>
+                <dt className="text-ink/60">Publiée le</dt>
+                <dd className="text-right">
+                  <time dateTime={offer.publishedAt.toISOString()}>
+                    {formatDateFr(offer.publishedAt.getTime())}
+                  </time>{" "}
+                  ({timeAgo(offer.publishedAt.getTime())})
+                </dd>
               </div>
               <div className="flex justify-between gap-2">
                 <dt className="text-ink/60">Secteur</dt>
