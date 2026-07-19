@@ -54,3 +54,46 @@ export function geocodeCity(city: string): { lat: number; lng: number } | null {
     .trim();
   return CITY_COORDS[base] ?? null;
 }
+
+// Cache mémoire du géocodage distant (y compris les échecs, pour ne pas
+// réinterroger l'API à chaque cycle d'ingestion sur les mêmes villes).
+const remoteCache = new Map<string, { lat: number; lng: number } | null>();
+
+/**
+ * Géocodage complet : table statique d'abord, puis l'API officielle
+ * adresse.data.gouv.fr (gratuite, sans clé) pour les communes de périphérie
+ * (Blagnac, Issy-les-Moulineaux…). Indispensable à la recherche « à moins de
+ * X km » : sans coordonnées, une offre est invisible pour le filtre géo.
+ */
+export async function geocodeCityFull(city: string): Promise<{ lat: number; lng: number } | null> {
+  const local = geocodeCity(city);
+  if (local) return local;
+  if (!city) return null;
+
+  const key = stripAccents(city).toLowerCase().trim();
+  if (remoteCache.has(key)) return remoteCache.get(key) ?? null;
+
+  let coords: { lat: number; lng: number } | null = null;
+  try {
+    const url = new URL("https://api-adresse.data.gouv.fr/search/");
+    url.searchParams.set("q", city);
+    url.searchParams.set("type", "municipality");
+    url.searchParams.set("limit", "1");
+    const res = await fetch(url, {
+      headers: { "User-Agent": "NextStep/1.0" },
+      signal: AbortSignal.timeout(8_000),
+      cache: "no-store",
+    });
+    if (res.ok) {
+      const json = (await res.json()) as {
+        features?: Array<{ geometry?: { coordinates?: [number, number] } }>;
+      };
+      const c = json.features?.[0]?.geometry?.coordinates;
+      if (c && c.length === 2) coords = { lat: c[1], lng: c[0] };
+    }
+  } catch {
+    // Échec réseau : on cache le null du cycle courant, retenté au prochain process.
+  }
+  remoteCache.set(key, coords);
+  return coords;
+}
