@@ -23,6 +23,7 @@ const PAGES_PER_QUERY = 1;
 type JSearchJob = {
   job_title?: string;
   employer_name?: string;
+  employer_logo?: string;
   job_city?: string;
   job_description?: string;
   job_apply_link?: string;
@@ -58,9 +59,11 @@ function toRawOffer(job: JSearchJob, sourceSite: string): RawOffer | null {
     sector: TECH_SECTOR,
     sourceUrl: url,
     sourceSite,
-    scrapedAt: job.job_posted_at_datetime_utc
-      ? new Date(job.job_posted_at_datetime_utc)
-      : new Date(),
+    scrapedAt: new Date(),
+    ...(job.job_posted_at_datetime_utc
+      ? { publishedAt: new Date(job.job_posted_at_datetime_utc) }
+      : {}),
+    ...(job.employer_logo?.startsWith("http") ? { companyLogoUrl: job.employer_logo } : {}),
     ...(geo ? { latitude: geo.lat, longitude: geo.lng } : {}),
   };
 }
