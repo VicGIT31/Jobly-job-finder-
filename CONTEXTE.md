@@ -12,9 +12,8 @@ Le site **n'héberge aucune candidature** : chaque offre vient d'une source rée
 et le bouton « Postuler » redirige (302) vers le **lien réel de l'annonce**, en
 enregistrant le clic. Design **sobre et épuré** (fond blanc, accent indigo).
 
-- **Chemin local** : `le dossier du projet`
-- **Dépôt** : https://github.com/***/Internship-finders (branche `main`)
-- **Compte GitHub** : *** (commits attribués via `***`)
+- **Chemin local** : le dossier où le dépôt est cloné
+- **Dépôt** : le remote Git `origin` (branche `main`)
 
 ---
 
