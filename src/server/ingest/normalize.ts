@@ -20,6 +20,11 @@ export const rawOfferSchema = z.object({
   // offres de plusieurs sites (Indeed, Glassdoor…) → chacune garde sa vraie source.
   sourceSite: z.string().min(3).max(120).optional(),
   scrapedAt: z.coerce.date().optional(),
+  // Date de publication réelle de l'annonce sur le site d'origine (pas la date
+  // d'ingestion). Absente si la source ne l'expose pas.
+  publishedAt: z.coerce.date().optional(),
+  // Logo de l'entreprise tel qu'exposé par la source.
+  companyLogoUrl: z.string().url().max(1000).optional(),
 });
 
 export type RawOffer = z.infer<typeof rawOfferSchema>;
@@ -45,6 +50,8 @@ export type NormalizedOffer = {
   sourceUrl: string;
   sourceSite: string | null;
   scrapedAt: Date;
+  publishedAt: Date | null;
+  companyLogoUrl: string | null;
 };
 
 const CONTRACT_MAP: Record<string, ContractType> = {
@@ -188,5 +195,7 @@ export function normalizeOffer(raw: RawOffer): NormalizedOffer {
     sourceUrl: raw.sourceUrl,
     sourceSite: raw.sourceSite ?? null,
     scrapedAt: raw.scrapedAt ?? new Date(),
+    publishedAt: raw.publishedAt ?? null,
+    companyLogoUrl: raw.companyLogoUrl ?? null,
   };
 }
