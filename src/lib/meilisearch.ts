@@ -9,6 +9,10 @@ export function getMeili(): Meilisearch {
     globalForMeili.meili = new Meilisearch({
       host: process.env.MEILISEARCH_HOST ?? "http://localhost:7700",
       apiKey: process.env.MEILISEARCH_API_KEY,
+      // Next.js met en cache les fetch() sortants (Data Cache), y compris les
+      // POST /search du client : sans no-store, les résultats de recherche
+      // restent figés à leur première exécution après le build.
+      requestInit: { cache: "no-store" },
     });
   }
   return globalForMeili.meili;
