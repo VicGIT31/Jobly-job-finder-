@@ -1,10 +1,15 @@
 /**
- * Seed NextStep — comptes de démonstration uniquement.
+ * Seed Jobly — comptes de démonstration uniquement.
  *
  * Les offres et entreprises ne sont plus fictives : elles proviennent de
  * l'ingestion temps réel des sources réelles (France Travail, The Muse), lancée
  * par le worker au démarrage puis toutes les 30 min. Voir `src/server/ingest`.
  * Ce seed reste volontairement hors-ligne et idempotent (upsert par email).
+ *
+ * ⚠️ Aucun compte ADMIN n'est créé ici : le mot de passe de démo est public
+ * (dépôt + README), il ne doit jamais ouvrir le panneau d'administration.
+ * L'administrateur est provisionné hors dépôt par `npm run admin:create`,
+ * qui lit ses identifiants dans `.env` (non versionné).
  */
 import { PrismaClient, Role } from "@prisma/client";
 import bcrypt from "bcryptjs";
@@ -12,21 +17,12 @@ import bcrypt from "bcryptjs";
 const prisma = new PrismaClient();
 
 async function main(): Promise<void> {
-  console.log("🌱 Seed NextStep…");
+  console.log("🌱 Seed Jobly…");
 
-  const passwordHash = await bcrypt.hash("nextstep123", 10);
+  const passwordHash = await bcrypt.hash("jobly123", 10);
   const usersData = [
     {
-      email: "admin@nextstep.test",
-      name: "Alex Martin",
-      role: Role.ADMIN,
-      school: null,
-      graduationYear: null,
-      headline: "Admin NextStep",
-      city: "Paris",
-    },
-    {
-      email: "camille@nextstep.test",
+      email: "camille@jobly.test",
       name: "Camille Dubois",
       role: Role.USER,
       school: "EDHEC Business School",
@@ -35,7 +31,7 @@ async function main(): Promise<void> {
       city: "Lille",
     },
     {
-      email: "theo@nextstep.test",
+      email: "theo@jobly.test",
       name: "Théo Lefèvre",
       role: Role.USER,
       school: "INSA Lyon",
@@ -51,7 +47,8 @@ async function main(): Promise<void> {
       create: { ...u, passwordHash, emailVerified: new Date() },
     });
   }
-  console.log(`  ✔ ${usersData.length} utilisateurs`);
+  console.log(`  ✔ ${usersData.length} utilisateurs de démonstration (rôle USER)`);
+  console.log("  ℹ Compte administrateur : `npm run admin:create` (identifiants dans .env)");
   console.log("🌱 Seed terminé. Les offres réelles sont ingérées par le worker au démarrage.");
 }
 
