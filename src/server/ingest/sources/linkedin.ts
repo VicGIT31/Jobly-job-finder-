@@ -1,4 +1,6 @@
 import type { RawOffer } from "@/server/ingest/normalize";
+import { inferContractType, inferEducationLevel, inferRemotePolicy } from "@/server/ingest/enrich";
+import { RateLimitedError, fetchText, mapPool } from "@/server/ingest/http";
 import { geocodeCityFull } from "./geocode";
 import { TECH_KEYWORDS, TECH_SECTOR, type SourceConnector } from "./types";
 
@@ -9,14 +11,15 @@ import { TECH_KEYWORDS, TECH_SECTOR, type SourceConnector } from "./types";
  * mots-clés), puis la description réelle de chaque annonce. Chaque offre pointe
  * vers son URL LinkedIn réelle (`/jobs/view/...`).
  *
- * Endpoint non contractuel : en cas de changement de HTML ou de throttling, le
- * connecteur échoue proprement sans bloquer les autres sources.
+ * Robustesse (voir `ingest/http.ts`) : chaque requête est rejouée avec backoff,
+ * throttlée par hôte et protégée par un disjoncteur. Quand LinkedIn nous coupe,
+ * on **rend les offres déjà collectées** au lieu de perdre le cycle entier.
+ * Les descriptions sont récupérées en parallèle borné, ce qui divise la durée
+ * du cycle par ~4 à pression réseau équivalente.
  */
 
 const SEARCH_URL = "https://www.linkedin.com/jobs-guest/jobs/api/seeMoreJobPostings/search";
 const DETAIL_URL = "https://www.linkedin.com/jobs-guest/jobs/api/jobPosting";
-const UA =
-  "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0 Safari/537.36";
 
 // Requêtes ciblées tech FR, générées depuis TECH_KEYWORDS pour maximiser le
 // volume. f_JT=I = Internship (stage) ; l'alternance n'a pas de type LinkedIn
@@ -27,8 +30,16 @@ const QUERIES: Array<{ keywords: string; internshipType: boolean }> = TECH_KEYWO
     { keywords: `alternance ${kw}`, internshipType: false },
   ],
 );
-const PAGES_PER_QUERY = 2;
+const PAGES_PER_QUERY = 3;
 const PAGE_SIZE = 25;
+/** Descriptions récupérées de front. Au-delà, LinkedIn rate-limite vite. */
+const DETAIL_CONCURRENCY = 4;
+/** Espacement minimum entre deux requêtes LinkedIn (throttle poli). */
+const MIN_INTERVAL_MS = 300;
+/** `f_TPR=r604800` = publiées depuis 7 jours : on reste sur du frais. */
+const RECENT_WINDOW = "r604800";
+
+const HTTP = { minIntervalMs: MIN_INTERVAL_MS, retries: 2, timeoutMs: 15_000 };
 
 type Card = {
   id: string;
@@ -57,7 +68,7 @@ function firstMatch(html: string, re: RegExp): string | null {
 }
 
 /** Extrait les cartes d'offres d'une page de résultats guest. */
-function parseCards(html: string): Card[] {
+export function parseCards(html: string): Card[] {
   const cards: Card[] = [];
   for (const block of html.split("<li>").slice(1)) {
     const url = firstMatch(block, /href="(https:\/\/[a-z.]*linkedin\.com\/jobs\/view\/[^"?]+)/);
@@ -93,20 +104,12 @@ function htmlToText(html: string): string {
 
 async function fetchDescription(id: string): Promise<string | null> {
   if (!id) return null;
-  try {
-    const res = await fetch(`${DETAIL_URL}/${id}`, {
-      headers: { "User-Agent": UA },
-      signal: AbortSignal.timeout(15_000),
-    });
-    if (!res.ok) return null;
-    const html = await res.text();
-    const m = /show-more-less-html__markup[^>]*>([\s\S]*?)<\/div>/.exec(html);
-    if (!m) return null;
-    const text = htmlToText(m[1]);
-    return text.length >= 20 ? text.slice(0, 8000) : null;
-  } catch {
-    return null;
-  }
+  const html = await fetchText(`${DETAIL_URL}/${id}`, HTTP);
+  if (!html) return null;
+  const m = /show-more-less-html__markup[^>]*>([\s\S]*?)<\/div>/.exec(html);
+  if (!m) return null;
+  const text = htmlToText(m[1]);
+  return text.length >= 20 ? text.slice(0, 8000) : null;
 }
 
 export class LinkedInConnector implements SourceConnector {
@@ -118,6 +121,45 @@ export class LinkedInConnector implements SourceConnector {
   }
 
   async fetchOffers(): Promise<RawOffer[]> {
+    const cards = await this.collectCards();
+    if (cards.length === 0) return [];
+
+    // Descriptions + géocodage en parallèle borné. `mapPool` interrompt tout le
+    // pool si LinkedIn coupe, et renvoie ce qui a déjà été construit.
+    return mapPool(cards, DETAIL_CONCURRENCY, async (card) => {
+      const description = await fetchDescription(card.id);
+      if (!description) return null;
+      const geo = await geocodeCityFull(card.city);
+
+      // Type déduit du titre + description (fiable), sinon de la requête d'origine.
+      const inferred = inferContractType(card.title, description.slice(0, 1200));
+      const contractType = inferred ?? (card.alternance ? "alternance" : "stage");
+
+      const offer: RawOffer = {
+        title: card.title.slice(0, 200),
+        companyName: card.company.slice(0, 120),
+        city: card.city.slice(0, 120),
+        description,
+        contractType,
+        remotePolicy: inferRemotePolicy(card.title, card.city, description),
+        educationLevel: inferEducationLevel(card.title, description),
+        sector: TECH_SECTOR,
+        sourceUrl: card.url,
+        scrapedAt: new Date(),
+        ...(card.postedAt ? { publishedAt: new Date(card.postedAt) } : {}),
+        ...(card.logoUrl ? { companyLogoUrl: card.logoUrl } : {}),
+        ...(geo ? { latitude: geo.lat, longitude: geo.lng } : {}),
+      };
+      return offer;
+    });
+  }
+
+  /**
+   * Balaie toutes les requêtes tech et déduplique les cartes par identifiant
+   * LinkedIn. Une page vide ou en échec arrête la pagination de *cette* requête
+   * seulement ; un rate-limit arrête la collecte entière mais conserve l'acquis.
+   */
+  private async collectCards(): Promise<Array<Card & { alternance: boolean }>> {
     const cardsById = new Map<string, Card & { alternance: boolean }>();
 
     for (const q of QUERIES) {
@@ -126,50 +168,38 @@ export class LinkedInConnector implements SourceConnector {
         url.searchParams.set("keywords", q.keywords);
         url.searchParams.set("location", "France");
         url.searchParams.set("start", String(page * PAGE_SIZE));
+        url.searchParams.set("f_TPR", RECENT_WINDOW);
         if (q.internshipType) url.searchParams.set("f_JT", "I");
 
-        let html: string;
+        let html: string | null;
         try {
-          const res = await fetch(url, {
-            headers: { "User-Agent": UA },
-            signal: AbortSignal.timeout(15_000),
-          });
-          if (!res.ok) break;
-          html = await res.text();
-        } catch {
-          break;
+          html = await fetchText(url, HTTP);
+        } catch (err) {
+          if (err instanceof RateLimitedError) {
+            console.warn(
+              `[linkedin] Rate limit atteint — collecte arrêtée avec ${cardsById.size} carte(s).`,
+            );
+            return [...cardsById.values()];
+          }
+          throw err;
         }
+        if (!html) break;
+
         const cards = parseCards(html);
         if (cards.length === 0) break;
+
+        let fresh = 0;
         for (const c of cards) {
           if (c.id && !cardsById.has(c.id)) {
             cardsById.set(c.id, { ...c, alternance: !q.internshipType });
+            fresh++;
           }
         }
+        // Page entièrement composée de doublons : la requête n'apportera plus rien.
+        if (fresh === 0) break;
       }
     }
 
-    const offers: RawOffer[] = [];
-    for (const card of cardsById.values()) {
-      const description = await fetchDescription(card.id);
-      if (!description) continue;
-      const geo = await geocodeCityFull(card.city);
-      // Type déduit du titre en priorité (fiable), sinon de la requête d'origine.
-      const isAlt = /alternance|apprentissage|alternant/i.test(card.title) || card.alternance;
-      offers.push({
-        title: card.title.slice(0, 200),
-        companyName: card.company.slice(0, 120),
-        city: card.city.slice(0, 120),
-        description,
-        contractType: isAlt ? "alternance" : "stage",
-        sector: TECH_SECTOR,
-        sourceUrl: card.url,
-        scrapedAt: new Date(),
-        ...(card.postedAt ? { publishedAt: new Date(card.postedAt) } : {}),
-        ...(card.logoUrl ? { companyLogoUrl: card.logoUrl } : {}),
-        ...(geo ? { latitude: geo.lat, longitude: geo.lng } : {}),
-      });
-    }
-    return offers;
+    return [...cardsById.values()];
   }
 }
