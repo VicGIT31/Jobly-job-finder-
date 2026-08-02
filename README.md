@@ -1,4 +1,4 @@
-# NextStep — Job board étudiants & jeunes diplômés
+# Jobly — Job board étudiants & jeunes diplômés
 
 > Agrégateur d'offres de **stage et d'alternance dans la tech en France**, construit avec Next.js 14, PostgreSQL, Meilisearch et Redis. Design sobre et épuré.
 >
@@ -11,15 +11,36 @@ cp .env.example .env
 docker compose up
 ```
 
-Le site est disponible sur [http://localhost:3000](http://localhost:3000). Au démarrage, le worker ingère automatiquement de vraies offres (The Muse fonctionne sans clé ; ajoutez vos identifiants France Travail pour la couverture complète — voir ci-dessous). Trois comptes de démonstration sont créés par le seed.
+Le site est disponible sur [http://localhost:3000](http://localhost:3000). Au démarrage, le worker ingère automatiquement de vraies offres (The Muse fonctionne sans clé ; ajoutez vos identifiants France Travail pour la couverture complète — voir ci-dessous). Deux comptes candidats de démonstration sont créés par le seed.
 
 ### Comptes de démonstration
 
-| Rôle  | Email                 | Mot de passe |
-| ----- | --------------------- | ------------ |
-| Admin | admin@nextstep.test   | nextstep123  |
-| User  | camille@nextstep.test | nextstep123  |
-| User  | theo@nextstep.test    | nextstep123  |
+| Rôle | Email              | Mot de passe |
+| ---- | ------------------ | ------------ |
+| User | camille@jobly.test | jobly123     |
+| User | theo@jobly.test    | jobly123     |
+
+### Compte administrateur
+
+Le seed **ne crée aucun compte ADMIN** : son mot de passe est public, il n'a rien
+à faire dans une console d'administration. L'administrateur est provisionné hors
+dépôt, à partir de variables d'environnement placées dans `.env` (non versionné) :
+
+```bash
+# dans .env — voir .env.example
+ADMIN_USERNAME=…
+ADMIN_PASSWORD=…
+ADMIN_EMAIL=…          # optionnel, défaut <username>@jobly.local
+```
+
+```bash
+npm run admin:create               # local
+docker compose exec app npm run admin:create   # dans le conteneur
+```
+
+Le script est idempotent (relançable pour changer le mot de passe) et les mêmes
+variables sont appliquées automatiquement au démarrage de `docker compose`.
+La connexion accepte **l'email ou l'identifiant** ; la console est sur `/admin`.
 
 ### Développement local (sans Docker pour l'app)
 
@@ -49,13 +70,13 @@ cron quotidien **supprime définitivement** (base + index) les offres publiées 
 y a plus de 2 mois (`OFFER_MAX_AGE_DAYS`), et un cron horaire marque `EXPIRED`
 les offres qui ont disparu de leur source. Lancement manuel : `npm run ingest:now`.
 
-| Source                         | Clé requise    | Couverture                                               |
-| ------------------------------ | -------------- | -------------------------------------------------------- |
-| **LinkedIn**                   | Non            | Endpoint invité public — stages + alternance tech FR     |
-| **Indeed**                     | Non            | Recherche publique fr.indeed.com — stages + alternance   |
-| **France Travail** (Offres v2) | Oui (OAuth)    | Exhaustive France — codes ROME tech                      |
-| **Glassdoor** (via JSearch)    | Oui (RapidAPI) | Google for Jobs, éditeur Glassdoor                        |
-| **The Muse**                   | Non            | Repli — stages tech localisés en France                  |
+| Source                         | Clé requise    | Couverture                                             |
+| ------------------------------ | -------------- | ------------------------------------------------------ |
+| **LinkedIn**                   | Non            | Endpoint invité public — stages + alternance tech FR   |
+| **Indeed**                     | Non            | Recherche publique fr.indeed.com — stages + alternance |
+| **France Travail** (Offres v2) | Oui (OAuth)    | Exhaustive France — codes ROME tech                    |
+| **Glassdoor** (via JSearch)    | Oui (RapidAPI) | Google for Jobs, éditeur Glassdoor                     |
+| **The Muse**                   | Non            | Repli — stages tech localisés en France                |
 
 - **France Travail** : application gratuite sur [francetravail.io](https://francetravail.io),
   souscrire à « Offres d'emploi v2 » → `FRANCE_TRAVAIL_CLIENT_ID` / `_SECRET`.
@@ -67,6 +88,26 @@ n'interrompt pas les autres.
 
 Ajouter une source = implémenter `SourceConnector` dans
 `src/server/ingest/sources/` et l'enregistrer dans `run-ingestion.ts`.
+
+### Robustesse du scraping
+
+Tous les connecteurs passent par une couche HTTP commune
+(`src/server/ingest/http.ts`) qui apporte :
+
+- **retry avec backoff exponentiel + jitter**, et respect de l'en-tête `Retry-After` ;
+- **throttle par hôte** (intervalle minimum entre deux requêtes) et **rotation
+  d'User-Agent**, pour rester poli et éviter le bannissement ;
+- un **disjoncteur par hôte** : après trois rate-limits, la source est coupée
+  pour le reste du cycle et **rend les offres déjà collectées** au lieu de
+  perdre le cycle entier ;
+- un **pool de parallélisme borné** (`mapPool`) : les descriptions d'offres sont
+  récupérées plusieurs de front, et les sources tournent en parallèle entre elles.
+
+Les offres sont en plus **enrichies depuis leur texte** (`ingest/enrich.ts`) :
+politique de télétravail, niveau d'études et type de contrat sont déduits du
+titre et de la description — sans quoi ces facettes resteraient vides. Chaque
+passage de connecteur est archivé dans `ingest_runs` et surveillé dans
+`/admin/sources` (volume, durée, taux d'échec sur 24 h).
 
 ## Stack
 
@@ -120,7 +161,32 @@ Body: { "sourceSite": "...", "offers": [ { titre, entreprise, ville, ... } ] }
 5. **Expiration** : un cron horaire marque `EXPIRED` toute offre non revue depuis `OFFER_FRESHNESS_DAYS` jours.
 6. **Purge** : un cron quotidien supprime définitivement les offres de plus de `OFFER_MAX_AGE_DAYS` jours (2 mois).
 
-Chaque opération est tracée dans `ingest_logs` (visible dans `/admin`).
+Chaque opération est tracée dans `ingest_logs` (visible dans `/admin/sources`).
+
+## Console d'administration (`/admin`)
+
+Réservée aux comptes de rôle `ADMIN` — le rôle est **revalidé en base** à chaque
+rendu de page et à chaque action, jamais sur la seule foi du JWT.
+
+| Section             | Ce qu'on y fait                                                                      |
+| ------------------- | ------------------------------------------------------------------------------------ |
+| Tableau de bord     | Indicateurs (offres, comptes, clics), derniers cycles d'ingestion, actions rapides   |
+| Offres              | Recherche, blocage durable, suppression définitive (base + index)                    |
+| Entreprises         | Mise en avant sur l'accueil, suppression (avec ses offres)                           |
+| Utilisateurs        | Rôle, suspension, validation d'email, redéfinition du mot de passe, suppression      |
+| Sources & ingestion | Santé des connecteurs sur 24 h, lancement manuel, ré-indexation, journal d'ingestion |
+| SEO                 | Titres, description, mots-clés, canonique, indexation, `robots.txt`, vérifications   |
+| Paramètres          | Accroche, contact, inscriptions ouvertes/fermées, mode maintenance, durées de vie    |
+| Journal             | Audit de toutes les actions d'administration (qui, quoi, quand)                      |
+
+Les réglages sont stockés dans `site_settings` (une ligne JSON par groupe) et
+**alimentent réellement le rendu** : métadonnées de `app/layout.tsx`,
+`robots.txt`, `sitemap.xml`, formulaire d'inscription, crons d'ingestion.
+Une base sans réglages se comporte exactement comme avant (valeurs d'usine).
+
+Deux garde-fous : le **dernier administrateur actif** ne peut être ni
+rétrogradé, ni suspendu, ni supprimé ; et une offre bloquée en modération n'est
+pas réactivée par le cycle d'ingestion suivant (`blockedAt`).
 
 ## Redirection « Postuler »
 
@@ -134,29 +200,43 @@ Offre expirée → page dédiée avec 6 offres similaires.
 
 ## Scripts
 
-| Commande              | Effet                                         |
-| --------------------- | --------------------------------------------- |
-| `npm run dev`         | App Next.js en développement                  |
-| `npm run build`       | Build de production                           |
-| `npm run start:all`   | App + worker (utilisé par Docker)             |
-| `npm run worker`      | Worker BullMQ seul (crons + ingestion)        |
-| `npm run db:seed`     | Seed (3 comptes de démonstration)             |
-| `npm run ingest:now`  | Ingestion manuelle des offres réelles         |
-| `npm run search:sync` | Ré-indexation complète Postgres → Meilisearch |
-| `npm run test`        | Tests Vitest                                  |
-| `npm run lint`        | ESLint                                        |
+| Commande               | Effet                                         |
+| ---------------------- | --------------------------------------------- |
+| `npm run dev`          | App Next.js en développement                  |
+| `npm run build`        | Build de production                           |
+| `npm run start:all`    | App + worker (utilisé par Docker)             |
+| `npm run worker`       | Worker BullMQ seul (crons + ingestion)        |
+| `npm run db:seed`      | Seed (2 comptes candidats de démonstration)   |
+| `npm run admin:create` | Provisionne l'administrateur depuis `.env`    |
+| `npm run ingest:now`   | Ingestion manuelle des offres réelles         |
+| `npm run search:sync`  | Ré-indexation complète Postgres → Meilisearch |
+| `npm run test`         | Tests Vitest                                  |
+| `npm run lint`         | ESLint                                        |
 
 ## Tests
 
-30 tests Vitest couvrent les trois zones critiques :
+50 tests Vitest couvrent les zones critiques :
 
 - **Déduplication** (`src/server/ingest/dedup.test.ts`, `normalize.test.ts`) — normalisation accents/casse/ponctuation, hash stable, mapping des enums, rejets ;
+- **Couche HTTP du scraping** (`src/server/ingest/http.test.ts`) — retries, 404 définitif, disjoncteur de rate-limit, bornes du pool de concurrence ;
+- **Enrichissement** (`src/server/ingest/enrich.test.ts`) — déduction télétravail / niveau d'études / type de contrat ;
 - **Redirection `/go/`** (`src/server/apply/redirect.test.ts`) — 302 vers la source, clic loggé (connecté et anonyme), offre expirée → page dédiée sans clic compté ;
 - **Matching d'alertes** (`src/server/alerts/match.test.ts`) — mots-clés multi-termes insensibles aux accents, filtres combinés, salaires.
 
 ```bash
 npm run test
 ```
+
+## Marque
+
+Le monogramme Jobly est un « J » dont la hampe est coiffée d'une flèche vers le
+haut — la progression de carrière — sur un badge au dégradé indigo → violet.
+Il est **interactif** (`src/components/brand/jobly-logo.tsx`) : le badge s'incline
+vers le pointeur (parallaxe 3D), la flèche décolle en laissant une trace, les
+lettres du wordmark se soulèvent en cascade et le point d'accent respire. Tout
+est neutralisé par `prefers-reduced-motion`, et l'inclinaison n'est calculée que
+sur pointeur fin (souris). Le même monogramme sert de favicon (`app/icon.svg`),
+d'image Open Graph (`app/opengraph-image.tsx`) et d'emblème de la console admin.
 
 ## Design system — sobre & épuré
 
