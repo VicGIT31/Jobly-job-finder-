@@ -18,6 +18,7 @@
     "ingest:now": "tsx scripts/ingest-now.ts",
     "search:sync": "tsx scripts/search-sync.ts",
     "geo:backfill": "tsx scripts/geocode-backfill.ts",
+    "specialty:backfill": "tsx scripts/specialty-backfill.ts",
     "postinstall": "prisma generate"
   },
   "dependencies": {
