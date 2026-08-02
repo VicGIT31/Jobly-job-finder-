@@ -12,6 +12,13 @@ export const EDUCATION_LEVELS = [
   "DOCTORAT",
   "INDIFFERENT",
 ] as const;
+/**
+ * Spécialités tech (enum Prisma `TechSpecialty`). `AUTRE` n'est pas proposé au
+ * filtre : « non classé » n'est pas un critère de recherche pour un candidat,
+ * il ne servirait qu'à afficher le fond de tiroir.
+ */
+export const SPECIALTIES = ["IA", "CYBERSECURITE", "WEB", "DEVOPS", "SOFTWARE", "RESEAUX"] as const;
+
 export const DATE_RANGES = ["24h", "7j", "30j"] as const;
 export const SORTS = ["pertinence", "date"] as const;
 export const RADII = [5, 10, 20, 25, 50, 100] as const;
@@ -62,6 +69,25 @@ export const EDUCATION_LABELS: Record<(typeof EDUCATION_LEVELS)[number], string>
   INDIFFERENT: "Indifférent",
 };
 
+export const SPECIALTY_LABELS: Record<(typeof SPECIALTIES)[number], string> = {
+  IA: "IA & Data",
+  CYBERSECURITE: "Cybersécurité",
+  WEB: "Web",
+  DEVOPS: "DevOps & Cloud",
+  SOFTWARE: "Software Engineering",
+  RESEAUX: "Réseaux & Systèmes",
+};
+
+/** Pictogrammes des spécialités, utilisés sur l'accueil et les puces de filtre. */
+export const SPECIALTY_ICONS: Record<(typeof SPECIALTIES)[number], string> = {
+  IA: "🧠",
+  CYBERSECURITE: "🛡️",
+  WEB: "🌐",
+  DEVOPS: "⚙️",
+  SOFTWARE: "💻",
+  RESEAUX: "🖧",
+};
+
 export const DATE_RANGE_LABELS: Record<(typeof DATE_RANGES)[number], string> = {
   "24h": "Dernières 24 h",
   "7j": "7 derniers jours",
@@ -85,6 +111,7 @@ export const offerSearchParamsSchema = z.object({
   contrat: csv(CONTRACT_TYPES),
   remote: csv(REMOTE_POLICIES),
   niveau: csv(EDUCATION_LEVELS),
+  specialite: csv(SPECIALTIES),
   secteur: z
     .string()
     .optional()
