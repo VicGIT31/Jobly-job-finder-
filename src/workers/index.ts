@@ -4,6 +4,7 @@
  */
 import { Queue, Worker } from "bullmq";
 import Redis from "ioredis";
+import { getSettings } from "@/lib/settings";
 import { expireStaleOffers, purgeOldOffers } from "@/server/ingest/freshness";
 import { runIngestion } from "@/server/ingest/run-ingestion";
 import { sendDailyAlerts } from "@/server/alerts/send";
@@ -46,6 +47,13 @@ async function main(): Promise<void> {
     QUEUE_NAME,
     async (job) => {
       if (job.name === "ingest-offers") {
+        // Interrupteur de `/admin/parametres` : le cron peut être suspendu sans
+        // arrêter le worker (les autres crons continuent de tourner).
+        const { ingestionEnabled } = await getSettings("ingestion");
+        if (!ingestionEnabled) {
+          console.log("[cron] ingest-offers : ingestion désactivée dans les paramètres, ignorée.");
+          return;
+        }
         await runIngestion();
       } else if (job.name === "offer-freshness") {
         const expired = await expireStaleOffers();
@@ -71,7 +79,9 @@ async function main(): Promise<void> {
   );
 
   // Ingestion immédiate au démarrage pour peupler le site sans attendre le cron.
-  runIngestion().catch((err) => console.error("[worker] Ingestion initiale échouée :", err));
+  getSettings("ingestion")
+    .then(({ ingestionEnabled }) => (ingestionEnabled ? runIngestion() : undefined))
+    .catch((err) => console.error("[worker] Ingestion initiale échouée :", err));
 }
 
 main().catch((err) => {
