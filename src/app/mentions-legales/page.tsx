@@ -50,9 +50,8 @@ export default async function MentionsLegalesPage() {
             Les comptes candidats stockent : email, nom, école, année de diplôme, CV (fichier PDF),
             offres sauvegardées, alertes et historique de clics « Postuler ». Ces données servent
             uniquement au fonctionnement du service (espace personnel, alertes email). Vous pouvez
-            demander la suppression de votre compte et de vos données à tout moment :{" "}
-            {contactEmail}.
-            Conformément au RGPD, vous disposez d'un droit d'accès, de rectification et
+            demander la suppression de votre compte et de vos données à tout moment : {contactEmail}
+            . Conformément au RGPD, vous disposez d'un droit d'accès, de rectification et
             d'effacement.
           </p>
         </section>
