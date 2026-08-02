@@ -3,22 +3,32 @@ import { prisma } from "@/lib/prisma";
 import { OfferCard } from "@/components/offers/offer-card";
 import { offerToDocument } from "@/server/search/sync";
 import { HomeSearch } from "@/components/home-search";
+import { resolveCollections } from "@/lib/company-collections";
+import { SPECIALTIES, SPECIALTY_ICONS, SPECIALTY_LABELS } from "@/lib/search-params";
 
 export const dynamic = "force-dynamic";
 
 export default async function HomePage() {
-  const [recentOffers, featuredCompanies, offerCount, companyCount, cityCount] = await Promise.all([
-    prisma.jobOffer.findMany({
-      where: { status: "ACTIVE" },
-      include: { company: true },
-      orderBy: { publishedAt: "desc" },
-      take: 6,
-    }),
-    prisma.company.findMany({ where: { featured: true }, take: 5 }),
-    prisma.jobOffer.count({ where: { status: "ACTIVE" } }),
-    prisma.company.count(),
-    prisma.jobOffer.groupBy({ by: ["city"], where: { status: "ACTIVE" } }).then((g) => g.length),
-  ]);
+  const [recentOffers, collections, specialtyCounts, offerCount, companyCount, cityCount] =
+    await Promise.all([
+      prisma.jobOffer.findMany({
+        where: { status: "ACTIVE" },
+        include: { company: true },
+        orderBy: { publishedAt: "desc" },
+        take: 6,
+      }),
+      resolveCollections(),
+      prisma.jobOffer.groupBy({
+        by: ["specialty"],
+        where: { status: "ACTIVE" },
+        _count: true,
+      }),
+      prisma.jobOffer.count({ where: { status: "ACTIVE" } }),
+      prisma.company.count(),
+      prisma.jobOffer.groupBy({ by: ["city"], where: { status: "ACTIVE" } }).then((g) => g.length),
+    ]);
+
+  const countBySpecialty = new Map(specialtyCounts.map((row) => [row.specialty, row._count]));
 
   return (
     <div>
@@ -54,6 +64,40 @@ export default async function HomePage() {
         </div>
       </section>
 
+      {/* Spécialités : l'entrée la plus directe vers les offres pour un dev */}
+      <section className="mx-auto max-w-6xl px-4 pt-14" aria-labelledby="specialites">
+        <h2 id="specialites" className="text-2xl font-bold tracking-tight">
+          Explorez par spécialité
+        </h2>
+        <div className="mt-6 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+          {SPECIALTIES.map((specialty) => {
+            const count = countBySpecialty.get(specialty) ?? 0;
+            return (
+              <Link
+                key={specialty}
+                href={`/offres?specialite=${specialty}`}
+                className="card group flex items-center gap-4 p-5 hover:shadow-lift"
+              >
+                <span
+                  aria-hidden="true"
+                  className="grid h-12 w-12 shrink-0 place-items-center rounded-xl bg-cobalt-soft text-2xl transition-transform group-hover:scale-110"
+                >
+                  {SPECIALTY_ICONS[specialty]}
+                </span>
+                <span className="min-w-0">
+                  <span className="block truncate font-semibold group-hover:text-cobalt">
+                    {SPECIALTY_LABELS[specialty]}
+                  </span>
+                  <span className="text-sm text-ink/55">
+                    {count} offre{count > 1 ? "s" : ""}
+                  </span>
+                </span>
+              </Link>
+            );
+          })}
+        </div>
+      </section>
+
       {/* Offres récentes */}
       <section className="mx-auto max-w-6xl px-4 py-14" aria-labelledby="recentes">
         <div className="flex items-baseline justify-between">
@@ -74,24 +118,55 @@ export default async function HomePage() {
         </div>
       </section>
 
-      {/* Entreprises mises en avant */}
-      <section className="mx-auto max-w-6xl px-4 pb-16" aria-labelledby="entreprises">
-        <h2 id="entreprises" className="text-2xl font-bold tracking-tight">
-          Elles recrutent en ce moment
-        </h2>
-        <div className="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
-          {featuredCompanies.map((company) => (
-            <Link
-              key={company.id}
-              href={`/entreprises/${company.slug}`}
-              className="card group p-5 hover:shadow-lift"
-            >
-              <p className="font-semibold group-hover:text-cobalt">{company.name}</p>
-              <p className="mt-1 text-xs text-ink/50">{company.sector}</p>
-            </Link>
-          ))}
-        </div>
-      </section>
+      {/* Vitrines d'entreprises : GAFAM, tech françaises, licornes */}
+      {collections.map((collection) => (
+        <section
+          key={collection.key}
+          className="mx-auto max-w-6xl px-4 pb-14"
+          aria-labelledby={`collection-${collection.key}`}
+        >
+          <div className="flex flex-wrap items-baseline justify-between gap-2">
+            <div>
+              <h2
+                id={`collection-${collection.key}`}
+                className="flex items-center gap-2 text-2xl font-bold tracking-tight"
+              >
+                <span aria-hidden="true">{collection.icon}</span>
+                {collection.label}
+              </h2>
+              <p className="mt-1 text-sm text-ink/60">{collection.tagline}</p>
+            </div>
+            <p className="text-sm font-semibold text-cobalt">
+              {collection.totalOffers} offre{collection.totalOffers > 1 ? "s" : ""}
+            </p>
+          </div>
+
+          <div className="mt-5 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+            {collection.companies.slice(0, 8).map((company) => (
+              <Link
+                key={company.slug}
+                href={`/entreprises/${company.slug}`}
+                className="card group flex items-center justify-between gap-3 p-4 hover:shadow-lift"
+              >
+                <span className="min-w-0">
+                  <span className="block truncate font-semibold group-hover:text-cobalt">
+                    {company.name}
+                  </span>
+                  <span className="text-xs text-ink/50">
+                    {company.offerCount} offre{company.offerCount > 1 ? "s" : ""}
+                  </span>
+                </span>
+                <span
+                  aria-hidden="true"
+                  className="shrink-0 text-ink/30 transition-transform group-hover:translate-x-0.5 group-hover:text-cobalt"
+                >
+                  →
+                </span>
+              </Link>
+            ))}
+          </div>
+        </section>
+      ))}
     </div>
   );
 }
