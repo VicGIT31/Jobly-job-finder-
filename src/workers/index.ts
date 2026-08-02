@@ -12,7 +12,7 @@ const connection = new Redis(process.env.REDIS_URL ?? "redis://localhost:6379", 
   maxRetriesPerRequest: null,
 });
 
-const QUEUE_NAME = "nextstep-crons";
+const QUEUE_NAME = "jobly-crons";
 
 async function main(): Promise<void> {
   const queue = new Queue(QUEUE_NAME, { connection });
