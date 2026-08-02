@@ -29,6 +29,7 @@ export async function configureOffersIndex(): Promise<void> {
       "city",
       "remotePolicy",
       "sector",
+      "specialty",
       "educationLevel",
       "publishedAtTs",
       "status",
