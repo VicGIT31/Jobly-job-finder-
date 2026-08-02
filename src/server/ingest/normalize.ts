@@ -74,7 +74,7 @@ const CONTRACT_MAP: Record<string, ContractType> = {
 };
 
 /**
- * NextStep ne référence que les stages et alternances. Les autres contrats
+ * Jobly ne référence que les stages et alternances. Les autres contrats
  * (CDI, CDD, VIE…) sont reconnus par CONTRACT_MAP mais rejetés à l'ingestion,
  * pour distinguer « hors périmètre » de « vocabulaire inconnu » dans les logs.
  */
