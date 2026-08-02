@@ -11,6 +11,9 @@ import {
   RADII,
   REMOTE_LABELS,
   REMOTE_POLICIES,
+  SPECIALTIES,
+  SPECIALTY_ICONS,
+  SPECIALTY_LABELS,
   TOP_CITIES,
   TOP_CITY_RADIUS_KM,
 } from "@/lib/search-params";
@@ -54,6 +57,7 @@ export type FacetSelection = {
   contrat: string[];
   remote: string[];
   niveau: string[];
+  specialite: string[];
   secteur: string[];
   datePub?: string;
   rayon?: number;
@@ -70,7 +74,10 @@ export function FacetPanel({
 }: {
   facets: FacetCounts;
   selection: FacetSelection;
-  onToggle: (facet: "contrat" | "remote" | "niveau" | "secteur", value: string) => void;
+  onToggle: (
+    facet: "contrat" | "remote" | "niveau" | "specialite" | "secteur",
+    value: string,
+  ) => void;
   onDatePub: (value?: string) => void;
   onRayon: (value?: number) => void;
   onCity: (city?: string) => void;
@@ -94,7 +101,42 @@ export function FacetPanel({
 
   return (
     <aside aria-label="Filtres" className="flex flex-col gap-4">
+      {/* Spécialité en tête : c'est le premier tri qu'un dev fait mentalement. */}
       <fieldset>
+        <legend className="pb-2 text-xs font-bold uppercase tracking-widest">Spécialité</legend>
+        <div className="flex flex-wrap gap-1.5">
+          {SPECIALTIES.map((specialty) => {
+            const count = facets.specialty?.[specialty] ?? 0;
+            const active = selection.specialite.includes(specialty);
+            // Une spécialité sans résultat reste affichée si elle est
+            // sélectionnée, sinon on la masque pour ne pas proposer un cul-de-sac.
+            if (count === 0 && !active) return null;
+            return (
+              <button
+                key={specialty}
+                type="button"
+                aria-pressed={active}
+                className={
+                  active
+                    ? "ticket border-cobalt bg-cobalt text-white"
+                    : "ticket hover:border-ink/30"
+                }
+                onClick={() => onToggle("specialite", specialty)}
+              >
+                <span aria-hidden="true">{SPECIALTY_ICONS[specialty]}</span>
+                {SPECIALTY_LABELS[specialty]}
+                <span
+                  className={`text-xs tabular-nums ${active ? "text-white/70" : "text-ink/50"}`}
+                >
+                  {count}
+                </span>
+              </button>
+            );
+          })}
+        </div>
+      </fieldset>
+
+      <fieldset className="rule pt-4">
         <legend className="pb-2 text-xs font-bold uppercase tracking-widest">
           Grandes villes
           <span className="ml-1 font-normal normal-case tracking-normal text-ink/50">
