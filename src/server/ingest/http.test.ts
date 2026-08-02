@@ -68,10 +68,26 @@ describe("fetchWithRetry", () => {
     expect(fetchMock).toHaveBeenCalledTimes(1);
   });
 
+  it("réinitialise le compteur de rate-limit après une réponse réussie", async () => {
+    const fetchMock = vi
+      .fn()
+      .mockResolvedValueOnce(response(429))
+      .mockResolvedValueOnce(response(200, "ok"));
+    vi.stubGlobal("fetch", fetchMock);
+
+    await fetchWithRetry("https://reprise.test/a", FAST);
+    expect(isHostCircuitOpen("reprise.test")).toBe(false);
+  });
+
   it("ouvre le disjoncteur de l'hôte après des rate-limits répétés", async () => {
     const fetchMock = vi.fn().mockResolvedValue(response(429));
     vi.stubGlobal("fetch", fetchMock);
 
+    // Un seul appel (3 tentatives) ne suffit pas à couper l'hôte : il rend null.
+    await expect(fetchWithRetry("https://limite.test/d", FAST)).resolves.toBeNull();
+    expect(isHostCircuitOpen("limite.test")).toBe(false);
+
+    // Le second appel épuise le quota d'échecs et coupe l'hôte.
     await expect(fetchWithRetry("https://limite.test/e", FAST)).rejects.toBeInstanceOf(
       RateLimitedError,
     );
