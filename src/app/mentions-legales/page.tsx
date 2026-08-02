@@ -1,10 +1,16 @@
 import type { Metadata } from "next";
+import { getSettings } from "@/lib/settings";
 
 export const metadata: Metadata = {
   title: "Mentions légales",
 };
 
-export default function MentionsLegalesPage() {
+export const dynamic = "force-dynamic";
+
+export default async function MentionsLegalesPage() {
+  // Adresse de contact modifiable depuis `/admin/parametres`.
+  const { contactEmail } = await getSettings("general");
+
   return (
     <div className="mx-auto max-w-3xl px-4 py-12">
       <h1 className="font-display text-4xl font-bold tracking-tight">
@@ -16,7 +22,7 @@ export default function MentionsLegalesPage() {
           <h2 className="rule pt-4 font-display text-xl font-bold">Éditeur</h2>
           <p className="mt-2">
             Jobly — projet de démonstration. 42 rue de l'Exemple, 75000 Paris. Directeur de la
-            publication : Jobly. Contact : contact@jobly.example.
+            publication : Jobly. Contact : {contactEmail}.
           </p>
         </section>
 
@@ -31,9 +37,9 @@ export default function MentionsLegalesPage() {
         <section>
           <h2 className="rule pt-4 font-display text-xl font-bold">Nature du service</h2>
           <p className="mt-2">
-            Jobly est un agrégateur : les offres d'emploi affichées proviennent de sites tiers
-            (la « source » est mentionnée sur chaque offre). Jobly n'héberge aucune candidature :
-            le bouton « Postuler » redirige systématiquement vers le site source. Jobly n'est pas
+            Jobly est un agrégateur : les offres d'emploi affichées proviennent de sites tiers (la «
+            source » est mentionnée sur chaque offre). Jobly n'héberge aucune candidature : le
+            bouton « Postuler » redirige systématiquement vers le site source. Jobly n'est pas
             responsable du contenu des offres ni de leur disponibilité sur les sites sources.
           </p>
         </section>
@@ -44,9 +50,9 @@ export default function MentionsLegalesPage() {
             Les comptes candidats stockent : email, nom, école, année de diplôme, CV (fichier PDF),
             offres sauvegardées, alertes et historique de clics « Postuler ». Ces données servent
             uniquement au fonctionnement du service (espace personnel, alertes email). Vous pouvez
-            demander la suppression de votre compte et de vos données à tout moment :
-            contact@jobly.example. Conformément au RGPD, vous disposez d'un droit d'accès, de
-            rectification et d'effacement.
+            demander la suppression de votre compte et de vos données à tout moment :{contactEmail}.
+            Conformément au RGPD, vous disposez d'un droit d'accès, de rectification et
+            d'effacement.
           </p>
         </section>
 
