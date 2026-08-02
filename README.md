@@ -70,22 +70,22 @@ cron quotidien **supprime définitivement** (base + index) les offres publiées 
 y a plus de 2 mois (`OFFER_MAX_AGE_DAYS`), et un cron horaire marque `EXPIRED`
 les offres qui ont disparu de leur source. Lancement manuel : `npm run ingest:now`.
 
-| Source                         | Clé requise    | Couverture                                                    |
-| ------------------------------ | -------------- | ------------------------------------------------------------- |
-| **APEC**                       | Non            | ~1 400 alternances cadres, descriptions incluses (~218/cycle) |
-| **HelloWork**                  | Non            | 1er job board généraliste FR, via JSON-LD (~456/cycle)        |
-| **LinkedIn**                   | Non            | Endpoint invité public — stages + alternance tech FR          |
-| **Free-Work**                  | Non            | 100 % tech FR, télétravail et compétences structurés          |
-| **The Muse**                   | Non            | Repli — stages tech localisés en France                       |
-| **France Travail** (Offres v2) | Oui (OAuth)    | Exhaustive France — codes ROME tech                           |
-| **Indeed + Glassdoor**         | Oui (RapidAPI) | Google for Jobs, via JSearch                                  |
+| Source                         | Clé requise | Couverture                                                    |
+| ------------------------------ | ----------- | ------------------------------------------------------------- |
+| **APEC**                       | Non         | ~1 400 alternances cadres, descriptions incluses (~218/cycle) |
+| **HelloWork**                  | Non         | 1er job board généraliste FR, via JSON-LD (~456/cycle)        |
+| **LinkedIn**                   | Non         | Endpoint invité public — stages + alternance tech FR          |
+| **Free-Work**                  | Non         | 100 % tech FR, télétravail et compétences structurés          |
+| **The Muse**                   | Non         | Repli — stages tech localisés en France                       |
+| **France Travail** (Offres v2) | Oui (OAuth) | Exhaustive France — codes ROME tech                           |
+| **JSearch** (Google for Jobs)  | Oui         | 41 éditeurs : Indeed, Glassdoor, WTTJ, JobTeaser, Meteojob…   |
 
 **~700 offres par cycle sans aucune clé.** Panorama complet du marché, sources
 écartées et clés à fournir : **[`SOURCES.md`](SOURCES.md)**.
 
 - **France Travail** : application gratuite sur [francetravail.io](https://francetravail.io),
   souscrire à « Offres d'emploi v2 » → `FRANCE_TRAVAIL_CLIENT_ID` / `_SECRET`.
-- **Glassdoor** : clé gratuite [JSearch sur RapidAPI](https://rapidapi.com/letscrape-6bRBa3QguO5/api/jsearch) → `RAPIDAPI_KEY`.
+- **JSearch** : clé sur [openwebninja.com](https://www.openwebninja.com) → `JSEARCH_API_KEY`. Une seule clé ouvre des dizaines d'éditeurs, dont Welcome to the Jungle et JobTeaser, inaccessibles en direct.
 
 LinkedIn et HelloWork s'appuient sur des endpoints publics non contractuels : le
 parsing est défensif et une source en échec (throttling, changement de HTML)
