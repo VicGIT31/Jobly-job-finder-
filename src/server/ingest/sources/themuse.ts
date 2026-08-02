@@ -134,7 +134,7 @@ export class TheMuseConnector implements SourceConnector {
         let json: { results?: MuseJob[]; page_count?: number };
         try {
           const res = await fetch(url, {
-            headers: { "User-Agent": "NextStep/1.0" },
+            headers: { "User-Agent": "Jobly/1.0" },
             signal: AbortSignal.timeout(20_000),
           });
           if (res.status === 400) break; // au-delà de la dernière page
