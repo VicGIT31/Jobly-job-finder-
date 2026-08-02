@@ -1,4 +1,6 @@
 import type { RawOffer } from "@/server/ingest/normalize";
+import { inferEducationLevel, inferRemotePolicy } from "@/server/ingest/enrich";
+import { RateLimitedError, fetchJson } from "@/server/ingest/http";
 import { geocodeCityFull } from "./geocode";
 import { TECH_SECTOR, type SourceConnector } from "./types";
 
@@ -97,6 +99,8 @@ async function toRawOffer(job: MuseJob): Promise<RawOffer | null> {
     city: city.slice(0, 120),
     description: description.slice(0, 6000),
     contractType: "stage",
+    remotePolicy: inferRemotePolicy(job.name, city, description),
+    educationLevel: inferEducationLevel(job.name, description),
     sector: TECH_SECTOR,
     sourceUrl: url,
     scrapedAt: new Date(),
@@ -131,18 +135,20 @@ export class TheMuseConnector implements SourceConnector {
         url.searchParams.set("location", `${city}, France`);
         if (apiKey) url.searchParams.set("api_key", apiKey);
 
-        let json: { results?: MuseJob[]; page_count?: number };
+        // Retries, backoff et throttle mutualisés (voir `ingest/http.ts`).
+        let json: { results?: MuseJob[]; page_count?: number } | null;
         try {
-          const res = await fetch(url, {
+          json = await fetchJson<{ results?: MuseJob[]; page_count?: number }>(url, {
+            timeoutMs: 20_000,
             headers: { "User-Agent": "Jobly/1.0" },
-            signal: AbortSignal.timeout(20_000),
           });
-          if (res.status === 400) break; // au-delà de la dernière page
-          if (!res.ok) break; // ville sans résultats / throttling : on passe
-          json = (await res.json()) as { results?: MuseJob[]; page_count?: number };
-        } catch {
-          break; // erreur réseau sur cette ville : on continue avec les autres
+        } catch (err) {
+          // Hôte coupé par le disjoncteur : on rend l'acquis au lieu de tout perdre.
+          if (err instanceof RateLimitedError) return raw;
+          throw err;
         }
+        // 400 = au-delà de la dernière page ; null = ville sans résultats.
+        if (!json) break;
 
         for (const job of json.results ?? []) {
           if (seen.has(job.id)) continue;
