@@ -1,10 +1,12 @@
 import type { MetadataRoute } from "next";
 import { prisma } from "@/lib/prisma";
+import { getSettings, publicBaseUrl } from "@/lib/settings";
 
 export const dynamic = "force-dynamic";
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
-  const base = process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000";
+  // Domaine canonique éventuellement redéfini dans `/admin/seo`.
+  const base = publicBaseUrl(await getSettings("seo"));
 
   const [offers, companies] = await Promise.all([
     prisma.jobOffer.findMany({
