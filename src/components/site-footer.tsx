@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { JoblyLogo } from "@/components/brand/jobly-logo";
 
 export function SiteFooter() {
   return (
@@ -6,9 +7,7 @@ export function SiteFooter() {
       <div className="mx-auto max-w-6xl px-4 py-10">
         <div className="flex flex-col justify-between gap-6 sm:flex-row">
           <div>
-            <p className="text-lg font-bold">
-              NextStep<span className="text-cobalt">.</span>
-            </p>
+            <JoblyLogo size="sm" />
             <p className="mt-2 max-w-sm text-sm text-ink/70">
               Le job board qui vous ramène toujours à la source. Stages et alternances pour
               étudiants et jeunes diplômés.
@@ -33,7 +32,7 @@ export function SiteFooter() {
           </nav>
         </div>
         <div className="rule mt-6 pt-4 text-xs text-ink/50">
-          © {new Date().getFullYear()} NextStep — Les offres proviennent de sites partenaires ; les
+          © {new Date().getFullYear()} Jobly — Les offres proviennent de sites partenaires ; les
           candidatures se font toujours à la source.
         </div>
       </div>
