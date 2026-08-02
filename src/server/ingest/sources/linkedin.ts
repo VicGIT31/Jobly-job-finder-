@@ -1,6 +1,6 @@
 import type { RawOffer } from "@/server/ingest/normalize";
 import { inferContractType, inferEducationLevel, inferRemotePolicy } from "@/server/ingest/enrich";
-import { RateLimitedError, fetchText, mapPool } from "@/server/ingest/http";
+import { RateLimitedError, fetchText, isHostCircuitOpen, mapPool } from "@/server/ingest/http";
 import { geocodeCityFull } from "./geocode";
 import { TECH_KEYWORDS, TECH_SECTOR, type SourceConnector } from "./types";
 
@@ -30,10 +30,22 @@ const QUERIES: Array<{ keywords: string; internshipType: boolean }> = TECH_KEYWO
     { keywords: `alternance ${kw}`, internshipType: false },
   ],
 );
-const PAGES_PER_QUERY = 3;
+const PAGES_PER_QUERY = 2;
 const PAGE_SIZE = 25;
 /** Descriptions récupérées de front. Au-delà, LinkedIn rate-limite vite. */
 const DETAIL_CONCURRENCY = 4;
+/**
+ * Nombre de requêtes traitées avant d'aller chercher leurs descriptions.
+ *
+ * LinkedIn coupe autour de quelques dizaines de requêtes par cycle. En
+ * cherchant *toutes* les requêtes d'abord, on épuisait le quota pendant la
+ * recherche et il n'en restait plus pour les descriptions : le cycle rendait
+ * des centaines de cartes… et zéro offre exploitable. En alternant recherche et
+ * descriptions par petits lots, chaque lot produit des offres complètes, et une
+ * coupure en cours de route ne fait perdre que le lot en cours.
+ */
+const QUERY_BATCH = 4;
+const HOST = "www.linkedin.com";
 /** Espacement minimum entre deux requêtes LinkedIn (throttle poli). */
 const MIN_INTERVAL_MS = 300;
 /** `f_TPR=r604800` = publiées depuis 7 jours : on reste sur du frais. */
@@ -121,48 +133,75 @@ export class LinkedInConnector implements SourceConnector {
   }
 
   async fetchOffers(): Promise<RawOffer[]> {
-    const cards = await this.collectCards();
-    if (cards.length === 0) return [];
+    const offers: RawOffer[] = [];
+    const seen = new Set<string>();
 
-    // Descriptions + géocodage en parallèle borné. `mapPool` interrompt tout le
-    // pool si LinkedIn coupe, et renvoie ce qui a déjà été construit.
-    return mapPool(cards, DETAIL_CONCURRENCY, async (card) => {
-      const description = await fetchDescription(card.id);
-      if (!description) return null;
-      const geo = await geocodeCityFull(card.city);
+    // Alternance recherche → descriptions, lot par lot (voir QUERY_BATCH).
+    for (let i = 0; i < QUERIES.length; i += QUERY_BATCH) {
+      let cards: Array<Card & { alternance: boolean }>;
+      try {
+        cards = await this.collectCards(QUERIES.slice(i, i + QUERY_BATCH), seen);
+      } catch (err) {
+        if (err instanceof RateLimitedError) break;
+        throw err;
+      }
 
-      // Type déduit du titre + description (fiable), sinon de la requête d'origine.
-      const inferred = inferContractType(card.title, description.slice(0, 1200));
-      const contractType = inferred ?? (card.alternance ? "alternance" : "stage");
+      // Descriptions + géocodage en parallèle borné. `mapPool` interrompt tout
+      // le pool si LinkedIn coupe, et renvoie ce qui a déjà été construit.
+      offers.push(...(await mapPool(cards, DETAIL_CONCURRENCY, (card) => this.toOffer(card))));
 
-      const offer: RawOffer = {
-        title: card.title.slice(0, 200),
-        companyName: card.company.slice(0, 120),
-        city: card.city.slice(0, 120),
-        description,
-        contractType,
-        remotePolicy: inferRemotePolicy(card.title, card.city, description),
-        educationLevel: inferEducationLevel(card.title, description),
-        sector: TECH_SECTOR,
-        sourceUrl: card.url,
-        scrapedAt: new Date(),
-        ...(card.postedAt ? { publishedAt: new Date(card.postedAt) } : {}),
-        ...(card.logoUrl ? { companyLogoUrl: card.logoUrl } : {}),
-        ...(geo ? { latitude: geo.lat, longitude: geo.lng } : {}),
-      };
-      return offer;
-    });
+      // Hôte coupé : les lots suivants ne rendraient plus rien.
+      if (isHostCircuitOpen(HOST)) {
+        console.warn(
+          `[linkedin] Rate limit atteint — cycle arrêté avec ${offers.length} offre(s) complète(s).`,
+        );
+        break;
+      }
+    }
+
+    return offers;
+  }
+
+  /** Carte de résultat → offre brute complète (description, géo, enrichissement). */
+  private async toOffer(card: Card & { alternance: boolean }): Promise<RawOffer | null> {
+    const description = await fetchDescription(card.id);
+    if (!description) return null;
+    const geo = await geocodeCityFull(card.city);
+
+    // Type déduit du titre + description (fiable), sinon de la requête d'origine.
+    const inferred = inferContractType(card.title, description.slice(0, 1200));
+    const contractType = inferred ?? (card.alternance ? "alternance" : "stage");
+
+    return {
+      title: card.title.slice(0, 200),
+      companyName: card.company.slice(0, 120),
+      city: card.city.slice(0, 120),
+      description,
+      contractType,
+      remotePolicy: inferRemotePolicy(card.title, card.city, description),
+      educationLevel: inferEducationLevel(card.title, description),
+      sector: TECH_SECTOR,
+      sourceUrl: card.url,
+      scrapedAt: new Date(),
+      ...(card.postedAt ? { publishedAt: new Date(card.postedAt) } : {}),
+      ...(card.logoUrl ? { companyLogoUrl: card.logoUrl } : {}),
+      ...(geo ? { latitude: geo.lat, longitude: geo.lng } : {}),
+    };
   }
 
   /**
-   * Balaie toutes les requêtes tech et déduplique les cartes par identifiant
-   * LinkedIn. Une page vide ou en échec arrête la pagination de *cette* requête
-   * seulement ; un rate-limit arrête la collecte entière mais conserve l'acquis.
+   * Balaie un lot de requêtes et déduplique les cartes par identifiant LinkedIn
+   * (`seen` est partagé entre les lots). Une page vide ou en échec arrête la
+   * pagination de *cette* requête seulement ; un rate-limit remonte à l'appelant
+   * qui conserve les offres déjà construites.
    */
-  private async collectCards(): Promise<Array<Card & { alternance: boolean }>> {
+  private async collectCards(
+    queries: typeof QUERIES,
+    seen: Set<string>,
+  ): Promise<Array<Card & { alternance: boolean }>> {
     const cardsById = new Map<string, Card & { alternance: boolean }>();
 
-    for (const q of QUERIES) {
+    for (const q of queries) {
       for (let page = 0; page < PAGES_PER_QUERY; page++) {
         const url = new URL(SEARCH_URL);
         url.searchParams.set("keywords", q.keywords);
@@ -175,12 +214,9 @@ export class LinkedInConnector implements SourceConnector {
         try {
           html = await fetchText(url, HTTP);
         } catch (err) {
-          if (err instanceof RateLimitedError) {
-            console.warn(
-              `[linkedin] Rate limit atteint — collecte arrêtée avec ${cardsById.size} carte(s).`,
-            );
-            return [...cardsById.values()];
-          }
+          // Hôte coupé : on rend le lot partiel, dont les descriptions seront
+          // tentées avant que l'appelant n'arrête le cycle.
+          if (err instanceof RateLimitedError) return [...cardsById.values()];
           throw err;
         }
         if (!html) break;
@@ -190,7 +226,10 @@ export class LinkedInConnector implements SourceConnector {
 
         let fresh = 0;
         for (const c of cards) {
-          if (c.id && !cardsById.has(c.id)) {
+          // `seen` couvre tout le cycle : une offre déjà traitée dans un lot
+          // précédent ne repart pas chercher sa description.
+          if (c.id && !seen.has(c.id)) {
+            seen.add(c.id);
             cardsById.set(c.id, { ...c, alternance: !q.internshipType });
             fresh++;
           }
