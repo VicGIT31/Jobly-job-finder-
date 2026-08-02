@@ -1,17 +1,18 @@
 import Link from "next/link";
 import { JoblyLogo } from "@/components/brand/jobly-logo";
+import { getSettings } from "@/lib/settings";
 
-export function SiteFooter() {
+export async function SiteFooter() {
+  // Accroche modifiable depuis `/admin/parametres`.
+  const { tagline } = await getSettings("general");
+
   return (
     <footer className="mt-16 border-t border-ink/10 bg-surface">
       <div className="mx-auto max-w-6xl px-4 py-10">
         <div className="flex flex-col justify-between gap-6 sm:flex-row">
           <div>
             <JoblyLogo size="sm" />
-            <p className="mt-2 max-w-sm text-sm text-ink/70">
-              Le job board qui vous ramène toujours à la source. Stages et alternances pour
-              étudiants et jeunes diplômés.
-            </p>
+            <p className="mt-2 max-w-sm text-sm text-ink/70">{tagline}</p>
           </div>
           <nav
             aria-label="Liens de pied de page"
