@@ -1,4 +1,6 @@
 import type { RawOffer } from "@/server/ingest/normalize";
+import { inferContractType, inferEducationLevel, inferRemotePolicy } from "@/server/ingest/enrich";
+import { RateLimitedError, fetchJson } from "@/server/ingest/http";
 import { geocodeCityFull } from "./geocode";
 import { TECH_SECTOR, techQueries, type SourceConnector } from "./types";
 
@@ -48,14 +50,17 @@ async function toRawOffer(job: JSearchJob, sourceSite: string): Promise<RawOffer
   const description = job.job_description?.trim();
   if (!title || !company || !city || !url || !description || description.length < 20) return null;
 
-  const isAlt = /alternance|apprentissage|alternant/i.test(title);
+  // Le corps de l'annonce tranche mieux que le titre seul (« Stage/Alternance »).
+  const contractType = inferContractType(title, description.slice(0, 1200)) ?? "stage";
   const geo = await geocodeCityFull(city);
   return {
     title: title.slice(0, 200),
     companyName: company.slice(0, 120),
     city: city.slice(0, 120),
     description: description.slice(0, 8000),
-    contractType: isAlt ? "alternance" : "stage",
+    contractType,
+    remotePolicy: inferRemotePolicy(title, city, description),
+    educationLevel: inferEducationLevel(title, description),
     sector: TECH_SECTOR,
     sourceUrl: url,
     sourceSite,
@@ -91,17 +96,21 @@ export class JSearchConnector implements SourceConnector {
         url.searchParams.set("country", "fr");
         url.searchParams.set("date_posted", "month");
 
-        let data: { data?: JSearchJob[] };
+        let data: { data?: JSearchJob[] } | null;
         try {
-          const res = await fetch(url, {
+          data = await fetchJson<{ data?: JSearchJob[] }>(url, {
+            timeoutMs: 20_000,
+            // Quota gratuit serré : on espace les appels et on rejoue peu.
+            minIntervalMs: 1_200,
+            retries: 1,
             headers: { "X-RapidAPI-Key": key, "X-RapidAPI-Host": HOST },
-            signal: AbortSignal.timeout(20_000),
           });
-          if (!res.ok) break;
-          data = (await res.json()) as { data?: JSearchJob[] };
-        } catch {
-          break;
+        } catch (err) {
+          // Quota RapidAPI épuisé : on rend l'acquis et on repart au prochain cycle.
+          if (err instanceof RateLimitedError) return offers;
+          throw err;
         }
+        if (!data) break;
 
         for (const job of data.data ?? []) {
           const source = targetSource(job);
