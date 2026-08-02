@@ -1,7 +1,7 @@
 import { z } from "zod";
 import type { ContractType } from "@prisma/client";
 
-/** Contrats exposés au public : NextStep ne référence que stage et alternance. */
+/** Contrats exposés au public : Jobly ne référence que stage et alternance. */
 export const CONTRACT_TYPES = ["STAGE", "ALTERNANCE"] as const;
 export const REMOTE_POLICIES = ["ONSITE", "HYBRID", "FULL"] as const;
 export const EDUCATION_LEVELS = [
