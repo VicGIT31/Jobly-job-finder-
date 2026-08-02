@@ -61,10 +61,16 @@ model User {
   id             String    @id @default(cuid())
   name           String?
   email          String    @unique
+  // Identifiant de connexion alternatif à l'email (comptes internes). Optionnel
+  // et unique : la plupart des comptes candidats n'en ont pas.
+  username       String?   @unique
   emailVerified  DateTime?
   image          String?
   passwordHash   String?
   role           Role      @default(USER)
+  // Compte suspendu par un administrateur : la connexion est refusée tant que
+  // la date est renseignée (le compte et ses données sont conservés).
+  suspendedAt    DateTime?
 
   // Profil candidat
   school         String?
@@ -225,6 +231,59 @@ model ApplyClick {
   @@index([offerId, clickedAt])
   @@index([userId])
   @@map("apply_clicks")
+}
+
+/**
+ * Réglages du site pilotés depuis le panneau d'administration (SEO, contenu de
+ * la page d'accueil, paramètres d'ingestion). Un enregistrement par clé, valeur
+ * JSON libre : ajouter un réglage ne demande pas de migration.
+ */
+model SiteSetting {
+  key       String   @id
+  value     Json
+  updatedAt DateTime @updatedAt
+  updatedBy String?
+
+  @@map("site_settings")
+}
+
+/** Journal d'audit : trace toute action d'administration (qui, quoi, quand). */
+model AuditLog {
+  id         String   @id @default(cuid())
+  actorId    String?
+  actorEmail String?
+  action     String
+  target     String?
+  detail     String?
+  createdAt  DateTime @default(now())
+
+  @@index([createdAt])
+  @@index([action, createdAt])
+  @@map("audit_logs")
+}
+
+/**
+ * Bilan d'un passage de connecteur (une ligne par source et par cycle).
+ * `IngestLog` trace l'offre, `IngestRun` trace la santé de la source :
+ * volume, durée, erreur — c'est ce que le panneau admin surveille.
+ */
+model IngestRun {
+  id         String   @id @default(cuid())
+  sourceSite String
+  label      String
+  ok         Boolean
+  fetched    Int      @default(0)
+  created    Int      @default(0)
+  updated    Int      @default(0)
+  duplicates Int      @default(0)
+  rejected   Int      @default(0)
+  durationMs Int      @default(0)
+  error      String?
+  startedAt  DateTime @default(now())
+
+  @@index([startedAt])
+  @@index([sourceSite, startedAt])
+  @@map("ingest_runs")
 }
 
 model IngestLog {
