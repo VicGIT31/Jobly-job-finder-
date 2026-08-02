@@ -14,12 +14,12 @@ services:
       OFFER_FRESHNESS_DAYS: "7"
       OFFER_MAX_AGE_DAYS: "60"
       INGESTION_INTERVAL_MINUTES: "30"
-      # Sources d'offres réelles. LinkedIn + Indeed + The Muse marchent sans clé ;
-      # France Travail et Glassdoor (JSearch) s'activent via .env.
+      # Sources d'offres réelles. APEC, HelloWork, LinkedIn, Free-Work et The Muse
+      # marchent sans clé ; France Travail et JSearch s'activent via .env.
       FRANCE_TRAVAIL_CLIENT_ID: ${FRANCE_TRAVAIL_CLIENT_ID:-}
       FRANCE_TRAVAIL_CLIENT_SECRET: ${FRANCE_TRAVAIL_CLIENT_SECRET:-}
       THEMUSE_API_KEY: ${THEMUSE_API_KEY:-}
-      RAPIDAPI_KEY: ${RAPIDAPI_KEY:-}
+      JSEARCH_API_KEY: ${JSEARCH_API_KEY:-}
       AUTH_SECRET: docker-dev-secret-change-in-prod
       AUTH_URL: http://localhost:3000
       NEXT_PUBLIC_APP_URL: http://localhost:3000
