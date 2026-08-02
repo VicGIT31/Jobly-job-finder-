@@ -31,8 +31,8 @@ export default async function HomePage() {
             <span className="text-cobalt">alternance</span>
           </h1>
           <p className="mx-auto mt-4 max-w-xl text-lg text-ink/60">
-            NextStep agrège les meilleures offres du web et vous redirige toujours vers la source.
-            Pas de formulaire maison, pas de perte de temps.
+            Jobly agrège les meilleures offres du web et vous redirige toujours vers la source. Pas
+            de formulaire maison, pas de perte de temps.
           </p>
           <div className="mx-auto mt-8 max-w-2xl">
             <HomeSearch />
