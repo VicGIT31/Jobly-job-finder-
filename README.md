@@ -70,21 +70,28 @@ cron quotidien **supprime définitivement** (base + index) les offres publiées 
 y a plus de 2 mois (`OFFER_MAX_AGE_DAYS`), et un cron horaire marque `EXPIRED`
 les offres qui ont disparu de leur source. Lancement manuel : `npm run ingest:now`.
 
-| Source                         | Clé requise    | Couverture                                             |
-| ------------------------------ | -------------- | ------------------------------------------------------ |
-| **LinkedIn**                   | Non            | Endpoint invité public — stages + alternance tech FR   |
-| **Indeed**                     | Non            | Recherche publique fr.indeed.com — stages + alternance |
-| **France Travail** (Offres v2) | Oui (OAuth)    | Exhaustive France — codes ROME tech                    |
-| **Glassdoor** (via JSearch)    | Oui (RapidAPI) | Google for Jobs, éditeur Glassdoor                     |
-| **The Muse**                   | Non            | Repli — stages tech localisés en France                |
+| Source                         | Clé requise    | Couverture                                                    |
+| ------------------------------ | -------------- | ------------------------------------------------------------- |
+| **APEC**                       | Non            | ~1 400 alternances cadres, descriptions incluses (~218/cycle) |
+| **HelloWork**                  | Non            | 1er job board généraliste FR, via JSON-LD (~456/cycle)        |
+| **LinkedIn**                   | Non            | Endpoint invité public — stages + alternance tech FR          |
+| **Free-Work**                  | Non            | 100 % tech FR, télétravail et compétences structurés          |
+| **The Muse**                   | Non            | Repli — stages tech localisés en France                       |
+| **France Travail** (Offres v2) | Oui (OAuth)    | Exhaustive France — codes ROME tech                           |
+| **Indeed + Glassdoor**         | Oui (RapidAPI) | Google for Jobs, via JSearch                                  |
+
+**~700 offres par cycle sans aucune clé.** Panorama complet du marché, sources
+écartées et clés à fournir : **[`SOURCES.md`](SOURCES.md)**.
 
 - **France Travail** : application gratuite sur [francetravail.io](https://francetravail.io),
   souscrire à « Offres d'emploi v2 » → `FRANCE_TRAVAIL_CLIENT_ID` / `_SECRET`.
 - **Glassdoor** : clé gratuite [JSearch sur RapidAPI](https://rapidapi.com/letscrape-6bRBa3QguO5/api/jsearch) → `RAPIDAPI_KEY`.
 
-LinkedIn et Indeed s'appuient sur des endpoints publics non contractuels : le
+LinkedIn et HelloWork s'appuient sur des endpoints publics non contractuels : le
 parsing est défensif et une source en échec (throttling, changement de HTML)
-n'interrompt pas les autres.
+n'interrompt pas les autres. Quand un site publie ses offres au format
+**schema.org `JobPosting`** (cas de HelloWork), le connecteur lit ce bloc plutôt
+que le HTML : c'est un format standardisé, insensible aux refontes de maquette.
 
 Ajouter une source = implémenter `SourceConnector` dans
 `src/server/ingest/sources/` et l'enregistrer dans `run-ingestion.ts`.
@@ -108,6 +115,20 @@ politique de télétravail, niveau d'études et type de contrat sont déduits du
 titre et de la description — sans quoi ces facettes resteraient vides. Chaque
 passage de connecteur est archivé dans `ingest_runs` et surveillé dans
 `/admin/sources` (volume, durée, taux d'échec sur 24 h).
+
+### Classement par spécialité
+
+Chaque offre est rangée dans une spécialité tech — **IA & Data, Cybersécurité,
+Web, DevOps & Cloud, Software Engineering, Réseaux & Systèmes** — déduite du
+titre et de la description (`ingest/classify.ts`). Le secteur remonté par les
+sources vaut toujours « Tech / Informatique » : sans ce classement, aucun filtre
+par métier n'était possible.
+
+Le titre est décisif dès qu'il nomme un métier ; le corps ne sert qu'à
+départager. Sous le seuil de confiance, l'offre reste `AUTRE` plutôt que d'être
+mal rangée — sur le corpus réel, **83 % des offres sont classées**. La
+spécialité alimente le filtre de `/offres`, les facettes et les vignettes de la
+page d'accueil. Après modification des règles : `npm run specialty:backfill`.
 
 ## Stack
 
