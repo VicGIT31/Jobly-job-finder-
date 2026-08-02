@@ -29,7 +29,7 @@ enregistrant le clic. Design **sobre et épuré** (fond blanc, accent indigo).
 | Auth           | Auth.js (credentials bcrypt + OAuth Google/LinkedIn, JWT)       |
 | Fichiers       | S3-compatible (MinIO en dev), CV PDF ≤ 5 Mo (magic number)      |
 | Emails         | Provider abstrait (console en dev, Resend en prod)              |
-| Tests          | Vitest (31 tests)                                               |
+| Tests          | Vitest (51 tests)                                               |
 | Conteneurs     | docker-compose : app, postgres, redis, meilisearch, minio       |
 
 ---
@@ -54,14 +54,14 @@ Tout passe par **`src/server/ingest/`**.
 Interface `SourceConnector` (`types.ts`) : `isEnabled()` + `fetchOffers()`.
 Enregistrés dans **`run-ingestion.ts`** (orchestrateur).
 
-| Fichier             | Source                 | Clé requise    | Statut / notes                                                                                                              |
-| ------------------- | ---------------------- | -------------- | --------------------------------------------------------------------------------------------------------------------------- |
-| `linkedin.ts`       | LinkedIn               | **Non**        | ✅ Marche. Endpoint public « invité » (jobs-guest) + fetch description par offre. ~50-70 offres/cycle (rate-limit au-delà). |
-| `france-travail.ts` | France Travail v2      | Oui (OAuth)    | Prêt. Source officielle exhaustive, codes ROME tech. Vars `FRANCE_TRAVAIL_CLIENT_ID/SECRET`.                                |
-| `jsearch.ts`        | **Indeed + Glassdoor** | Oui (RapidAPI) | Prêt. Via JSearch/Google for Jobs. Attribution par offre (`indeed.com`/`glassdoor.fr`). Var `RAPIDAPI_KEY`.                 |
-| `themuse.ts`        | The Muse               | Non            | ✅ Marche mais volume FR faible (~1). Repli keyless.                                                                        |
-| `geocode.ts`        | —                      | —              | Géocodage villes FR → lat/lng (recherche géo).                                                                              |
-| `types.ts`          | —                      | —              | `SourceConnector`, `TECH_KEYWORDS` (24 métiers), `techQueries()`.                                                           |
+| Fichier             | Source                 | Clé requise    | Statut / notes                                                                                                                                                                                          |
+| ------------------- | ---------------------- | -------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `linkedin.ts`       | LinkedIn               | **Non**        | ✅ Marche. Endpoint public « invité » (jobs-guest). Recherche et descriptions **alternées par lots** (`QUERY_BATCH`) : un rate-limit en cours de cycle ne fait plus perdre les offres déjà construites. |
+| `france-travail.ts` | France Travail v2      | Oui (OAuth)    | Prêt. Source officielle exhaustive, codes ROME tech. Vars `FRANCE_TRAVAIL_CLIENT_ID/SECRET`.                                                                                                            |
+| `jsearch.ts`        | **Indeed + Glassdoor** | Oui (RapidAPI) | Prêt. Via JSearch/Google for Jobs. Attribution par offre (`indeed.com`/`glassdoor.fr`). Var `RAPIDAPI_KEY`.                                                                                             |
+| `themuse.ts`        | The Muse               | Non            | ✅ Marche mais volume FR faible (~1). Repli keyless.                                                                                                                                                    |
+| `geocode.ts`        | —                      | —              | Géocodage villes FR → lat/lng (recherche géo).                                                                                                                                                          |
+| `types.ts`          | —                      | —              | `SourceConnector`, `TECH_KEYWORDS` (24 métiers), `techQueries()`.                                                                                                                                       |
 
 > **Décision clé** : Indeed et Glassdoor **bloquent le scraping direct** (vérifié :
 > Indeed 403 depuis le conteneur, Glassdoor 403+captcha). Un connecteur Indeed
@@ -153,10 +153,16 @@ hero centré. Mode sombre neutre (`neutral-950/200`) avec bascule. Tokens dans
 - ⚠️ LinkedIn rate-limite au-delà de ~70 requêtes/cycle. Le disjoncteur de
   `ingest/http.ts` coupe désormais l'hôte proprement et **conserve les offres
   déjà collectées** ; la couverture massive vient toujours de France Travail.
-- ⚠️ **Migrations non appliquées** : `20260802103000_admin_panel_and_ingest_runs`
-  et `20260802104500_offer_moderation_block` ont été écrites hors ligne (Docker
-  était arrêté). Elles s'appliquent au prochain `docker compose up`
-  (`prisma migrate deploy`) ou via `npx prisma migrate deploy`.
+- ✅ Migrations `20260802103000_admin_panel_and_ingest_runs` et
+  `20260802104500_offer_moderation_block` **appliquées et vérifiées** en local.
+- ✅ Compte administrateur provisionné via `npm run admin:create` (identifiants
+  dans `.env`, non versionné) ; l'ancien compte de démonstration
+  `admin@nextstep.test` (mot de passe public) a été **rétrogradé en USER** —
+  il ouvrait sinon la console d'administration.
+- ⚠️ **LinkedIn rate-limite plus tôt qu'avant** (~20-30 requêtes/cycle observées).
+  Le connecteur alterne désormais recherche et descriptions par lots de 4
+  requêtes (`QUERY_BATCH`) : un cycle coupé rend quand même des offres complètes
+  (mesuré : 0 offre avant le correctif, 15 après, sur un cycle coupé).
 - ℹ️ Les identifiants d'infrastructure (PostgreSQL, MinIO, Meilisearch) sont
   restés `nextstep` : renommer aurait cassé les volumes Docker existants.
   Seule la marque visible a été renommée en Jobly.
