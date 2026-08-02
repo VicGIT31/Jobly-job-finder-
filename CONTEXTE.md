@@ -1,11 +1,11 @@
-# CONTEXTE — NextStep (état du projet & mémoire de travail)
+# CONTEXTE — Jobly (état du projet & mémoire de travail)
 
 > Document d'orientation destiné à reprendre le projet immédiatement, avec tout
 > le contexte des décisions et de l'architecture. À lire en premier.
 
 ---
 
-## 1. Qu'est-ce que NextStep
+## 1. Qu'est-ce que Jobly
 
 Agrégateur d'offres de **stage et d'alternance dans la tech en France**.
 Le site **n'héberge aucune candidature** : chaque offre vient d'une source réelle
@@ -19,18 +19,18 @@ enregistrant le clic. Design **sobre et épuré** (fond blanc, accent indigo).
 
 ## 2. Stack technique
 
-| Domaine        | Choix                                                          |
-| -------------- | -------------------------------------------------------------- |
-| Frontend       | Next.js 14 (App Router), TypeScript strict, Tailwind CSS       |
-| Data-fetching  | TanStack Query (client) + Server Components, filtres URL (nuqs)|
-| Base           | PostgreSQL + Prisma                                            |
-| Recherche      | Meilisearch (facettes, typo, géo)                             |
-| Cache / queues | Redis + BullMQ                                                 |
-| Auth           | Auth.js (credentials bcrypt + OAuth Google/LinkedIn, JWT)     |
-| Fichiers       | S3-compatible (MinIO en dev), CV PDF ≤ 5 Mo (magic number)    |
-| Emails         | Provider abstrait (console en dev, Resend en prod)            |
-| Tests          | Vitest (31 tests)                                             |
-| Conteneurs     | docker-compose : app, postgres, redis, meilisearch, minio     |
+| Domaine        | Choix                                                           |
+| -------------- | --------------------------------------------------------------- |
+| Frontend       | Next.js 14 (App Router), TypeScript strict, Tailwind CSS        |
+| Data-fetching  | TanStack Query (client) + Server Components, filtres URL (nuqs) |
+| Base           | PostgreSQL + Prisma                                             |
+| Recherche      | Meilisearch (facettes, typo, géo)                               |
+| Cache / queues | Redis + BullMQ                                                  |
+| Auth           | Auth.js (credentials bcrypt + OAuth Google/LinkedIn, JWT)       |
+| Fichiers       | S3-compatible (MinIO en dev), CV PDF ≤ 5 Mo (magic number)      |
+| Emails         | Provider abstrait (console en dev, Resend en prod)              |
+| Tests          | Vitest (31 tests)                                               |
+| Conteneurs     | docker-compose : app, postgres, redis, meilisearch, minio       |
 
 ---
 
@@ -39,6 +39,7 @@ enregistrant le clic. Design **sobre et épuré** (fond blanc, accent indigo).
 Tout passe par **`src/server/ingest/`**.
 
 ### Pipeline commun — `ingest.ts` → `processIngest(sourceSite, rawOffers[])`
+
 1. **Normalisation** (`normalize.ts`) : titres, villes, mapping des contrats.
 2. **Rejet hors périmètre** : tout ce qui n'est PAS stage/alternance est refusé
    (CDI, CDD, VIE…) et loggé — c'est la garantie « stage/alternance uniquement ».
@@ -49,17 +50,18 @@ Tout passe par **`src/server/ingest/`**.
    sourceSite du connecteur (utile pour l'agrégateur JSearch multi-sites).
 
 ### Connecteurs — `src/server/ingest/sources/`
+
 Interface `SourceConnector` (`types.ts`) : `isEnabled()` + `fetchOffers()`.
 Enregistrés dans **`run-ingestion.ts`** (orchestrateur).
 
-| Fichier             | Source              | Clé requise      | Statut / notes                                              |
-| ------------------- | ------------------- | ---------------- | ---------------------------------------------------------- |
-| `linkedin.ts`       | LinkedIn            | **Non**          | ✅ Marche. Endpoint public « invité » (jobs-guest) + fetch description par offre. ~50-70 offres/cycle (rate-limit au-delà). |
-| `france-travail.ts` | France Travail v2   | Oui (OAuth)      | Prêt. Source officielle exhaustive, codes ROME tech. Vars `FRANCE_TRAVAIL_CLIENT_ID/SECRET`. |
-| `jsearch.ts`        | **Indeed + Glassdoor** | Oui (RapidAPI)| Prêt. Via JSearch/Google for Jobs. Attribution par offre (`indeed.com`/`glassdoor.fr`). Var `RAPIDAPI_KEY`. |
-| `themuse.ts`        | The Muse            | Non              | ✅ Marche mais volume FR faible (~1). Repli keyless.        |
-| `geocode.ts`        | —                   | —                | Géocodage villes FR → lat/lng (recherche géo).             |
-| `types.ts`          | —                   | —                | `SourceConnector`, `TECH_KEYWORDS` (24 métiers), `techQueries()`. |
+| Fichier             | Source                 | Clé requise    | Statut / notes                                                                                                              |
+| ------------------- | ---------------------- | -------------- | --------------------------------------------------------------------------------------------------------------------------- |
+| `linkedin.ts`       | LinkedIn               | **Non**        | ✅ Marche. Endpoint public « invité » (jobs-guest) + fetch description par offre. ~50-70 offres/cycle (rate-limit au-delà). |
+| `france-travail.ts` | France Travail v2      | Oui (OAuth)    | Prêt. Source officielle exhaustive, codes ROME tech. Vars `FRANCE_TRAVAIL_CLIENT_ID/SECRET`.                                |
+| `jsearch.ts`        | **Indeed + Glassdoor** | Oui (RapidAPI) | Prêt. Via JSearch/Google for Jobs. Attribution par offre (`indeed.com`/`glassdoor.fr`). Var `RAPIDAPI_KEY`.                 |
+| `themuse.ts`        | The Muse               | Non            | ✅ Marche mais volume FR faible (~1). Repli keyless.                                                                        |
+| `geocode.ts`        | —                      | —              | Géocodage villes FR → lat/lng (recherche géo).                                                                              |
+| `types.ts`          | —                      | —              | `SourceConnector`, `TECH_KEYWORDS` (24 métiers), `techQueries()`.                                                           |
 
 > **Décision clé** : Indeed et Glassdoor **bloquent le scraping direct** (vérifié :
 > Indeed 403 depuis le conteneur, Glassdoor 403+captcha). Un connecteur Indeed
@@ -68,6 +70,7 @@ Enregistrés dans **`run-ingestion.ts`** (orchestrateur).
 > WTTJ : clé Algolia chiffrée côté serveur, non réutilisable. JobTeaser : auth-gated.
 
 ### Automatisation — `src/workers/index.ts` (BullMQ)
+
 - `ingest-offers` : **toutes les 30 min** + **au démarrage** du worker.
 - `offer-freshness` : horaire → `EXPIRED` si non revue depuis `OFFER_FRESHNESS_DAYS`.
 - `purge-old-offers` : quotidien 3 h → **suppression définitive** (base + index)
@@ -80,6 +83,7 @@ Lancement manuel : `npm run ingest:now` (script `scripts/ingest-now.ts`).
 ---
 
 ## 4. Redirection « Postuler »
+
 - `GET /go/:offerId` (`src/app/go/[offerId]/route.ts`) : vérifie que l'offre est
   ACTIVE, enregistre le clic (`apply_clicks`), répond **302** vers `sourceUrl`
   (le **vrai lien de l'annonce**). Offre expirée → page dédiée + 6 similaires.
@@ -89,6 +93,7 @@ Lancement manuel : `npm run ingest:now` (script `scripts/ingest-now.ts`).
 ---
 
 ## 5. Design (« sobre & épuré »)
+
 Fond blanc `#FFF`, encre `#171717`, **un seul accent indigo `#4F46E5`**, gris
 `neutral-50` pour les surfaces. Police unique **Inter**. Cards arrondies à bordure
 légère + ombre douce au survol, badges arrondis pour les contrats, header sticky,
@@ -112,6 +117,14 @@ hero centré. Mode sombre neutre (`neutral-950/200`) avec bascule. Tokens dans
    Seed réduit aux 3 comptes démo (plus aucune offre fictive).
 6. **Indeed + Glassdoor** via JSearch, **volume maximisé** (`TECH_KEYWORDS`),
    **purge +2 mois**, **redirections en nouvel onglet**.
+7. **Renommage en Jobly + marque** : logo interactif (monogramme « J »-flèche,
+   parallaxe au pointeur), favicon, image Open Graph, palette de marque.
+8. **Scraping durci** : couche HTTP commune (`ingest/http.ts` — retry/backoff,
+   throttle et disjoncteur par hôte, pool borné), enrichissement des offres
+   (`ingest/enrich.ts`), sources en parallèle, bilans archivés (`ingest_runs`).
+9. **Console d'administration complète** (`/admin`) : tableau de bord, offres,
+   entreprises, utilisateurs, sources, SEO, paramètres, journal d'audit.
+   Compte admin provisionné **hors dépôt** (`npm run admin:create` ← `.env`).
 
 ---
 
@@ -137,8 +150,16 @@ hero centré. Mode sombre neutre (`neutral-950/200`) avec bascule. Tokens dans
 - ⚠️ LinkedIn et JSearch reposent sur des endpoints **non contractuels** : parsing
   défensif, échec propre par source. Un changement de HTML LinkedIn peut casser le
   connecteur → à surveiller.
-- ⚠️ LinkedIn rate-limite au-delà de ~70 requêtes/cycle : le volume keyless
-  plafonne ; la couverture massive vient de France Travail (avec clé).
+- ⚠️ LinkedIn rate-limite au-delà de ~70 requêtes/cycle. Le disjoncteur de
+  `ingest/http.ts` coupe désormais l'hôte proprement et **conserve les offres
+  déjà collectées** ; la couverture massive vient toujours de France Travail.
+- ⚠️ **Migrations non appliquées** : `20260802103000_admin_panel_and_ingest_runs`
+  et `20260802104500_offer_moderation_block` ont été écrites hors ligne (Docker
+  était arrêté). Elles s'appliquent au prochain `docker compose up`
+  (`prisma migrate deploy`) ou via `npx prisma migrate deploy`.
+- ℹ️ Les identifiants d'infrastructure (PostgreSQL, MinIO, Meilisearch) sont
+  restés `nextstep` : renommer aurait cassé les volumes Docker existants.
+  Seule la marque visible a été renommée en Jobly.
 
 ---
 
@@ -148,6 +169,10 @@ hero centré. Mode sombre neutre (`neutral-950/200`) avec bascule. Tokens dans
   orchestrateur `run-ingestion.ts`, crons `src/workers/index.ts`).
 - Redirection : `src/app/go/[offerId]/route.ts` + `src/server/apply/redirect.ts`.
 - Recherche : `src/server/search/` + `src/app/api/search/route.ts` + `src/components/offers/`.
-- Design : `tailwind.config.ts`, `src/app/globals.css`, `src/components/`.
+- Design & marque : `tailwind.config.ts`, `src/app/globals.css`,
+  `src/components/brand/jobly-logo.tsx`, `src/app/icon.svg`, `src/app/opengraph-image.tsx`.
+- Administration : `src/app/admin/`, `src/server/admin/` (`guard.ts`, `audit.ts`,
+  `actions.ts`), réglages `src/lib/settings.ts`, composants `src/components/admin/`.
+- Compte admin : `scripts/create-admin.ts` (identifiants dans `.env`, jamais versionnés).
 - Config env : `.env.example`, `docker-compose.yml`.
 - Docs : `README.md`, `MARCHE_A_SUIVRE.md`, `CONTEXTE.md`, `DECISIONS.md`.
