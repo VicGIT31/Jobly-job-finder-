@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { auth } from "@/lib/auth";
+import { JoblyLogo } from "@/components/brand/jobly-logo";
 import { ThemeToggle } from "@/components/theme-toggle";
 
 export async function SiteHeader() {
@@ -15,8 +16,8 @@ export async function SiteHeader() {
         Aller au contenu
       </a>
       <div className="mx-auto flex max-w-6xl items-center justify-between gap-4 px-4 py-3">
-        <Link href="/" className="text-xl font-bold tracking-tight">
-          NextStep<span className="text-cobalt">.</span>
+        <Link href="/" aria-label="Jobly — accueil" className="rounded-lg">
+          <JoblyLogo size="md" />
         </Link>
         <nav aria-label="Navigation principale" className="flex items-center gap-1 sm:gap-2">
           <Link
