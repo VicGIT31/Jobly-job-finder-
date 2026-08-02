@@ -15,8 +15,8 @@ export default function MentionsLegalesPage() {
         <section>
           <h2 className="rule pt-4 font-display text-xl font-bold">Éditeur</h2>
           <p className="mt-2">
-            NextStep — projet de démonstration. 42 rue de l'Exemple, 75000 Paris. Directeur de la
-            publication : NextStep. Contact : contact@nextstep.example.
+            Jobly — projet de démonstration. 42 rue de l'Exemple, 75000 Paris. Directeur de la
+            publication : Jobly. Contact : contact@jobly.example.
           </p>
         </section>
 
@@ -31,9 +31,9 @@ export default function MentionsLegalesPage() {
         <section>
           <h2 className="rule pt-4 font-display text-xl font-bold">Nature du service</h2>
           <p className="mt-2">
-            NextStep est un agrégateur : les offres d'emploi affichées proviennent de sites tiers
-            (la « source » est mentionnée sur chaque offre). NextStep n'héberge aucune candidature :
-            le bouton « Postuler » redirige systématiquement vers le site source. NextStep n'est pas
+            Jobly est un agrégateur : les offres d'emploi affichées proviennent de sites tiers
+            (la « source » est mentionnée sur chaque offre). Jobly n'héberge aucune candidature :
+            le bouton « Postuler » redirige systématiquement vers le site source. Jobly n'est pas
             responsable du contenu des offres ni de leur disponibilité sur les sites sources.
           </p>
         </section>
@@ -45,7 +45,7 @@ export default function MentionsLegalesPage() {
             offres sauvegardées, alertes et historique de clics « Postuler ». Ces données servent
             uniquement au fonctionnement du service (espace personnel, alertes email). Vous pouvez
             demander la suppression de votre compte et de vos données à tout moment :
-            contact@nextstep.example. Conformément au RGPD, vous disposez d'un droit d'accès, de
+            contact@jobly.example. Conformément au RGPD, vous disposez d'un droit d'accès, de
             rectification et d'effacement.
           </p>
         </section>
@@ -53,7 +53,7 @@ export default function MentionsLegalesPage() {
         <section>
           <h2 className="rule pt-4 font-display text-xl font-bold">Cookies</h2>
           <p className="mt-2">
-            NextStep utilise uniquement des cookies techniques de session (authentification). Aucun
+            Jobly utilise uniquement des cookies techniques de session (authentification). Aucun
             cookie publicitaire ou de mesure d'audience tierce n'est déposé.
           </p>
         </section>
