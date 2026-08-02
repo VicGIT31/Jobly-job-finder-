@@ -1,6 +1,7 @@
 import { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { slugifyFr } from "@/lib/slug";
+import { classifySpecialty } from "./classify";
 import { computeDedupHash } from "./dedup";
 import { normalizeOffer, rawOfferSchema, NormalizationError } from "./normalize";
 import { syncOffersToSearch } from "@/server/search/sync";
@@ -64,6 +65,9 @@ export async function processIngest(
     }
 
     const dedupHash = computeDedupHash(normalized.title, normalized.companyName, normalized.city);
+    // Spécialité déduite ici plutôt que dans chaque connecteur : toute source,
+    // présente ou future, est classée de la même façon.
+    const specialty = classifySpecialty(normalized.title, normalized.description);
     // Attribution : la source portée par l'offre prime (agrégateur multi-sites).
     const offerSourceSite = normalized.sourceSite ?? sourceSite;
 
@@ -82,6 +86,8 @@ export async function processIngest(
         data: {
           lastSeenAt: new Date(),
           scrapedAt: normalized.scrapedAt,
+          // Reclassement à chaque passage : profite des règles affinées depuis.
+          specialty,
           // Une offre bloquée en modération reste hors ligne, même si la source
           // continue de la publier : seule la console peut la débloquer.
           ...(existing.blockedAt ? {} : { status: "ACTIVE" as const }),
@@ -146,6 +152,7 @@ export async function processIngest(
           salaryMax: normalized.salaryMax,
           educationLevel: normalized.educationLevel,
           sector: normalized.sector,
+          specialty,
           sourceUrl: normalized.sourceUrl,
           sourceSite: offerSourceSite,
           scrapedAt: normalized.scrapedAt,
