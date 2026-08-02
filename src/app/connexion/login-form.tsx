@@ -26,7 +26,7 @@ export function LoginForm() {
     });
     setPending(false);
     if (result?.error) {
-      setError("Email ou mot de passe incorrect.");
+      setError("Identifiant ou mot de passe incorrect.");
     } else {
       router.push(callbackUrl);
       router.refresh();
@@ -54,13 +54,15 @@ export function LoginForm() {
       <form onSubmit={onSubmit} className="flex flex-col gap-3">
         <div>
           <label htmlFor="email" className="mb-1 block text-sm font-semibold">
-            Email
+            Email ou identifiant
           </label>
+          {/* `type="text"` volontairement : le champ accepte aussi un identifiant
+              court, que la validation HTML `type="email"` rejetterait. */}
           <input
             id="email"
             name="email"
-            type="email"
-            autoComplete="email"
+            type="text"
+            autoComplete="username"
             required
             className="input-ink"
           />
