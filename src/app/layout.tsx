@@ -14,11 +14,12 @@ const inter = Inter({
 export const metadata: Metadata = {
   metadataBase: new URL(process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000"),
   title: {
-    default: "NextStep — Le job board des étudiants et jeunes diplômés",
-    template: "%s · NextStep",
+    default: "Jobly — Le job board des étudiants et jeunes diplômés",
+    template: "%s · Jobly",
   },
   description:
-    "Stages et alternances : NextStep agrège les meilleures offres pour étudiants et jeunes diplômés et vous redirige directement vers la source.",
+    "Stages et alternances : Jobly agrège les meilleures offres pour étudiants et jeunes diplômés et vous redirige directement vers la source.",
+  applicationName: "Jobly",
 };
 
 export default function RootLayout({
