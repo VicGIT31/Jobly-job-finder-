@@ -42,9 +42,9 @@ export async function register(formData: FormData): Promise<ActionResult> {
 
   await sendEmail({
     to: email,
-    subject: "Bienvenue sur NextStep 🎯",
-    text: `Bonjour ${parsed.data.name},\n\nBienvenue sur NextStep ! Créez vos alertes et sauvegardez vos offres préférées : ${APP_URL()}/offres\n\nÀ très vite.`,
-    html: `<p>Bonjour ${parsed.data.name},</p><p>Bienvenue sur NextStep ! <a href="${APP_URL()}/offres">Explorez les offres</a>, créez vos alertes et sauvegardez vos favorites.</p><p>À très vite.</p>`,
+    subject: "Bienvenue sur Jobly 🎯",
+    text: `Bonjour ${parsed.data.name},\n\nBienvenue sur Jobly ! Créez vos alertes et sauvegardez vos offres préférées : ${APP_URL()}/offres\n\nÀ très vite.`,
+    html: `<p>Bonjour ${parsed.data.name},</p><p>Bienvenue sur Jobly ! <a href="${APP_URL()}/offres">Explorez les offres</a>, créez vos alertes et sauvegardez vos favorites.</p><p>À très vite.</p>`,
   });
 
   return {
@@ -67,7 +67,7 @@ export async function sendVerificationEmail(email: string): Promise<void> {
   const url = `${APP_URL()}/api/verifier-email?token=${token}&email=${encodeURIComponent(email)}`;
   await sendEmail({
     to: email,
-    subject: "Confirmez votre adresse email — NextStep",
+    subject: "Confirmez votre adresse email — Jobly",
     text: `Confirmez votre adresse en ouvrant ce lien (valable 24 h) :\n${url}`,
     html: `<p>Confirmez votre adresse email en cliquant sur ce lien (valable 24 h) :</p><p><a href="${url}">Confirmer mon adresse</a></p>`,
   });
@@ -96,7 +96,7 @@ export async function requestPasswordReset(formData: FormData): Promise<ActionRe
     const url = `${APP_URL()}/reinitialiser/${token}?email=${encodeURIComponent(email)}`;
     await sendEmail({
       to: email,
-      subject: "Réinitialisation de votre mot de passe — NextStep",
+      subject: "Réinitialisation de votre mot de passe — Jobly",
       text: `Réinitialisez votre mot de passe (lien valable 1 h) :\n${url}\n\nSi vous n'êtes pas à l'origine de cette demande, ignorez cet email.`,
       html: `<p>Réinitialisez votre mot de passe (lien valable 1 h) :</p><p><a href="${url}">Choisir un nouveau mot de passe</a></p><p>Si vous n'êtes pas à l'origine de cette demande, ignorez cet email.</p>`,
     });
