@@ -7,7 +7,7 @@ export const dynamic = "force-dynamic";
 export const metadata: Metadata = {
   title: "Les entreprises qui recrutent",
   description:
-    "Découvrez les entreprises qui recrutent des étudiants et jeunes diplômés sur NextStep.",
+    "Découvrez les entreprises qui recrutent des étudiants et jeunes diplômés sur Jobly.",
 };
 
 export default async function EntreprisesPage() {
