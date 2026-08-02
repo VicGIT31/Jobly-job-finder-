@@ -5,6 +5,7 @@ import bcrypt from "bcryptjs";
 import { z } from "zod";
 import { prisma } from "@/lib/prisma";
 import { sendEmail } from "@/lib/email";
+import { getSettings } from "@/lib/settings";
 
 const APP_URL = () => process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000";
 
@@ -18,6 +19,13 @@ const registerSchema = z.object({
 
 /** Inscription email/mot de passe + envoi de l'email de vérification. */
 export async function register(formData: FormData): Promise<ActionResult> {
+  // Fermeture des inscriptions pilotée depuis `/admin/parametres`. Le contrôle
+  // est ici, côté serveur : masquer le formulaire ne suffirait pas.
+  const { registrationOpen } = await getSettings("general");
+  if (!registrationOpen) {
+    return { ok: false, error: "Les inscriptions sont momentanément fermées." };
+  }
+
   const parsed = registerSchema.safeParse({
     name: formData.get("name"),
     email: formData.get("email"),
