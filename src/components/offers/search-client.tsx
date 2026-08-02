@@ -10,6 +10,8 @@ import {
   EDUCATION_LABELS,
   REMOTE_LABELS,
   SORTS,
+  SPECIALTY_ICONS,
+  SPECIALTY_LABELS,
   TOP_CITY_RADIUS_KM,
 } from "@/lib/search-params";
 import { OfferCard } from "./offer-card";
@@ -25,6 +27,7 @@ const searchStateParsers = {
   contrat: parseAsString.withDefault(""),
   remote: parseAsString.withDefault(""),
   niveau: parseAsString.withDefault(""),
+  specialite: parseAsString.withDefault(""),
   secteur: parseAsString.withDefault(""),
   datePub: parseAsString,
   tri: parseAsStringLiteral(SORTS).withDefault("date"),
@@ -51,6 +54,7 @@ export function SearchClient({
     if (state.contrat) params.set("contrat", state.contrat);
     if (state.remote) params.set("remote", state.remote);
     if (state.niveau) params.set("niveau", state.niveau);
+    if (state.specialite) params.set("specialite", state.specialite);
     if (state.secteur) params.set("secteur", state.secteur);
     if (state.datePub) params.set("datePub", state.datePub);
     if (state.tri !== "date") params.set("tri", state.tri);
@@ -71,7 +75,7 @@ export function SearchClient({
   const result = data ?? initialResult;
 
   const toggleFacet = useCallback(
-    (facet: "contrat" | "remote" | "niveau" | "secteur", value: string) => {
+    (facet: "contrat" | "remote" | "niveau" | "specialite" | "secteur", value: string) => {
       const current = csv(state[facet]);
       const next = current.includes(value)
         ? current.filter((v) => v !== value)
@@ -104,6 +108,15 @@ export function SearchClient({
         remove: () => toggleFacet("niveau", n),
       });
     }
+    for (const sp of csv(state.specialite)) {
+      tickets.push({
+        key: `specialite-${sp}`,
+        label: `${SPECIALTY_ICONS[sp as keyof typeof SPECIALTY_ICONS] ?? ""} ${
+          SPECIALTY_LABELS[sp as keyof typeof SPECIALTY_LABELS] ?? sp
+        }`.trim(),
+        remove: () => toggleFacet("specialite", sp),
+      });
+    }
     for (const s of csv(state.secteur)) {
       tickets.push({ key: `secteur-${s}`, label: s, remove: () => toggleFacet("secteur", s) });
     }
@@ -134,6 +147,7 @@ export function SearchClient({
           contrat: csv(state.contrat),
           remote: csv(state.remote),
           niveau: csv(state.niveau),
+          specialite: csv(state.specialite),
           secteur: csv(state.secteur),
           datePub: state.datePub ?? undefined,
           rayon: state.rayon ?? undefined,
