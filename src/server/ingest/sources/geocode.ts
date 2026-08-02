@@ -80,7 +80,7 @@ export async function geocodeCityFull(city: string): Promise<{ lat: number; lng:
     url.searchParams.set("type", "municipality");
     url.searchParams.set("limit", "1");
     const res = await fetch(url, {
-      headers: { "User-Agent": "NextStep/1.0" },
+      headers: { "User-Agent": "Jobly/1.0" },
       signal: AbortSignal.timeout(8_000),
       cache: "no-store",
     });
