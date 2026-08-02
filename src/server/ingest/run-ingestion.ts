@@ -1,7 +1,10 @@
 import { prisma } from "@/lib/prisma";
 import { processIngest, type IngestSummary } from "./ingest";
 import { resetHttpState } from "./http";
+import { ApecConnector } from "./sources/apec";
 import { FranceTravailConnector } from "./sources/france-travail";
+import { FreeWorkConnector } from "./sources/free-work";
+import { HelloWorkConnector } from "./sources/hellowork";
 import { JSearchConnector } from "./sources/jsearch";
 import { LinkedInConnector } from "./sources/linkedin";
 import { TheMuseConnector } from "./sources/themuse";
@@ -9,7 +12,10 @@ import type { SourceConnector } from "./sources/types";
 
 const CONNECTORS: SourceConnector[] = [
   new FranceTravailConnector(),
+  new ApecConnector(),
   new LinkedInConnector(),
+  new HelloWorkConnector(),
+  new FreeWorkConnector(),
   new JSearchConnector(),
   new TheMuseConnector(),
 ];
