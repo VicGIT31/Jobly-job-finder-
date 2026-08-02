@@ -1,4 +1,6 @@
 import type { RawOffer } from "@/server/ingest/normalize";
+import { inferEducationLevel, inferRemotePolicy } from "@/server/ingest/enrich";
+import { RateLimitedError, fetchWithRetry, mapPool } from "@/server/ingest/http";
 import { geocodeCityFull } from "./geocode";
 import { TECH_SECTOR, type SourceConnector } from "./types";
 
@@ -83,13 +85,15 @@ async function searchPage(
 ): Promise<{ offers: FTOffer[]; total: number }> {
   const url = new URL(SEARCH_URL);
   for (const [k, v] of Object.entries(params)) url.searchParams.set(k, v);
-  const res = await fetch(url, {
+  // L'API France Travail throttle les partenaires : retries + backoff mutualisés.
+  const res = await fetchWithRetry(url, {
     headers: { Authorization: `Bearer ${token}` },
-    signal: AbortSignal.timeout(20_000),
+    timeoutMs: 20_000,
+    minIntervalMs: 400,
   });
   // 204 = aucune offre ; 206 = résultat partiel (pagination) ; 200 = complet.
-  if (res.status === 204) return { offers: [], total: 0 };
-  if (!res.ok) throw new Error(`France Travail search ${res.status} : ${await res.text()}`);
+  // `null` = échec définitif après retries → page ignorée, pagination arrêtée.
+  if (!res || res.status === 204) return { offers: [], total: 0 };
   const total = Number(res.headers.get("Content-Range")?.split("/")[1] ?? "0");
   const json = (await res.json()) as { resultats?: FTOffer[] };
   return { offers: json.resultats ?? [], total };
@@ -122,6 +126,8 @@ async function toRawOffer(o: FTOffer): Promise<RawOffer | null> {
     city: city.slice(0, 120),
     description,
     contractType,
+    remotePolicy: inferRemotePolicy(o.intitule, city, description),
+    educationLevel: inferEducationLevel(o.intitule, description),
     sector: TECH_SECTOR,
     sourceUrl: url,
     scrapedAt: new Date(),
@@ -157,15 +163,17 @@ export class FranceTravailConnector implements SourceConnector {
     for (const base of queries) {
       // Pagination par tranches de 150 (limite API : range 0-149, etc.).
       for (let start = 0; start < 1050; start += 150) {
-        const { offers, total } = await searchPage(token, {
-          ...base,
-          range: `${start}-${start + 149}`,
-        });
-        for (const o of offers) {
-          const mapped = await toRawOffer(o);
-          if (mapped) raw.push(mapped);
+        let page: { offers: FTOffer[]; total: number };
+        try {
+          page = await searchPage(token, { ...base, range: `${start}-${start + 149}` });
+        } catch (err) {
+          // Partenaire throttlé : on rend l'acquis plutôt que de perdre le cycle.
+          if (err instanceof RateLimitedError) return raw;
+          throw err;
         }
-        if (start + 150 >= total || offers.length === 0) break;
+        // Le géocodage de secours est réseau : on mappe en parallèle borné.
+        raw.push(...(await mapPool(page.offers, 6, (o) => toRawOffer(o))));
+        if (start + 150 >= page.total || page.offers.length === 0) break;
       }
     }
     return raw;
