@@ -178,6 +178,10 @@ model JobOffer {
   lastSeenAt     DateTime
   dedupHash      String         @unique
   status         OfferStatus    @default(ACTIVE)
+  // Offre bloquée par un modérateur. Sans ce drapeau, l'ingestion suivante la
+  // retrouverait sur la source et la repasserait en ACTIVE : la modération
+  // serait annulée toute seule au bout de 30 minutes.
+  blockedAt      DateTime?
 
   publishedAt    DateTime       @default(now())
 
@@ -190,6 +194,7 @@ model JobOffer {
   @@index([status, publishedAt])
   @@index([companyId, status])
   @@index([lastSeenAt])
+  @@index([blockedAt])
   @@map("job_offers")
 }
 
