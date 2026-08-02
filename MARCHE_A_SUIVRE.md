@@ -1,4 +1,4 @@
-# Marche à suivre — NextStep
+# Marche à suivre — Jobly
 
 Guide pas à pas pour lancer le site, activer toutes les sources d'offres et
 exploiter le projet au quotidien.
@@ -26,13 +26,30 @@ docker compose up --build # build + lance app, postgres, redis, meilisearch, min
 - Arrêter : `docker compose down` (les données sont conservées).
 - Repartir de zéro (base vide) : `docker compose down -v` puis `docker compose up --build`.
 
-### Comptes de démonstration
+> ℹ️ Les identifiants d'infrastructure (utilisateur PostgreSQL, MinIO, clé
+> Meilisearch) sont restés `nextstep` : ce sont des noms techniques liés aux
+> volumes Docker existants, les renommer aurait cassé la base en place.
 
-| Rôle  | Email                 | Mot de passe |
-| ----- | --------------------- | ------------ |
-| Admin | admin@nextstep.test   | nextstep123  |
-| User  | camille@nextstep.test | nextstep123  |
-| User  | theo@nextstep.test    | nextstep123  |
+### Comptes de démonstration (candidats)
+
+| Rôle | Email              | Mot de passe |
+| ---- | ------------------ | ------------ |
+| User | camille@jobly.test | jobly123     |
+| User | theo@jobly.test    | jobly123     |
+
+### Compte administrateur
+
+Le seed ne crée **aucun** compte admin (son mot de passe est public). Renseigne
+`ADMIN_USERNAME` / `ADMIN_PASSWORD` (et éventuellement `ADMIN_EMAIL`) dans
+`.env` — fichier **non versionné** — puis :
+
+```bash
+docker compose exec app npm run admin:create   # ou `npm run admin:create` hors Docker
+```
+
+Le provisionnement est aussi rejoué à chaque `docker compose up` si les
+variables sont présentes. Connexion sur `/connexion` avec **l'email ou
+l'identifiant**, puis console sur **`/admin`**.
 
 ---
 
@@ -56,7 +73,7 @@ Par défaut, seules **LinkedIn** et **The Muse** tournent (sans clé). Pour ajou
 ### 3.b Indeed + Glassdoor (via JSearch / RapidAPI)
 
 1. Créer un compte sur **https://rapidapi.com** (gratuit).
-2. S'abonner à l'API **JSearch** (plan *Basic*, gratuit ≈ 200 requêtes/mois) :
+2. S'abonner à l'API **JSearch** (plan _Basic_, gratuit ≈ 200 requêtes/mois) :
    https://rapidapi.com/letscrape-6bRBa3QguO5/api/jsearch
 3. Copier la clé **X-RapidAPI-Key** dans `.env` :
    ```
@@ -94,15 +111,37 @@ dans un **nouvel onglet**.
 
 ## 5. Fonctionnement automatique (rien à faire)
 
-| Tâche              | Fréquence        | Effet                                                      |
-| ----------------- | ---------------- | --------------------------------------------------------- |
-| `ingest-offers`   | 30 min + démarrage | Récupère les nouvelles offres, déduplique, indexe        |
-| `offer-freshness` | toutes les heures  | Marque `EXPIRED` les offres disparues de leur source     |
-| `purge-old-offers`| tous les jours à 3 h | **Supprime** définitivement les offres de +2 mois       |
-| `daily-alerts`    | tous les jours à 8 h | Envoie les alertes email des recherches sauvegardées    |
+| Tâche              | Fréquence            | Effet                                                |
+| ------------------ | -------------------- | ---------------------------------------------------- |
+| `ingest-offers`    | 30 min + démarrage   | Récupère les nouvelles offres, déduplique, indexe    |
+| `offer-freshness`  | toutes les heures    | Marque `EXPIRED` les offres disparues de leur source |
+| `purge-old-offers` | tous les jours à 3 h | **Supprime** définitivement les offres de +2 mois    |
+| `daily-alerts`     | tous les jours à 8 h | Envoie les alertes email des recherches sauvegardées |
 
-Réglages dans `.env` : `INGESTION_INTERVAL_MINUTES`, `OFFER_FRESHNESS_DAYS`,
-`OFFER_MAX_AGE_DAYS`.
+Réglages dans `.env` : `INGESTION_INTERVAL_MINUTES` (fréquence du cron).
+La durée de vie des offres et l'activation de l'ingestion se pilotent désormais
+depuis **`/admin/parametres`** ; les variables `OFFER_FRESHNESS_DAYS` et
+`OFFER_MAX_AGE_DAYS` ne servent plus que de valeurs de repli.
+
+---
+
+## 5.b La console d'administration
+
+Tout se gère depuis **`/admin`** (réservé au rôle ADMIN) :
+
+| Section             | Usage                                                                       |
+| ------------------- | --------------------------------------------------------------------------- |
+| Tableau de bord     | Indicateurs, derniers cycles d'ingestion, lancement manuel, ré-indexation   |
+| Offres              | Bloquer durablement une offre, la supprimer                                 |
+| Entreprises         | Mettre en avant sur l'accueil, supprimer                                    |
+| Utilisateurs        | Rôle, suspension, validation d'email, mot de passe, suppression             |
+| Sources & ingestion | Santé des connecteurs sur 24 h, journal offre par offre                     |
+| SEO                 | Titres, description, canonique, indexation, `robots.txt`, vérifications     |
+| Paramètres          | Accroche, contact, inscriptions, mode maintenance, durées de vie des offres |
+| Journal             | Historique de toutes les actions d'administration                           |
+
+> Le **mode maintenance** coupe le site pour les visiteurs mais laisse passer
+> `/connexion` et `/admin` : on peut toujours se connecter pour le désactiver.
 
 ---
 
