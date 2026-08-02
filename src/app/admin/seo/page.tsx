@@ -57,9 +57,10 @@ export default async function AdminSeoPage() {
             description="Ce que voient les moteurs de recherche et les réseaux sociaux."
           />
           <div className="grid gap-4 sm:grid-cols-2">
-            <Field name="siteName" label="Nom du site" defaultValue={seo.siteName} />
+            <Field required name="siteName" label="Nom du site" defaultValue={seo.siteName} />
             <Field
               name="titleTemplate"
+              required
               label="Gabarit de titre"
               defaultValue={seo.titleTemplate}
               hint="« %s » est remplacé par le titre de la page."
@@ -67,6 +68,7 @@ export default async function AdminSeoPage() {
             <div className="sm:col-span-2">
               <Field
                 name="defaultTitle"
+                required
                 label="Titre par défaut (accueil)"
                 defaultValue={seo.defaultTitle}
                 hint="Idéalement 50 à 60 caractères."
@@ -75,6 +77,7 @@ export default async function AdminSeoPage() {
             <div className="sm:col-span-2">
               <Field
                 name="description"
+                required
                 label="Méta-description"
                 defaultValue={seo.description}
                 rows={3}
