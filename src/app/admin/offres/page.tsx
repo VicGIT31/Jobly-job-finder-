@@ -1,7 +1,8 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { prisma } from "@/lib/prisma";
-import { toggleOfferStatus } from "@/server/admin/actions";
+import { deleteOffer, toggleOfferStatus } from "@/server/admin/actions";
+import { ConfirmButton } from "@/components/admin/confirm-button";
 import { CONTRACT_LABELS } from "@/lib/search-params";
 
 export const metadata: Metadata = { title: "Admin — Modération des offres" };
@@ -151,19 +152,35 @@ export default async function AdminOffresPage({
                 <td className="py-2.5 pr-4">
                   {offer.status === "ACTIVE" ? (
                     <span className="stamp !border-cobalt !text-[10px] text-cobalt">Active</span>
+                  ) : offer.blockedAt ? (
+                    <span
+                      className="stamp !text-[10px] opacity-80"
+                      title="Bloquée en modération : l'ingestion ne la réactivera pas."
+                    >
+                      Bloquée
+                    </span>
                   ) : (
                     <span className="stamp !text-[10px] opacity-60">Expirée</span>
                   )}
                 </td>
                 <td className="py-2.5">
-                  <form action={toggleOfferStatus.bind(null, offer.id)}>
-                    <button
-                      type="submit"
-                      className="text-sm font-semibold text-cobalt underline-offset-4 hover:underline"
-                    >
-                      {offer.status === "ACTIVE" ? "Désactiver" : "Réactiver"}
-                    </button>
-                  </form>
+                  <div className="flex flex-wrap items-center gap-3">
+                    <form action={toggleOfferStatus.bind(null, offer.id)}>
+                      <button
+                        type="submit"
+                        className="text-sm font-semibold text-cobalt underline-offset-4 hover:underline"
+                      >
+                        {offer.status === "ACTIVE" ? "Désactiver" : "Réactiver"}
+                      </button>
+                    </form>
+                    <form action={deleteOffer.bind(null, offer.id)}>
+                      <ConfirmButton
+                        message={`Supprimer définitivement « ${offer.title} » ? L'offre disparaîtra de la base et de l'index.`}
+                      >
+                        Supprimer
+                      </ConfirmButton>
+                    </form>
+                  </div>
                 </td>
               </tr>
             ))}
@@ -177,6 +194,12 @@ export default async function AdminOffresPage({
           </tbody>
         </table>
       </div>
+
+      <p className="mt-6 text-xs text-ink/45">
+        « Désactiver » bloque l&apos;offre durablement : l&apos;ingestion la retrouvera sur la
+        source mais ne la remettra pas en ligne. « Supprimer » l&apos;efface de la base — si la
+        source la publie encore, elle sera ré-ingérée au cycle suivant.
+      </p>
 
       {totalPages > 1 && (
         <nav
