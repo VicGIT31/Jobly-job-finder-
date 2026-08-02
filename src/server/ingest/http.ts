@@ -41,6 +41,10 @@ export function randomUserAgent(): string {
 
 export type FetchOptions = {
   headers?: Record<string, string>;
+  /** Méthode HTTP. Défaut GET ; certaines API de recherche exigent POST. */
+  method?: "GET" | "POST";
+  /** Corps de requête (POST). Rejoué tel quel à chaque tentative. */
+  body?: string;
   /** Millisecondes avant abandon d'une tentative. Défaut 15 s. */
   timeoutMs?: number;
   /** Nombre de tentatives supplémentaires après le premier essai. Défaut 2. */
@@ -132,6 +136,8 @@ export async function fetchWithRetry(
     let response: Response | null = null;
     try {
       response = await fetch(target, {
+        method: config.method ?? "GET",
+        ...(config.body !== undefined ? { body: config.body } : {}),
         headers: {
           "User-Agent": randomUserAgent(),
           "Accept-Language": "fr-FR,fr;q=0.9,en;q=0.8",
