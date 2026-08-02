@@ -18,13 +18,13 @@ const activeOffer: ApplyOffer = {
 describe("resolveApply — /go/:offerId", () => {
   it("redirige vers la source et enregistre le clic (user connecté)", async () => {
     const deps = makeDeps(activeOffer);
-    const result = await resolveApply(deps, "offer-1", "user-42", "https://nextstep.test/offres/x");
+    const result = await resolveApply(deps, "offer-1", "user-42", "https://jobly.test/offres/x");
 
     expect(result).toEqual({ kind: "redirect", url: activeOffer.sourceUrl });
     expect(deps.recordClick).toHaveBeenCalledExactlyOnceWith({
       offerId: "offer-1",
       userId: "user-42",
-      referer: "https://nextstep.test/offres/x",
+      referer: "https://jobly.test/offres/x",
     });
   });
 
