@@ -29,7 +29,7 @@ enregistrant le clic. Design **sobre et épuré** (fond blanc, accent indigo).
 | Auth           | Auth.js (credentials bcrypt + OAuth Google/LinkedIn, JWT)       |
 | Fichiers       | S3-compatible (MinIO en dev), CV PDF ≤ 5 Mo (magic number)      |
 | Emails         | Provider abstrait (console en dev, Resend en prod)              |
-| Tests          | Vitest (51 tests)                                               |
+| Tests          | Vitest (75 tests)                                               |
 | Conteneurs     | docker-compose : app, postgres, redis, meilisearch, minio       |
 
 ---
@@ -54,20 +54,22 @@ Tout passe par **`src/server/ingest/`**.
 Interface `SourceConnector` (`types.ts`) : `isEnabled()` + `fetchOffers()`.
 Enregistrés dans **`run-ingestion.ts`** (orchestrateur).
 
-| Fichier             | Source                 | Clé requise    | Statut / notes                                                                                                                                                                                          |
-| ------------------- | ---------------------- | -------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `linkedin.ts`       | LinkedIn               | **Non**        | ✅ Marche. Endpoint public « invité » (jobs-guest). Recherche et descriptions **alternées par lots** (`QUERY_BATCH`) : un rate-limit en cours de cycle ne fait plus perdre les offres déjà construites. |
-| `france-travail.ts` | France Travail v2      | Oui (OAuth)    | Prêt. Source officielle exhaustive, codes ROME tech. Vars `FRANCE_TRAVAIL_CLIENT_ID/SECRET`.                                                                                                            |
-| `jsearch.ts`        | **Indeed + Glassdoor** | Oui (RapidAPI) | Prêt. Via JSearch/Google for Jobs. Attribution par offre (`indeed.com`/`glassdoor.fr`). Var `RAPIDAPI_KEY`.                                                                                             |
-| `themuse.ts`        | The Muse               | Non            | ✅ Marche mais volume FR faible (~1). Repli keyless.                                                                                                                                                    |
-| `geocode.ts`        | —                      | —              | Géocodage villes FR → lat/lng (recherche géo).                                                                                                                                                          |
-| `types.ts`          | —                      | —              | `SourceConnector`, `TECH_KEYWORDS` (24 métiers), `techQueries()`.                                                                                                                                       |
+| Fichier             | Source              | Clé requise | Statut / notes                                                                                                                                                                                          |
+| ------------------- | ------------------- | ----------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `linkedin.ts`       | LinkedIn            | **Non**     | ✅ Marche. Endpoint public « invité » (jobs-guest). Recherche et descriptions **alternées par lots** (`QUERY_BATCH`) : un rate-limit en cours de cycle ne fait plus perdre les offres déjà construites. |
+| `france-travail.ts` | France Travail v2   | Oui (OAuth) | Prêt. Source officielle exhaustive, codes ROME tech. Vars `FRANCE_TRAVAIL_CLIENT_ID/SECRET`.                                                                                                            |
+| `jsearch.ts`        | **Google for Jobs** | Oui         | ✅ Actif. API OpenWeb Ninja (`JSEARCH_API_KEY`). **41 éditeurs** mesurés : Indeed, Glassdoor, WTTJ, JobTeaser, Meteojob, L'Étudiant, France Travail. Attribution par domaine du lien de candidature.    |
+| `apec.ts`           | APEC                | Non         | ✅ Actif. API JSON du moteur de recherche (POST), descriptions incluses. ~218 offres/cycle.                                                                                                             |
+| `hellowork.ts`      | HelloWork           | Non         | ✅ Actif. JSON-LD `JobPosting` des pages d'offres (insensible aux refontes). ~456 offres/cycle.                                                                                                         |
+| `free-work.ts`      | Free-Work           | Non         | ✅ Actif. API publique API Platform, 100 % tech FR, télétravail et compétences structurés.                                                                                                              |
+| `themuse.ts`        | The Muse            | Non         | ✅ Marche mais volume FR faible (~1). Repli keyless.                                                                                                                                                    |
+| `geocode.ts`        | —                   | —           | Géocodage villes FR → lat/lng (recherche géo).                                                                                                                                                          |
+| `types.ts`          | —                   | —           | `SourceConnector`, `TECH_KEYWORDS` (24 métiers), `techQueries()`.                                                                                                                                       |
 
-> **Décision clé** : Indeed et Glassdoor **bloquent le scraping direct** (vérifié :
-> Indeed 403 depuis le conteneur, Glassdoor 403+captcha). Un connecteur Indeed
-> direct a été tenté puis **abandonné** (renvoyait 0). La voie légale retenue est
-> **JSearch** (agrège Google for Jobs, inclut Indeed + Glassdoor avec vrais liens).
-> WTTJ : clé Algolia chiffrée côté serveur, non réutilisable. JobTeaser : auth-gated.
+> **Décision clé** : Indeed, Glassdoor, WTTJ et JobTeaser bloquent le scraping
+> direct (403/captcha, clé Algolia chiffrée, auth école). Tous sont désormais
+> couverts par **JSearch** (Google for Jobs), qui republie leurs annonces avec le
+> vrai lien de candidature — 41 éditeurs mesurés sur un cycle. Voir `SOURCES.md`.
 
 ### Automatisation — `src/workers/index.ts` (BullMQ)
 
