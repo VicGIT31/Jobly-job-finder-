@@ -51,7 +51,7 @@ export async function sendDailyAlerts(
 
     await sendEmail({
       to: search.user.email,
-      subject: `NextStep — ${matches.length} nouvelle${matches.length > 1 ? "s" : ""} offre${matches.length > 1 ? "s" : ""} pour « ${search.name} »`,
+      subject: `Jobly — ${matches.length} nouvelle${matches.length > 1 ? "s" : ""} offre${matches.length > 1 ? "s" : ""} pour « ${search.name} »`,
       text: `Bonjour ${search.user.name ?? ""},\n\nVotre alerte « ${search.name} » a trouvé ${matches.length} nouvelle(s) offre(s) :\n\n${lines.join("\n\n")}\n\nGérer vos alertes : ${APP_URL()}/mon-espace/alertes`,
       html: `<p>Bonjour ${search.user.name ?? ""},</p><p>Votre alerte « <strong>${search.name}</strong> » a trouvé ${matches.length} nouvelle(s) offre(s) :</p><ul>${htmlItems}</ul><p><a href="${APP_URL()}/mon-espace/alertes">Gérer vos alertes</a></p>`,
     });
