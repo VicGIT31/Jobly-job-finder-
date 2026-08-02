@@ -61,8 +61,12 @@ const DEFAULTS = {
   rateLimitStatuses: [429, 503],
 };
 
-/** Nombre d'échecs de rate-limit avant coupure de l'hôte pour le cycle. */
-const CIRCUIT_THRESHOLD = 3;
+/**
+ * Nombre d'échecs de rate-limit avant coupure de l'hôte pour le cycle.
+ * Assez haut pour absorber quelques 429 isolés (une seule requête rejouée deux
+ * fois en compte déjà trois), assez bas pour ne pas s'acharner.
+ */
+const CIRCUIT_THRESHOLD = 6;
 
 /** Dernier instant d'appel par hôte, pour le throttle. */
 const lastCallAt = new Map<string, number>();
@@ -141,7 +145,12 @@ export async function fetchWithRetry(
       response = null;
     }
 
-    if (response?.ok) return response;
+    if (response?.ok) {
+      // Un succès efface un rate-limit passé : seuls les échecs *rapprochés*
+      // doivent faire tomber le disjoncteur, pas leur cumul sur tout le cycle.
+      rateLimitHits.delete(host);
+      return response;
+    }
 
     if (response && config.rateLimitStatuses.includes(response.status)) {
       const hits = (rateLimitHits.get(host) ?? 0) + 1;
