@@ -120,7 +120,7 @@ export async function processIngest(
         name: normalized.companyName,
         slug: companySlug,
         logoUrl: normalized.companyLogoUrl,
-        description: `${normalized.companyName} recrute sur NextStep. Cette fiche a été créée automatiquement lors de l'ingestion et sera enrichie par nos équipes.`,
+        description: `${normalized.companyName} recrute sur Jobly. Cette fiche a été créée automatiquement lors de l'ingestion et sera enrichie par nos équipes.`,
         sector: normalized.sector,
         size: "Non renseigné",
       },
