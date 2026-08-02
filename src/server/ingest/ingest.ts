@@ -82,7 +82,9 @@ export async function processIngest(
         data: {
           lastSeenAt: new Date(),
           scrapedAt: normalized.scrapedAt,
-          status: "ACTIVE",
+          // Une offre bloquée en modération reste hors ligne, même si la source
+          // continue de la publier : seule la console peut la débloquer.
+          ...(existing.blockedAt ? {} : { status: "ACTIVE" as const }),
           sourceUrl: normalized.sourceUrl,
           sourceSite: offerSourceSite,
           // La date de publication réelle prime sur la date d'ingestion
