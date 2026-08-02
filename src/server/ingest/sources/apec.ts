@@ -37,9 +37,18 @@ type ApecOffer = {
   numeroOffre?: string;
   datePublication?: string;
   salaireTexte?: string;
-  latitude?: number;
-  longitude?: number;
+  // L'APEC renvoie les coordonnées tantôt en nombre, tantôt en chaîne selon
+  // les annonces : à convertir avant validation, sinon l'offre est rejetée.
+  latitude?: number | string;
+  longitude?: number | string;
 };
+
+/** Coordonnée APEC → nombre exploitable, ou `null` si absente/illisible. */
+function toCoord(value: number | string | undefined): number | null {
+  if (value == null) return null;
+  const parsed = typeof value === "number" ? value : Number(value);
+  return Number.isFinite(parsed) ? parsed : null;
+}
 
 type ApecResponse = { resultats?: ApecOffer[]; totalCount?: number };
 
@@ -89,10 +98,9 @@ async function toRawOffer(offer: ApecOffer): Promise<RawOffer | null> {
   if (!city) return null;
 
   // Coordonnées fournies par l'APEC en priorité, géocodage en secours.
-  const geo =
-    offer.latitude != null && offer.longitude != null
-      ? { lat: offer.latitude, lng: offer.longitude }
-      : await geocodeCityFull(city);
+  const lat = toCoord(offer.latitude);
+  const lng = toCoord(offer.longitude);
+  const geo = lat != null && lng != null ? { lat, lng } : await geocodeCityFull(city);
 
   // Le filtre APEC ne renvoie que de l'alternance ; le titre peut préciser
   // « stage » sur certaines annonces mixtes.
