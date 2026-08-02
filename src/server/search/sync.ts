@@ -18,6 +18,7 @@ export type OfferDocument = {
   salaryMax: number | null;
   educationLevel: string;
   sector: string;
+  specialty: string;
   sourceSite: string;
   status: string;
   publishedAtTs: number;
@@ -51,6 +52,7 @@ export function offerToDocument(offer: OfferWithCompany): OfferDocument {
     salaryMax: offer.salaryMax,
     educationLevel: offer.educationLevel,
     sector: offer.sector,
+    specialty: offer.specialty,
     sourceSite: offer.sourceSite,
     status: offer.status,
     publishedAtTs: offer.publishedAt.getTime(),
