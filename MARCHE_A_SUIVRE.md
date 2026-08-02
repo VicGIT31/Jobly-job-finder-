@@ -70,15 +70,18 @@ Par défaut, seules **LinkedIn** et **The Muse** tournent (sans clé). Pour ajou
    FRANCE_TRAVAIL_CLIENT_SECRET=xxxxxxxx
    ```
 
-### 3.b Indeed + Glassdoor (via JSearch / RapidAPI)
+### 3.b JSearch — Indeed, Glassdoor, WTTJ, JobTeaser… (Google for Jobs)
 
-1. Créer un compte sur **https://rapidapi.com** (gratuit).
-2. S'abonner à l'API **JSearch** (plan _Basic_, gratuit ≈ 200 requêtes/mois) :
-   https://rapidapi.com/letscrape-6bRBa3QguO5/api/jsearch
-3. Copier la clé **X-RapidAPI-Key** dans `.env` :
+1. Créer un compte sur **https://www.openwebninja.com**.
+2. Récupérer la clé d'API (en-tête `X-API-Key`).
+3. La copier dans `.env` :
    ```
-   RAPIDAPI_KEY=xxxxxxxx
+   JSEARCH_API_KEY=xxxxxxxx
    ```
+
+Une seule clé ouvre **41 éditeurs** mesurés : Indeed, Glassdoor, Welcome to the
+Jungle, JobTeaser, Meteojob, L'Étudiant, France Travail, BeBee, WIZBII… Chaque
+annonce garde le lien de candidature réel chez son éditeur.
 
 ### 3.c Appliquer les clés
 
