@@ -1,12 +1,26 @@
 import { prisma } from "@/lib/prisma";
+import { getSettings } from "@/lib/settings";
 import { removeOffersFromSearch, syncOffersToSearch } from "@/server/search/sync";
 
 /**
+ * Durées de vie des offres. Le réglage saisi dans `/admin/parametres` prime ;
+ * les variables d'environnement historiques servent de valeur de repli tant
+ * qu'aucun réglage n'a été enregistré.
+ */
+async function lifetimeDays(): Promise<{ freshness: number; maxAge: number }> {
+  const settings = await getSettings("ingestion");
+  return {
+    freshness: settings.freshnessDays || Number(process.env.OFFER_FRESHNESS_DAYS ?? 7),
+    maxAge: settings.maxAgeDays || Number(process.env.OFFER_MAX_AGE_DAYS ?? 60),
+  };
+}
+
+/**
  * Cron de fraîcheur : toute offre ACTIVE non revue par le scraping depuis
- * OFFER_FRESHNESS_DAYS jours passe en EXPIRED (et l'index est mis à jour).
+ * N jours passe en EXPIRED (et l'index est mis à jour).
  */
 export async function expireStaleOffers(now = new Date()): Promise<number> {
-  const days = Number(process.env.OFFER_FRESHNESS_DAYS ?? 7);
+  const { freshness: days } = await lifetimeDays();
   const threshold = new Date(now.getTime() - days * 86_400_000);
 
   const stale = await prisma.jobOffer.findMany({
@@ -36,11 +50,11 @@ export async function expireStaleOffers(now = new Date()): Promise<number> {
 
 /**
  * Purge des vieilles offres : suppression définitive (base + index) de toute
- * offre publiée il y a plus de OFFER_MAX_AGE_DAYS jours (2 mois par défaut).
+ * offre publiée il y a plus de N jours (2 mois par défaut).
  * Les clics et sauvegardes liés sont supprimés en cascade (FK onDelete: Cascade).
  */
 export async function purgeOldOffers(now = new Date()): Promise<number> {
-  const days = Number(process.env.OFFER_MAX_AGE_DAYS ?? 60);
+  const { maxAge: days } = await lifetimeDays();
   const threshold = new Date(now.getTime() - days * 86_400_000);
 
   const old = await prisma.jobOffer.findMany({
