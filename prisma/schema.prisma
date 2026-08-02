@@ -42,6 +42,22 @@ enum OfferStatus {
   EXPIRED
 }
 
+/**
+ * Spécialité tech d'une offre, déduite du titre et de la description
+ * (`server/ingest/classify.ts`). Le secteur remonté par les sources vaut
+ * toujours « Tech / Informatique » : c'est cette classification qui permet de
+ * filtrer par métier. `AUTRE` = aucun signal suffisant, pas de devinette.
+ */
+enum TechSpecialty {
+  IA
+  CYBERSECURITE
+  WEB
+  DEVOPS
+  SOFTWARE
+  RESEAUX
+  AUTRE
+}
+
 enum AlertFrequency {
   DAILY
   WEEKLY
@@ -170,6 +186,7 @@ model JobOffer {
   salaryMax      Int?
   educationLevel EducationLevel @default(INDIFFERENT)
   sector         String
+  specialty      TechSpecialty  @default(AUTRE)
 
   // Provenance scraping
   sourceUrl      String
@@ -195,6 +212,7 @@ model JobOffer {
   @@index([companyId, status])
   @@index([lastSeenAt])
   @@index([blockedAt])
+  @@index([specialty, status])
   @@map("job_offers")
 }
 
