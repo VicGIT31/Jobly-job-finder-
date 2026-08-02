@@ -1,3 +1,5 @@
+import { fetchJson } from "@/server/ingest/http";
+
 /**
  * Géocodage léger des principales villes françaises (lat/lng réels).
  * Suffisant pour la recherche géo « à moins de X km » sur les offres ingérées ;
@@ -55,17 +57,25 @@ export function geocodeCity(city: string): { lat: number; lng: number } | null {
   return CITY_COORDS[base] ?? null;
 }
 
+type Coords = { lat: number; lng: number };
+
 // Cache mémoire du géocodage distant (y compris les échecs, pour ne pas
 // réinterroger l'API à chaque cycle d'ingestion sur les mêmes villes).
-const remoteCache = new Map<string, { lat: number; lng: number } | null>();
+const remoteCache = new Map<string, Coords | null>();
+// Requêtes en vol : avec l'ingestion parallèle, dix offres de la même ville
+// arrivent ensemble. Sans cette table, on lancerait dix appels identiques.
+const inFlight = new Map<string, Promise<Coords | null>>();
 
 /**
  * Géocodage complet : table statique d'abord, puis l'API officielle
  * adresse.data.gouv.fr (gratuite, sans clé) pour les communes de périphérie
  * (Blagnac, Issy-les-Moulineaux…). Indispensable à la recherche « à moins de
  * X km » : sans coordonnées, une offre est invisible pour le filtre géo.
+ *
+ * Les appels distants passent par la couche HTTP commune (retry, backoff,
+ * throttle) et sont dédupliqués par ville, y compris entre appels concurrents.
  */
-export async function geocodeCityFull(city: string): Promise<{ lat: number; lng: number } | null> {
+export async function geocodeCityFull(city: string): Promise<Coords | null> {
   const local = geocodeCity(city);
   if (local) return local;
   if (!city) return null;
@@ -73,27 +83,34 @@ export async function geocodeCityFull(city: string): Promise<{ lat: number; lng:
   const key = stripAccents(city).toLowerCase().trim();
   if (remoteCache.has(key)) return remoteCache.get(key) ?? null;
 
-  let coords: { lat: number; lng: number } | null = null;
+  const pending = inFlight.get(key);
+  if (pending) return pending;
+
+  const request = geocodeRemote(city)
+    .then((coords) => {
+      remoteCache.set(key, coords);
+      return coords;
+    })
+    .finally(() => inFlight.delete(key));
+
+  inFlight.set(key, request);
+  return request;
+}
+
+async function geocodeRemote(city: string): Promise<Coords | null> {
+  const url = new URL("https://api-adresse.data.gouv.fr/search/");
+  url.searchParams.set("q", city);
+  url.searchParams.set("type", "municipality");
+  url.searchParams.set("limit", "1");
+
   try {
-    const url = new URL("https://api-adresse.data.gouv.fr/search/");
-    url.searchParams.set("q", city);
-    url.searchParams.set("type", "municipality");
-    url.searchParams.set("limit", "1");
-    const res = await fetch(url, {
-      headers: { "User-Agent": "Jobly/1.0" },
-      signal: AbortSignal.timeout(8_000),
-      cache: "no-store",
-    });
-    if (res.ok) {
-      const json = (await res.json()) as {
-        features?: Array<{ geometry?: { coordinates?: [number, number] } }>;
-      };
-      const c = json.features?.[0]?.geometry?.coordinates;
-      if (c && c.length === 2) coords = { lat: c[1], lng: c[0] };
-    }
+    const json = await fetchJson<{
+      features?: Array<{ geometry?: { coordinates?: [number, number] } }>;
+    }>(url, { timeoutMs: 8_000, minIntervalMs: 120, headers: { "User-Agent": "Jobly/1.0" } });
+    const c = json?.features?.[0]?.geometry?.coordinates;
+    if (c && c.length === 2) return { lat: c[1], lng: c[0] };
   } catch {
-    // Échec réseau : on cache le null du cycle courant, retenté au prochain process.
+    // API coupée par le disjoncteur : on renvoie null, retenté au prochain cycle.
   }
-  remoteCache.set(key, coords);
-  return coords;
+  return null;
 }
