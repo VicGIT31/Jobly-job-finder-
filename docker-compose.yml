@@ -29,7 +29,7 @@ services:
       S3_SECRET_KEY: nextstep-secret
       S3_BUCKET_CV: nextstep-cv
       EMAIL_PROVIDER: console
-      EMAIL_FROM: NextStep <no-reply@nextstep.example>
+      EMAIL_FROM: Jobly <no-reply@jobly.example>
     depends_on:
       postgres:
         condition: service_healthy
