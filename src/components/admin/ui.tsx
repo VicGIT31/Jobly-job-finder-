@@ -74,6 +74,7 @@ export function Field({
   type = "text",
   rows,
   placeholder,
+  required,
 }: {
   name: string;
   label: string;
@@ -82,11 +83,18 @@ export function Field({
   type?: string;
   rows?: number;
   placeholder?: string;
+  /**
+   * Les réglages validés par Zod côté serveur sont rejetés en bloc si un champ
+   * obligatoire est vide ; `required` évite d'envoyer un formulaire qui serait
+   * silencieusement ignoré.
+   */
+  required?: boolean;
 }) {
   return (
     <div>
       <label htmlFor={name} className="mb-1 block text-sm font-semibold">
         {label}
+        {required && <span className="ml-1 text-cobalt">*</span>}
       </label>
       {rows ? (
         <textarea
@@ -95,6 +103,7 @@ export function Field({
           rows={rows}
           defaultValue={defaultValue}
           placeholder={placeholder}
+          required={required}
           className="input-ink !h-auto py-2 font-mono text-xs"
         />
       ) : (
@@ -104,6 +113,7 @@ export function Field({
           type={type}
           defaultValue={defaultValue}
           placeholder={placeholder}
+          required={required}
           className="input-ink"
         />
       )}
