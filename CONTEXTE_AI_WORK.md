@@ -137,28 +137,27 @@ candidature). À enrichir si ces colonnes deviennent nécessaires.
   `sourceUrl`/offre liée, à agréger), soit le multi-pays (§3.1) pour avoir
   un axe pays pertinent.
 
----
+### 2.7 Premières sources internationales réelles — spec §13, §32-33, §54
 
-## 3. Ce qui N'A PAS été fait (le reste du cahier des charges)
+**Le changement le plus significatif de cette session.** Jusqu'ici Jobly
+n'ingérait que du stage/alternance français. Deux connecteurs internationaux
+réels sont maintenant actifs, testés en conditions réelles (premier cycle :
+96 + 566 offres créées) :
 
-Le cahier des charges complet est dans `europe_asia_ai_job_platform_mvp_prompt.md`
-(racine du repo). Grandes masses non commencées, par ordre de priorité P0
-probable :
+- **`sources/arbetsformedlingen.ts`** (Suède) — API officielle JobTech
+  (`jobsearch.api.jobtechdev.se`), gratuite, sans clé. Filtre tech par
+  `occupation_field` officiel de la taxonomie JobTech plutôt que par
+  mots-clés.
+- **`sources/ats-boards.ts`** — connecteur générique Greenhouse/Lever/Ashby
+  (spec §13 : « Support adapters for major ATS ecosystems »). Sept
+  entreprises vérifiées (GitLab, Teneo, Lever, Plaid, Notion, OpenAI, Ramp)
+  couvrant 16 pays dès le premier cycle sans code supplémentaire — ajouter
+  un pays = ajouter une ligne dans `BOARDS`, pas un nouveau connecteur.
 
-1. **Europe + Asie multi-pays** (spec §2, §32-33) — Jobly reste 100 % France
-   stage/alternance. C'est le changement le plus lourd : modèle de données
-   (pays, devises, autorisation de travail), ingestion multi-sources
-   internationales, UI de localisation. **Ne pas commencer sans en discuter
-   avec l'utilisateur** — c'est un changement d'identité produit, pas une
-   feature. **La recherche de sources est faite** : voir
-   `SOURCES_EUROPE_ASIA.md` (APIs officielles par pays, agrégateurs
-   multi-pays, adaptateurs ATS publics, plan d'implémentation par ordre de
-   priorité). Rien de ce document n'est encore intégré ni testé en
-   conditions réelles — c'est un plan de recherche, pas du code.
-2. **IA réelle** (spec §41) — aucune clé configurée. Si on l'ajoute :
-   construire une couche d'abstraction provider (spec §69 : « build the
-   abstraction, mock adapter for dev, mark the required env var, never fake
-   a success »). Cas d'usage prioritaires : parsing CV à l'upload (le CV est
-   stocké mais jamais lu), recherche en langage naturel, résumé d'offre
-   structuré (Résumé/Responsabilités/Requis), réponses de candidature.
-3. **Ex
+**Changement de périmètre, fait proprement plutôt que silencieusement** :
+Jobly rejetait auparavant tout ce qui n'était pas stage/alternance
+(`ACCEPTED_CONTRACTS` dans `normalize.ts`), un choix produit délibéré et
+documenté (`CONTEXTE.md`). Plutôt que de changer ce défaut global (ce qui
+aurait changé le comportement des 7 connecteurs français existants),
+`normalizeOffer`/`processIngest` acceptent maintenant un paramètre
+`acceptedContracts` optionnel : absent

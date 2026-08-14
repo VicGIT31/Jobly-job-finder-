@@ -11,6 +11,15 @@
 > Voir `CONTEXTE_AI_WORK.md` §3.1 : le multi-pays est le plus gros morceau
 > non commencé du cahier des charges. Ce document est le point de départ
 > pour le construire sans partir de zéro sur la recherche de sources.
+>
+> **Mise à jour 2026-08-14** : deux sources de ce document sont passées de
+> 🔎 recherché à **✅ testé** et sont maintenant intégrées et actives dans
+> Jobly — voir `src/server/ingest/sources/arbetsformedlingen.ts` (Tier 1,
+> Suède) et `src/server/ingest/sources/ats-boards.ts` (Tier 3, Greenhouse/
+> Lever/Ashby). Premier cycle réel : 96 offres suédoises + 566 offres
+> internationales via les ATS (16 pays), toutes visibles dans l'app, sans
+> aucun impact sur le comportement des sources françaises existantes. Détail
+> dans `CONTEXTE_AI_WORK.md` §2.7.
 
 ---
 
