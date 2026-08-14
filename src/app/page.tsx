@@ -9,24 +9,35 @@ import { SPECIALTIES, SPECIALTY_ICONS, SPECIALTY_LABELS } from "@/lib/search-par
 export const dynamic = "force-dynamic";
 
 export default async function HomePage() {
-  const [recentOffers, collections, specialtyCounts, offerCount, companyCount, cityCount] =
-    await Promise.all([
-      prisma.jobOffer.findMany({
-        where: { status: "ACTIVE" },
-        include: { company: true },
-        orderBy: { publishedAt: "desc" },
-        take: 6,
-      }),
-      resolveCollections(),
-      prisma.jobOffer.groupBy({
-        by: ["specialty"],
-        where: { status: "ACTIVE" },
-        _count: true,
-      }),
-      prisma.jobOffer.count({ where: { status: "ACTIVE" } }),
-      prisma.company.count(),
-      prisma.jobOffer.groupBy({ by: ["city"], where: { status: "ACTIVE" } }).then((g) => g.length),
-    ]);
+  const [
+    recentOffers,
+    collections,
+    specialtyCounts,
+    offerCount,
+    companyCount,
+    cityCount,
+    internationalCount,
+  ] = await Promise.all([
+    prisma.jobOffer.findMany({
+      where: { status: "ACTIVE" },
+      include: { company: true },
+      orderBy: { publishedAt: "desc" },
+      take: 6,
+    }),
+    resolveCollections(),
+    prisma.jobOffer.groupBy({
+      by: ["specialty"],
+      where: { status: "ACTIVE" },
+      _count: true,
+    }),
+    prisma.jobOffer.count({ where: { status: "ACTIVE" } }),
+    prisma.company.count(),
+    prisma.jobOffer.groupBy({ by: ["city"], where: { status: "ACTIVE" } }).then((g) => g.length),
+    // Offres internationales (hors stage/alternance France) — voir
+    // SOURCES_EUROPE_ASIA.md. Affichées en secondaire, sans changer la
+    // promesse principale du site (stage/alternance France).
+    prisma.jobOffer.count({ where: { status: "ACTIVE", countryCode: { not: "FR" } } }),
+  ]);
 
   const countBySpecialty = new Map(specialtyCounts.map((row) => [row.specialty, row._count]));
 
@@ -61,6 +72,19 @@ export default async function HomePage() {
               <dt className="text-sm text-ink/50">villes</dt>
             </div>
           </dl>
+
+          {internationalCount > 0 && (
+            <p className="mt-6 text-sm text-ink/60">
+              Aussi disponible :{" "}
+              <Link
+                href="/offres?contrat=FULL_TIME,PART_TIME,CONTRACT,FREELANCE"
+                className="font-semibold text-cobalt underline-offset-4 hover:underline"
+              >
+                {internationalCount} offre{internationalCount > 1 ? "s" : ""} à l'international
+              </Link>{" "}
+              (CDI, contrats — hors stage/alternance France)
+            </p>
+          )}
         </div>
       </section>
 
