@@ -279,6 +279,55 @@ CA 3, AE 2 — 16 pays, filtrables en direct depuis `/offres`.
   confirmation explicite (`window.confirm`), pas de case pré-cochée nulle
   part dans ce flux.
 
+### 2.11 Passe de redesign UX/UI + recentrage éditorial Europe/France
+
+Demande explicite et répétée de l'utilisateur (`/goal` : « redesign it to
+make it look way better for the ux/ui », « focus on europe and france »).
+**Correction du §1 ci-dessus** : cette session avait d'abord jugé qu'aucune
+refonte n'était nécessaire — toujours vrai pour une refonte _complète_, mais
+une vraie passe d'amélioration visuelle a été faite ici, dans les tokens
+existants (pas de nouveau système de design, pas de nouvelle palette) :
+
+- **`lucide-react` ajouté** (recommandé par le spec §53, absent jusqu'ici).
+  Icônes ajoutées : nav `/mon-espace` (§ci-dessous), `OfferCard` (ville,
+  télétravail, salaire, date), hero d'accueil (offres/entreprises/villes),
+  `MatchScoreCard`/`CvMatchCard` (icônes de titre + barres de progression
+  par facteur, remplaçant le texte seul).
+- **Nav `/mon-espace` refaite** (`mon-espace-nav.tsx`, composant client
+  pour `usePathname()`) : 8 liens texte plats sans indicateur de page
+  active → icônes + libellés + état actif visible (`aria-current="page"`).
+  Absence d'indicateur actif = vrai trou UX corrigé, pas juste cosmétique.
+- **`OfferCard` retravaillée** : bouton "Postuler" devient un vrai bouton
+  (pastille `cobalt-soft` → pleine couleur au survol de la carte) au lieu
+  d'un lien texte ; icônes de métadonnées ; légère élévation au survol
+  (`-translate-y-0.5`).
+- **Accueil retravaillé** : halo `cobalt/10` discret derrière le hero
+  (pas un dégradé plein écran — reste dans l'esprit "restrained gradients"
+  du spec §35) ; stats du hero avec icônes ; nouvelle section **« Explorez
+  l'Europe »** (`EUROPEAN_COUNTRIES` dans `search-params.ts`, 17 pays,
+  affichés seulement si des offres existent) remplaçant le simple lien
+  "offres à l'international" — France toujours en premier, lien vers
+  `/offres?contrat=STAGE,ALTERNANCE` (seul moyen propre d'isoler les
+  offres françaises, "FR" n'étant volontairement pas une option du filtre
+  pays public). Répond directement à « focus on europe and france » sans
+  toucher au positionnement stage/alternance de la promesse principale.
+- **Bug trouvé en vérifiant en conditions réelles** (pas en test unitaire,
+  ni en `tsc`) : le premier `Edit` en `replace_all` sur les en-têtes de
+  `MatchScoreCard`/`CvMatchCard` n'a touché que 2 branches sur 3 — la
+  troisième avait une indentation différente (retour au niveau racine du
+  composant vs. imbriquée dans un `if`), donc une chaîne non identique que
+  `replace_all` n'a pas matchée. Résultat avant correction : l'icône et la
+  barre de progression n'apparaissaient jamais sur le cas réellement
+  utile (un score calculé), seulement sur les états vides. Détecté en
+  inspectant le HTML réellement servi après rebuild, pas en supposant que
+  l'édition avait fonctionné partout — même leçon que les troncatures de
+  ce fichier (§4) : vérifier, ne jamais supposer.
+- **Non fait** : refonte visuelle complète (nouvelle palette, nouvelle
+  typographie, nouveau layout) — toujours jugée disproportionnée par
+  rapport à la maturité du design system existant, cohérent avec §66 du
+  spec. Cette passe est une amélioration réelle et vérifiée, pas un
+  changement d'identité visuelle.
+
 ---
 
 ## 3. Ce qui N'A PAS été fait (le reste du cahier des charges)
