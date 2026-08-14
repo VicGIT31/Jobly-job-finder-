@@ -1,0 +1,83 @@
+import Link from "next/link";
+import type { MatchResult } from "@/server/match/score";
+
+function scoreTier(score: number): { label: string; className: string } {
+  if (score >= 85)
+    return { label: "Très bon match", className: "text-emerald-700 dark:text-emerald-400" };
+  if (score >= 65) return { label: "Bon match", className: "text-cobalt" };
+  if (score >= 40)
+    return { label: "Match partiel", className: "text-amber-700 dark:text-amber-400" };
+  return { label: "Match faible", className: "text-ink/60" };
+}
+
+/**
+ * Score de correspondance côté candidat (§11 du cahier des charges) : jamais
+ * présenté comme une décision de l'employeur, toujours accompagné du détail
+ * qui le justifie. `result === null` → profil insuffisant pour comparer.
+ */
+export function MatchScoreCard({
+  isLoggedIn,
+  result,
+}: {
+  isLoggedIn: boolean;
+  result: MatchResult | null;
+}) {
+  if (!isLoggedIn) {
+    return (
+      <div className="card mt-4 p-5">
+        <h2 className="font-display text-lg font-bold">Correspondance</h2>
+        <p className="mt-2 text-sm text-ink/60">
+          <Link href="/connexion" className="text-cobalt underline-offset-4 hover:underline">
+            Connectez-vous
+          </Link>{" "}
+          pour voir en quoi cette offre correspond à votre profil.
+        </p>
+      </div>
+    );
+  }
+
+  if (!result) {
+    return (
+      <div className="card mt-4 p-5">
+        <h2 className="font-display text-lg font-bold">Correspondance</h2>
+        <p className="mt-2 text-sm text-ink/60">
+          Complétez vos préférences (niveau d'études, spécialité, ville) pour voir votre score de
+          correspondance sur cette offre.
+        </p>
+        <Link
+          href="/mon-espace"
+          className="mt-3 inline-block text-sm font-semibold text-cobalt underline-offset-4 hover:underline"
+        >
+          Compléter mon profil →
+        </Link>
+      </div>
+    );
+  }
+
+  const tier = scoreTier(result.score);
+
+  return (
+    <div className="card mt-4 p-5">
+      <h2 className="font-display text-lg font-bold">Correspondance</h2>
+      <p className="mt-1">
+        <span className="font-display text-3xl font-bold tabular-nums">{result.score}%</span>{" "}
+        <span className={`text-sm font-semibold ${tier.className}`}>{tier.label}</span>
+      </p>
+      <p className="mt-0.5 text-xs text-ink/45">
+        Estimation basée sur votre profil, pas une décision de l'employeur.
+      </p>
+
+      <ul className="mt-3 space-y-2 text-sm">
+        {result.factors.map((factor) => (
+          <li key={factor.key} className="flex items-start justify-between gap-3">
+            <div>
+              <p className="font-medium">{factor.label}</p>
+              <p className="text-xs text-ink/55">{factor.explanation}</p>
+            </div>
+            <span className="shrink-0 tabular-nums text-ink/70">{factor.score}%</span>
+          </li>
+        ))}
+      </ul>
+    </div>
+  );
+}

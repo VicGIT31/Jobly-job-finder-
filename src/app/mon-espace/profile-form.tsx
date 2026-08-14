@@ -3,6 +3,12 @@
 import { useState, useTransition } from "react";
 import { updateProfile } from "@/server/account/actions";
 import type { ActionResult } from "@/server/auth/actions";
+import {
+  EDUCATION_LABELS,
+  EDUCATION_LEVELS,
+  SPECIALTIES,
+  SPECIALTY_LABELS,
+} from "@/lib/search-params";
 
 type ProfileInitial = {
   name: string;
@@ -10,7 +16,13 @@ type ProfileInitial = {
   school: string;
   graduationYear: string;
   city: string;
+  educationLevel: string;
+  targetSpecialty: string;
 };
+
+// « Indifférent » n'a de sens que côté offre (aucun niveau requis) : côté
+// candidat, l'absence de sélection (chaîne vide → null) joue déjà ce rôle.
+const CANDIDATE_EDUCATION_LEVELS = EDUCATION_LEVELS.filter((l) => l !== "INDIFFERENT");
 
 export function ProfileForm({
   initial,
@@ -96,6 +108,52 @@ export function ProfileForm({
           Ville
         </label>
         <input id="city" name="city" defaultValue={initial.city} className="input-ink" />
+      </div>
+
+      <div className="rule pt-3">
+        <p className="text-sm font-semibold">Préférences de correspondance</p>
+        <p className="mt-0.5 text-xs text-ink/55">
+          Utilisées pour calculer votre score de correspondance sur chaque offre. Laissez vide si
+          vous ne savez pas encore.
+        </p>
+        <div className="mt-2 grid gap-3 sm:grid-cols-2">
+          <div>
+            <label htmlFor="educationLevel" className="mb-1 block text-sm font-semibold">
+              Votre niveau d'études
+            </label>
+            <select
+              id="educationLevel"
+              name="educationLevel"
+              defaultValue={initial.educationLevel}
+              className="input-ink"
+            >
+              <option value="">Non renseigné</option>
+              {CANDIDATE_EDUCATION_LEVELS.map((level) => (
+                <option key={level} value={level}>
+                  {EDUCATION_LABELS[level]}
+                </option>
+              ))}
+            </select>
+          </div>
+          <div>
+            <label htmlFor="targetSpecialty" className="mb-1 block text-sm font-semibold">
+              Spécialité recherchée
+            </label>
+            <select
+              id="targetSpecialty"
+              name="targetSpecialty"
+              defaultValue={initial.targetSpecialty}
+              className="input-ink"
+            >
+              <option value="">Non renseigné</option>
+              {SPECIALTIES.map((specialty) => (
+                <option key={specialty} value={specialty}>
+                  {SPECIALTY_LABELS[specialty]}
+                </option>
+              ))}
+            </select>
+          </div>
+        </div>
       </div>
 
       {result && (

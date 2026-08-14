@@ -31,6 +31,8 @@ export default async function ProfilPage() {
               school: user.school ?? "",
               graduationYear: user.graduationYear?.toString() ?? "",
               city: user.city ?? "",
+              educationLevel: user.educationLevel ?? "",
+              targetSpecialty: user.targetSpecialty ?? "",
             }}
             email={user.email}
             emailVerified={Boolean(user.emailVerified)}

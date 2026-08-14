@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
+import { EducationLevel, TechSpecialty } from "@prisma/client";
 import { auth, signOut } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { getStorage } from "@/lib/storage";
@@ -20,6 +21,10 @@ const profileSchema = z.object({
   school: z.string().max(200).optional().or(z.literal("")),
   graduationYear: z.coerce.number().int().min(1990).max(2040).optional().or(z.literal("")),
   city: z.string().max(120).optional().or(z.literal("")),
+  // Préférences du score de correspondance (`src/server/match/score.ts`) :
+  // chaîne vide = non renseigné → null en base, jamais deviné.
+  educationLevel: z.nativeEnum(EducationLevel).optional().or(z.literal("")),
+  targetSpecialty: z.nativeEnum(TechSpecialty).optional().or(z.literal("")),
 });
 
 export async function updateProfile(formData: FormData): Promise<ActionResult> {
@@ -32,6 +37,8 @@ export async function updateProfile(formData: FormData): Promise<ActionResult> {
     school: formData.get("school"),
     graduationYear: formData.get("graduationYear") || "",
     city: formData.get("city"),
+    educationLevel: formData.get("educationLevel") || "",
+    targetSpecialty: formData.get("targetSpecialty") || "",
   });
   if (!parsed.success) return { ok: false, error: "Vérifiez les champs du formulaire." };
 
@@ -44,6 +51,8 @@ export async function updateProfile(formData: FormData): Promise<ActionResult> {
       graduationYear:
         typeof parsed.data.graduationYear === "number" ? parsed.data.graduationYear : null,
       city: parsed.data.city || null,
+      educationLevel: parsed.data.educationLevel || null,
+      targetSpecialty: parsed.data.targetSpecialty || null,
     },
   });
 
@@ -116,6 +125,14 @@ export async function removeSavedOffer(offerId: string): Promise<void> {
   if (!userId) return;
   await prisma.savedOffer.deleteMany({ where: { userId, offerId } });
   revalidatePath("/mon-espace/sauvegardees");
+}
+
+/** Réaffiche une offre masquée (retrait de `HiddenOffer`). */
+export async function unhideOffer(offerId: string): Promise<void> {
+  const userId = await requireUserId();
+  if (!userId) return;
+  await prisma.hiddenOffer.deleteMany({ where: { userId, offerId } });
+  revalidatePath("/mon-espace/masquees");
 }
 
 const frequencySchema = z.enum(["DAILY", "WEEKLY", "NEVER"]);
