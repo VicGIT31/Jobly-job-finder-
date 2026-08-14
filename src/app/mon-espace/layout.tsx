@@ -37,6 +37,18 @@ export default async function MonEspaceLayout({ children }: { children: React.Re
         >
           Offres sauvegardées
         </Link>
+        <Link
+          href="/mon-espace/candidatures"
+          className="px-3 py-2 text-sm font-semibold hover:bg-ink/5"
+        >
+          Candidatures
+        </Link>
+        <Link
+          href="/mon-espace/masquees"
+          className="px-3 py-2 text-sm font-semibold hover:bg-ink/5"
+        >
+          Offres masquées
+        </Link>
         <Link href="/mon-espace/alertes" className="px-3 py-2 text-sm font-semibold hover:bg-ink/5">
           Alertes
         </Link>
