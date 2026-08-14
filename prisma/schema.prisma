@@ -125,6 +125,10 @@ model User {
   cvKey           String? // clé S3 du CV
   cvFilename      String?
   cvUploadedAt    DateTime?
+  // Texte brut extrait du PDF à l'upload (src/server/cv/extract-text.ts),
+  // pour la comparaison de mots-clés avec une offre (src/server/cv/analyze.ts).
+  // Jamais analysé par IA — voir CONTEXTE_AI_WORK.md.
+  cvText          String?
 
   accounts      Account[]
   sessions      Session[]
