@@ -10,9 +10,11 @@ import { SaveOfferButton } from "@/components/offers/save-offer-button";
 import { AlreadyAppliedButton } from "@/components/applications/already-applied-button";
 import { HideOfferButton } from "@/components/offers/hide-offer-button";
 import { MatchScoreCard } from "@/components/offers/match-score-card";
+import { CvMatchCard } from "@/components/offers/cv-match-card";
 import { findSimilarOffers } from "@/server/offers/similar";
 import { offerToDocument } from "@/server/search/sync";
 import { computeMatchScore } from "@/server/match/score";
+import { computeCvMatch } from "@/server/cv/analyze";
 import { CONTRACT_LABELS, EDUCATION_LABELS, REMOTE_LABELS } from "@/lib/search-params";
 
 export const dynamic = "force-dynamic";
@@ -115,7 +117,7 @@ export default async function OffrePage({ params }: { params: { slug: string } }
     userId
       ? prisma.user.findUnique({
           where: { id: userId },
-          select: { educationLevel: true, targetSpecialty: true, city: true },
+          select: { educationLevel: true, targetSpecialty: true, city: true, cvText: true },
         })
       : Promise.resolve(null),
   ]);
@@ -127,6 +129,10 @@ export default async function OffrePage({ params }: { params: { slug: string } }
         city: offer.city,
         remotePolicy: offer.remotePolicy,
       })
+    : null;
+
+  const cvMatchResult = candidateProfile?.cvText
+    ? computeCvMatch(candidateProfile.cvText, `${offer.title}\n${offer.description}`)
     : null;
 
   const isExpired = offer.status === "EXPIRED";
@@ -256,6 +262,11 @@ export default async function OffrePage({ params }: { params: { slug: string } }
           </div>
 
           <MatchScoreCard isLoggedIn={Boolean(session?.user)} result={matchResult} />
+          <CvMatchCard
+            isLoggedIn={Boolean(session?.user)}
+            hasCv={Boolean(candidateProfile?.cvText)}
+            result={cvMatchResult}
+          />
 
           <div className="card mt-4 p-5">
             <h2 className="font-display text-lg font-bold">{offer.company.name}</h2>

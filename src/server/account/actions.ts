@@ -6,6 +6,7 @@ import { EducationLevel, TechSpecialty } from "@prisma/client";
 import { auth, signOut } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { getStorage } from "@/lib/storage";
+import { extractCvText } from "@/server/cv/extract-text";
 import type { ActionResult } from "@/server/auth/actions";
 
 const MAX_CV_BYTES = 5 * 1024 * 1024; // 5 Mo
@@ -86,10 +87,15 @@ export async function uploadCv(formData: FormData): Promise<ActionResult> {
     return { ok: false, error: "Stockage indisponible, réessayez plus tard." };
   }
 
+  // Extraction lexicale (pas d'IA) pour la comparaison CV/offre — voir
+  // src/server/cv/analyze.ts. Un PDF illisible (scan sans texte) ne bloque
+  // pas l'upload : cvText reste simplement null, la comparaison est masquée.
+  const cvText = await extractCvText(buffer);
+
   const previous = await prisma.user.findUnique({ where: { id: userId }, select: { cvKey: true } });
   await prisma.user.update({
     where: { id: userId },
-    data: { cvKey: key, cvFilename: file.name, cvUploadedAt: new Date() },
+    data: { cvKey: key, cvFilename: file.name, cvUploadedAt: new Date(), cvText },
   });
   if (previous?.cvKey) {
     await getStorage()
@@ -113,7 +119,7 @@ export async function deleteCv(): Promise<ActionResult> {
   }
   await prisma.user.update({
     where: { id: userId },
-    data: { cvKey: null, cvFilename: null, cvUploadedAt: null },
+    data: { cvKey: null, cvFilename: null, cvUploadedAt: null, cvText: null },
   });
 
   revalidatePath("/mon-espace");
