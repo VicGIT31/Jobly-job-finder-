@@ -224,6 +224,42 @@ FROM job_offers WHERE "sourceSite" = 'ats-boards' GROUP BY 1`) : US 458,
 GB 35, IN 29, DE 23, XX 22, ES 17, SG 11, IE 9, JP 8, KR 4, AU 3, FR 3,
 CA 3, AE 2 — 16 pays, filtrables en direct depuis `/offres`.
 
+### 2.9 Analyse CV par mots-clés — spec §21 « Resume Analysis », sans IA
+
+- `pdf-parse` ajouté comme dépendance pour extraire le texte des CV PDF déjà
+  stockés (`cvKey`, jamais lus jusqu'ici). Nouveau champ `User.cvText`
+  (migration `20260814112833_cv_text_extraction`), rempli à l'upload
+  (`uploadCv` dans `server/account/actions.ts`), vidé à la suppression.
+- **Bug de build trouvé et corrigé** : `pdf-parse` exécute un auto-test au
+  chargement du module quand `module.parent` est absent
+  (`if (!module.parent) { lit ./test/data/05-versions-space.pdf }`) — vrai
+  sous le bundling webpack de Next.js, ce qui faisait planter
+  `docker compose build` avec une erreur `ENOENT` sur un fichier de test
+  absent de l'image. Contourné en important directement `pdf-parse/lib/pdf-parse.js`
+  (l'implémentation interne, sans le garde-fou) plutôt que le point d'entrée
+  public — déclaration de types ad hoc dans `src/types/pdf-parse.d.ts`
+  puisque `@types/pdf-parse` ne couvre que le point d'entrée public.
+- `src/server/cv/skills.ts` : vocabulaire contrôlé (~90 termes techniques)
+  plutôt qu'extraction naïve de mots — cohérent avec l'exemple du spec
+  (« Found: Product strategy, Figma, User research… », pas n'importe quel
+  nom commun de la description).
+- `src/server/cv/analyze.ts` : `computeCvMatch`, pure, testée (5 tests).
+  **Bug trouvé par les tests avant tout déploiement** : une comparaison
+  `.includes()` naïve faisait matcher le mot-clé "go" à l'intérieur de
+  "rigoureuse" et "ui" dans des mots quelconques — corrigé avec une
+  correspondance sur limite de mot (lookaround plutôt que `\b`, pour rester
+  correct sur des mots-clés comme `c++`, `c#`, `.net` qui commencent/finissent
+  par un caractère non alphanumérique).
+- `null` si l'offre ne mentionne aucun mot-clé du vocabulaire contrôlé —
+  jamais de score creux. `CvMatchCard` (page offre) n'affiche jamais de
+  suggestion d'ajouter une compétence non détectée dans le CV (spec §21 :
+  « NEVER invent experience »).
+- **Vérifié en conditions réelles**, pas seulement en test unitaire : PDF
+  généré via `cupsfilter` (texte → PDF), extraction confirmée dans le
+  conteneur applicatif avec le vrai `pdf-parse` corrigé, `cvText` simulé en
+  base sur le compte démo, carte de correspondance confirmée affichée sur
+  une vraie page offre.
+
 ---
 
 ## 3. Ce qui N'A PAS été fait (le reste du cahier des charges)
@@ -252,10 +288,12 @@ probable :
    structuré (Résumé/Responsabilités/Requis), réponses de candidature.
 3. **Extension navigateur + autofill** (spec §15-17) — gros morceau,
    nécessite un nouveau projet (Manifest V3) hors de ce repo Next.js.
-4. **Analyse CV / tailoring** (spec §21-22) — nécessite d'extraire le texte
-   du PDF (`pdf-parse` ou équivalent) puis comparaison de mots-clés avec la
-   description de poste. Faisable sans IA pour une V1 (comparaison lexicale
-   simple, dans l'esprit de `computeMatchScore`).
+4. **Analyse CV — fait (§2.9) ; tailoring — pas fait** (spec §21-22). La
+   comparaison CV/offre par mots-clés (§21 « Resume Analysis ») est en
+   production. Reste : « Tailor Resume » (§22, réécriture guidée de phrases
+   du CV avec diff avant/après) — plus proche d'un besoin réel d'IA que la
+   simple comparaison de mots-clés, à traiter avec §2 ci-dessous si une clé
+   est ajoutée.
 5. **Priority Score / effort estimate** (spec §61-62) — peut maintenant
    s'appuyer sur `computeMatchScore` (§2.3) + date de publication +
    éventuellement une estimation de complexité du formulaire externe (pas
@@ -319,23 +357,32 @@ probable :
 - **Convention de commit du projet** (`CONTEXTE.md` §7) : 1 commit par
   fichier, préfixes `MOD:`/`ADD:`/`RM:`, messages en français. Cette
   session a été committée en commits groupés par fonctionnalité (demande
-  explicite de l'utilisateur : « 10 commits » pour le premier lot), pas
+  explicite de l'utilisateur pour le premier lot : « 10 commits »), pas
   1-par-fichier — voir le log git pour le détail exact.
-- **Tests** : 108 tests passent (`npm run test`), tous les nouveaux modules
+- **Tests** : 113 tests passent (`npm run test`), tous les nouveaux modules
   purs (`follow-up.ts`, `score.ts`, `tracker.ts` côté logique,
-  `hidden-filter.ts`, `insights/compute.ts`) sont testés unitairement sans
-  dépendance DB, dans l'esprit de `src/server/apply/redirect.ts` (déjà
-  présent avant cette session). Les connecteurs eux-mêmes (`arbetsformedlingen.ts`,
-  `ats-boards.ts`) n'ont pas de tests unitaires — vérifiés uniquement en
-  conditions réelles (curl direct + cycles d'ingestion complets). À corriger
-  si ces connecteurs deviennent critiques : au minimum tester
-  `guessCountryFromLocation`/`inferJobTechContractKey` en isolation.
-- **Édition de ce fichier** : en cas de gros ajout, préférer relire
-  l'intégralité du fichier avant un `Edit` avec un `old_string` long — une
-  édition précédente dans cette session a tronqué silencieusement tout le
-  contenu après le point d'insertion (voir l'avertissement en tête de
-  fichier). `Write` (réécriture complète) est plus sûr pour les révisions
-  substantielles de ce document.
+  `hidden-filter.ts`, `insights/compute.ts`, `cv/analyze.ts`) sont testés
+  unitairement sans dépendance DB, dans l'esprit de
+  `src/server/apply/redirect.ts` (déjà présent avant cette session). Les
+  connecteurs eux-mêmes (`arbetsformedlingen.ts`, `ats-boards.ts`) et
+  l'extraction PDF (`extract-text.ts`) n'ont pas de tests unitaires —
+  vérifiés uniquement en conditions réelles (curl direct, cycles
+  d'ingestion complets, PDF généré via `cupsfilter`). À corriger si ces
+  modules deviennent critiques.
+- **`pdf-parse` : ne jamais importer le point d'entrée public**
+  (`import pdfParse from "pdf-parse"`) dans du code qui sera bundlé par
+  Next.js — voir §2.9. Toujours `pdf-parse/lib/pdf-parse.js`, avec la
+  déclaration de types dans `src/types/pdf-parse.d.ts`. L'erreur si on se
+  trompe n'apparaît qu'au `docker compose build` (pas en dev, pas en
+  `tsc --noEmit`), donc facile à rater avant un rebuild complet.
+- **Édition de ce fichier — attention réelle, pas juste une note** : cette
+  session a perdu du contenu par troncature silencieuse **deux fois** avec
+  des `Edit`/`Write` sur ce fichier précis (voir l'avertissement en tête de
+  fichier ; la deuxième fois s'est produite sur le `Write` de
+  reconstruction lui-même, pas sur un `Edit` ultérieur). Après toute
+  modification substantielle de ce document, vérifier `wc -l` et la
+  présence de tous les `##`/`###` attendus (`grep -n "^##"`) avant de
+  committer — ne pas supposer que l'outil a écrit ce qui a été demandé.
 - **Design** : aucune nouvelle classe Tailwind custom cette session — tout
   réutilise les tokens existants (`card`, `btn-cobalt`, `btn-outline`,
   `stamp`, `ticket`, `input-ink`, couleurs `ink`/`cobalt`/`surface`).
