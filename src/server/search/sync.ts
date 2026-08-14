@@ -13,6 +13,7 @@ export type OfferDocument = {
   companyLogo: string | null;
   contractType: string;
   city: string;
+  countryCode: string;
   remotePolicy: string;
   salaryMin: number | null;
   salaryMax: number | null;
@@ -47,6 +48,7 @@ export function offerToDocument(offer: OfferWithCompany): OfferDocument {
     companyLogo: offer.company.logoUrl,
     contractType: offer.contractType,
     city: offer.city,
+    countryCode: offer.countryCode,
     remotePolicy: offer.remotePolicy,
     salaryMin: offer.salaryMin,
     salaryMax: offer.salaryMax,

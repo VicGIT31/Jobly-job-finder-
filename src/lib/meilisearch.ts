@@ -35,6 +35,7 @@ export async function configureOffersIndex(): Promise<void> {
       "status",
       "companySlug",
       "sourceSite",
+      "countryCode",
       "_geo",
     ],
     sortableAttributes: ["publishedAtTs"],

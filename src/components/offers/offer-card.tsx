@@ -1,6 +1,6 @@
 import Link from "next/link";
 import type { OfferDocument } from "@/server/search/sync";
-import { CONTRACT_LABELS, REMOTE_LABELS } from "@/lib/search-params";
+import { CONTRACT_LABELS, COUNTRY_FLAGS, REMOTE_LABELS } from "@/lib/search-params";
 import { CompanyLogo } from "./company-logo";
 
 export function formatSalary(min: number | null, max: number | null): string | null {
@@ -68,7 +68,14 @@ export function OfferCard({ offer }: { offer: OfferDocument }) {
       <dl className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-ink/70">
         <div>
           <dt className="sr-only">Ville</dt>
-          <dd>{offer.city}</dd>
+          <dd>
+            {offer.countryCode !== "FR" && (
+              <span aria-hidden="true" className="mr-1">
+                {COUNTRY_FLAGS[offer.countryCode] ?? "🌍"}
+              </span>
+            )}
+            {offer.city}
+          </dd>
         </div>
         <div>
           <dt className="sr-only">Télétravail</dt>

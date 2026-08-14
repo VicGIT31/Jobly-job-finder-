@@ -52,6 +52,12 @@ export const CONTRACT_LABELS: Record<ContractType, string> = {
   STAGE: "Stage",
   ALTERNANCE: "Alternance",
   VIE: "VIE",
+  // Sources internationales (SOURCES_EUROPE_ASIA.md) — hors périmètre
+  // stage/alternance strict des sources françaises.
+  FULL_TIME: "Temps plein",
+  PART_TIME: "Temps partiel",
+  CONTRACT: "Contrat",
+  FREELANCE: "Freelance",
 };
 
 export const REMOTE_LABELS: Record<(typeof REMOTE_POLICIES)[number], string> = {
@@ -143,3 +149,43 @@ export function dateRangeToTimestamp(
   const hours = range === "24h" ? 24 : range === "7j" ? 24 * 7 : 24 * 30;
   return now - hours * 3600 * 1000;
 }
+
+/**
+ * Drapeaux des pays couverts par les sources internationales (Europe/Asie —
+ * voir SOURCES_EUROPE_ASIA.md). "FR" n'y figure pas : c'est le défaut
+ * historique, jamais affiché comme un badge distinctif sur les cartes.
+ */
+export const COUNTRY_FLAGS: Record<string, string> = {
+  US: "🇺🇸",
+  GB: "🇬🇧",
+  DE: "🇩🇪",
+  ES: "🇪🇸",
+  IT: "🇮🇹",
+  NL: "🇳🇱",
+  IE: "🇮🇪",
+  PL: "🇵🇱",
+  AT: "🇦🇹",
+  CH: "🇨🇭",
+  SE: "🇸🇪",
+  DK: "🇩🇰",
+  NO: "🇳🇴",
+  FI: "🇫🇮",
+  BE: "🇧🇪",
+  PT: "🇵🇹",
+  CZ: "🇨🇿",
+  SG: "🇸🇬",
+  IN: "🇮🇳",
+  JP: "🇯🇵",
+  KR: "🇰🇷",
+  AE: "🇦🇪",
+  HK: "🇭🇰",
+  MY: "🇲🇾",
+  ID: "🇮🇩",
+  TH: "🇹🇭",
+  VN: "🇻🇳",
+  PH: "🇵🇭",
+  TW: "🇹🇼",
+  CA: "🇨🇦",
+  AU: "🇦🇺",
+  XX: "🌍",
+};

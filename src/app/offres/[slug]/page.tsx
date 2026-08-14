@@ -45,6 +45,10 @@ function jobPostingJsonLd(offer: NonNullable<Awaited<ReturnType<typeof getOffer>
     STAGE: "INTERN",
     ALTERNANCE: "INTERN",
     VIE: "TEMPORARY",
+    FULL_TIME: "FULL_TIME",
+    PART_TIME: "PART_TIME",
+    CONTRACT: "CONTRACTOR",
+    FREELANCE: "CONTRACTOR",
   };
   return {
     "@context": "https://schema.org",
@@ -60,7 +64,11 @@ function jobPostingJsonLd(offer: NonNullable<Awaited<ReturnType<typeof getOffer>
     },
     jobLocation: {
       "@type": "Place",
-      address: { "@type": "PostalAddress", addressLocality: offer.city, addressCountry: "FR" },
+      address: {
+        "@type": "PostalAddress",
+        addressLocality: offer.city,
+        addressCountry: offer.countryCode,
+      },
     },
     ...(offer.salaryMin || offer.salaryMax
       ? {
