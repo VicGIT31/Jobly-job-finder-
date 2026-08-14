@@ -59,6 +59,9 @@ async function searchWithMeilisearch(input: OfferSearchInput): Promise<OfferSear
   if (input.specialite.length) {
     filters.push(`specialty IN [${input.specialite.map((s) => `"${s}"`).join(", ")}]`);
   }
+  if (input.pays.length) {
+    filters.push(`countryCode IN [${input.pays.map((p) => `"${p}"`).join(", ")}]`);
+  }
   if (input.secteur.length) {
     filters.push(`sector IN [${input.secteur.map((s) => `"${s.replace(/"/g, "")}"`).join(", ")}]`);
   }
@@ -80,7 +83,15 @@ async function searchWithMeilisearch(input: OfferSearchInput): Promise<OfferSear
   // hitsPerPage/page activent la pagination exhaustive (totalHits/totalPages)
   const result = (await meili.index(OFFERS_INDEX).search<OfferDocument>(input.q || "", {
     filter: filters.join(" AND "),
-    facets: ["contractType", "city", "remotePolicy", "sector", "specialty", "educationLevel"],
+    facets: [
+      "contractType",
+      "city",
+      "remotePolicy",
+      "sector",
+      "specialty",
+      "educationLevel",
+      "countryCode",
+    ],
     sort: input.tri === "date" ? ["publishedAtTs:desc"] : undefined,
     hitsPerPage: PAGE_SIZE,
     page: input.page,
@@ -123,6 +134,7 @@ function buildWhere(input: OfferSearchInput, withGeo?: { lat: number; lng: numbe
   if (input.remote.length) where.remotePolicy = { in: input.remote };
   if (input.niveau.length) where.educationLevel = { in: input.niveau };
   if (input.specialite.length) where.specialty = { in: input.specialite };
+  if (input.pays.length) where.countryCode = { in: input.pays };
   if (input.secteur.length) where.sector = { in: input.secteur };
   if (input.datePub) where.publishedAt = { gte: new Date(dateRangeToTimestamp(input.datePub)) };
 
@@ -157,6 +169,7 @@ async function searchWithPostgres(input: OfferSearchInput): Promise<OfferSearchR
     sectorFacet,
     specialtyFacet,
     educationFacet,
+    countryFacet,
   ] = await Promise.all([
     prisma.jobOffer.findMany({
       where,
@@ -172,6 +185,7 @@ async function searchWithPostgres(input: OfferSearchInput): Promise<OfferSearchR
     prisma.jobOffer.groupBy({ by: ["sector"], where, _count: true }),
     prisma.jobOffer.groupBy({ by: ["specialty"], where, _count: true }),
     prisma.jobOffer.groupBy({ by: ["educationLevel"], where, _count: true }),
+    prisma.jobOffer.groupBy({ by: ["countryCode"], where, _count: true }),
   ]);
 
   const toRecord = <K extends string>(
@@ -191,6 +205,7 @@ async function searchWithPostgres(input: OfferSearchInput): Promise<OfferSearchR
       sector: toRecord(sectorFacet as never, "sector"),
       specialty: toRecord(specialtyFacet as never, "specialty"),
       educationLevel: toRecord(educationFacet as never, "educationLevel"),
+      countryCode: toRecord(countryFacet as never, "countryCode"),
     },
     engine: "postgres",
   };

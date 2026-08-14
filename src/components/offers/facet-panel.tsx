@@ -4,6 +4,8 @@ import type { FacetCounts } from "@/server/search/query";
 import {
   CONTRACT_LABELS,
   CONTRACT_TYPES,
+  COUNTRY_FLAGS,
+  COUNTRY_LABELS,
   DATE_RANGE_LABELS,
   DATE_RANGES,
   EDUCATION_LABELS,
@@ -58,6 +60,7 @@ export type FacetSelection = {
   remote: string[];
   niveau: string[];
   specialite: string[];
+  pays: string[];
   secteur: string[];
   datePub?: string;
   rayon?: number;
@@ -75,7 +78,7 @@ export function FacetPanel({
   facets: FacetCounts;
   selection: FacetSelection;
   onToggle: (
-    facet: "contrat" | "remote" | "niveau" | "specialite" | "secteur",
+    facet: "contrat" | "remote" | "niveau" | "specialite" | "pays" | "secteur",
     value: string,
   ) => void;
   onDatePub: (value?: string) => void;
@@ -85,6 +88,17 @@ export function FacetPanel({
   const contractOptions = CONTRACT_TYPES.filter(
     (c) => (facets.contractType?.[c] ?? 0) > 0 || selection.contrat.includes(c),
   ).map((c) => ({ value: c, label: CONTRACT_LABELS[c], count: facets.contractType?.[c] ?? 0 }));
+
+  // "FR" n'est pas proposé ici : c'est le défaut implicite de tout le monde,
+  // le filtrer par pays sert à trouver les offres *internationales*.
+  const countryOptions = Object.keys(COUNTRY_LABELS)
+    .filter((c) => c !== "FR")
+    .filter((c) => (facets.countryCode?.[c] ?? 0) > 0 || selection.pays.includes(c))
+    .map((c) => ({
+      value: c,
+      label: `${COUNTRY_FLAGS[c] ?? ""} ${COUNTRY_LABELS[c]}`.trim(),
+      count: facets.countryCode?.[c] ?? 0,
+    }));
 
   const remoteOptions = REMOTE_POLICIES.filter(
     (r) => (facets.remotePolicy?.[r] ?? 0) > 0 || selection.remote.includes(r),
@@ -170,6 +184,12 @@ export function FacetPanel({
         options={contractOptions}
         selected={selection.contrat}
         onToggle={(v) => onToggle("contrat", v)}
+      />
+      <FacetGroup
+        title="Pays"
+        options={countryOptions}
+        selected={selection.pays}
+        onToggle={(v) => onToggle("pays", v)}
       />
       <FacetGroup
         title="Télétravail"

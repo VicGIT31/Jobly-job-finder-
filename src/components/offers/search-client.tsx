@@ -6,6 +6,8 @@ import { useCallback, useMemo } from "react";
 import type { OfferSearchResult } from "@/server/search/query";
 import {
   CONTRACT_LABELS,
+  COUNTRY_FLAGS,
+  COUNTRY_LABELS,
   DATE_RANGE_LABELS,
   EDUCATION_LABELS,
   REMOTE_LABELS,
@@ -28,6 +30,7 @@ const searchStateParsers = {
   remote: parseAsString.withDefault(""),
   niveau: parseAsString.withDefault(""),
   specialite: parseAsString.withDefault(""),
+  pays: parseAsString.withDefault(""),
   secteur: parseAsString.withDefault(""),
   datePub: parseAsString,
   tri: parseAsStringLiteral(SORTS).withDefault("date"),
@@ -55,6 +58,7 @@ export function SearchClient({
     if (state.remote) params.set("remote", state.remote);
     if (state.niveau) params.set("niveau", state.niveau);
     if (state.specialite) params.set("specialite", state.specialite);
+    if (state.pays) params.set("pays", state.pays);
     if (state.secteur) params.set("secteur", state.secteur);
     if (state.datePub) params.set("datePub", state.datePub);
     if (state.tri !== "date") params.set("tri", state.tri);
@@ -75,7 +79,7 @@ export function SearchClient({
   const result = data ?? initialResult;
 
   const toggleFacet = useCallback(
-    (facet: "contrat" | "remote" | "niveau" | "specialite" | "secteur", value: string) => {
+    (facet: "contrat" | "remote" | "niveau" | "specialite" | "pays" | "secteur", value: string) => {
       const current = csv(state[facet]);
       const next = current.includes(value)
         ? current.filter((v) => v !== value)
@@ -117,6 +121,13 @@ export function SearchClient({
         remove: () => toggleFacet("specialite", sp),
       });
     }
+    for (const p of csv(state.pays)) {
+      tickets.push({
+        key: `pays-${p}`,
+        label: `${COUNTRY_FLAGS[p] ?? ""} ${COUNTRY_LABELS[p] ?? p}`.trim(),
+        remove: () => toggleFacet("pays", p),
+      });
+    }
     for (const s of csv(state.secteur)) {
       tickets.push({ key: `secteur-${s}`, label: s, remove: () => toggleFacet("secteur", s) });
     }
@@ -148,6 +159,7 @@ export function SearchClient({
           remote: csv(state.remote),
           niveau: csv(state.niveau),
           specialite: csv(state.specialite),
+          pays: csv(state.pays),
           secteur: csv(state.secteur),
           datePub: state.datePub ?? undefined,
           rayon: state.rayon ?? undefined,

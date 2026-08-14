@@ -1,8 +1,21 @@
 import { z } from "zod";
 import type { ContractType } from "@prisma/client";
 
-/** Contrats exposés au public : Jobly ne référence que stage et alternance. */
-export const CONTRACT_TYPES = ["STAGE", "ALTERNANCE"] as const;
+/**
+ * Contrats exposés au public. Historiquement stage/alternance uniquement
+ * (sources françaises) ; les 4 types employeur génériques couvrent les
+ * sources internationales ajoutées depuis (voir SOURCES_EUROPE_ASIA.md).
+ * CDI/CDD/VIE restent hors filtre public : vocabulaire français legacy,
+ * toujours rejeté à l'ingestion pour les sources françaises (normalize.ts).
+ */
+export const CONTRACT_TYPES = [
+  "STAGE",
+  "ALTERNANCE",
+  "FULL_TIME",
+  "PART_TIME",
+  "CONTRACT",
+  "FREELANCE",
+] as const;
 export const REMOTE_POLICIES = ["ONSITE", "HYBRID", "FULL"] as const;
 export const EDUCATION_LEVELS = [
   "BAC",
@@ -43,6 +56,50 @@ export const TOP_CITIES = [
 export const TOP_CITY_RADIUS_KM = 20;
 
 export const PAGE_SIZE = 12;
+
+/**
+ * Pays des offres indexées (JobOffer.countryCode). "FR" reste le défaut
+ * historique (non affiché comme un badge distinctif, voir offer-card.tsx) ;
+ * les autres viennent des sources internationales — voir
+ * SOURCES_EUROPE_ASIA.md et CONTEXTE_AI_WORK.md §2.7. "XX" = pays non résolu
+ * par l'heuristique de localisation des connecteurs ATS.
+ */
+export const COUNTRY_LABELS: Record<string, string> = {
+  FR: "France",
+  US: "États-Unis",
+  GB: "Royaume-Uni",
+  DE: "Allemagne",
+  ES: "Espagne",
+  IT: "Italie",
+  NL: "Pays-Bas",
+  IE: "Irlande",
+  PL: "Pologne",
+  AT: "Autriche",
+  CH: "Suisse",
+  SE: "Suède",
+  DK: "Danemark",
+  NO: "Norvège",
+  FI: "Finlande",
+  BE: "Belgique",
+  PT: "Portugal",
+  CZ: "République tchèque",
+  SG: "Singapour",
+  IN: "Inde",
+  JP: "Japon",
+  KR: "Corée du Sud",
+  AE: "Émirats arabes unis",
+  HK: "Hong Kong",
+  MY: "Malaisie",
+  ID: "Indonésie",
+  TH: "Thaïlande",
+  VN: "Vietnam",
+  PH: "Philippines",
+  TW: "Taïwan",
+  CA: "Canada",
+  AU: "Australie",
+  XX: "Autre / non précisé",
+};
+export const COUNTRIES = Object.keys(COUNTRY_LABELS);
 
 // Couvre tout l'enum Prisma : d'anciennes offres hors périmètre peuvent
 // subsister en base (admin) même si seuls stage/alternance sont exposés.
@@ -118,6 +175,7 @@ export const offerSearchParamsSchema = z.object({
   remote: csv(REMOTE_POLICIES),
   niveau: csv(EDUCATION_LEVELS),
   specialite: csv(SPECIALTIES),
+  pays: csv(COUNTRIES),
   secteur: z
     .string()
     .optional()
