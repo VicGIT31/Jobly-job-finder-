@@ -3,6 +3,7 @@ import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { rateLimit } from "@/lib/rate-limit";
 import { resolveApply } from "@/server/apply/redirect";
+import { syncApplicationOnApply } from "@/server/applications/tracker";
 
 export const dynamic = "force-dynamic";
 
@@ -22,13 +23,21 @@ export async function GET(
 
   const session = await auth();
 
+  const offer = await prisma.jobOffer.findUnique({
+    where: { id: params.offerId },
+    select: {
+      id: true,
+      slug: true,
+      status: true,
+      sourceUrl: true,
+      title: true,
+      company: { select: { name: true, logoUrl: true } },
+    },
+  });
+
   const resolution = await resolveApply(
     {
-      findOffer: (offerId) =>
-        prisma.jobOffer.findUnique({
-          where: { id: offerId },
-          select: { id: true, slug: true, status: true, sourceUrl: true },
-        }),
+      findOffer: async () => offer,
       recordClick: async (data) => {
         await prisma.applyClick.create({ data });
       },
@@ -37,6 +46,22 @@ export async function GET(
     session?.user?.id ?? null,
     request.headers.get("referer"),
   );
+
+  // Suivi automatique de candidature : best-effort, ne doit jamais bloquer la
+  // redirection réelle vers la source si ça échoue.
+  if (resolution.kind === "redirect" && session?.user?.id && offer) {
+    try {
+      await syncApplicationOnApply(session.user.id, {
+        id: offer.id,
+        title: offer.title,
+        sourceUrl: offer.sourceUrl,
+        companyName: offer.company.name,
+        companyLogoUrl: offer.company.logoUrl,
+      });
+    } catch (err) {
+      console.error("syncApplicationOnApply a échoué", err);
+    }
+  }
 
   switch (resolution.kind) {
     case "redirect":
