@@ -586,6 +586,43 @@ suite de tests complète (119 tests), `docker compose build app` réel.
 §2.18 + correctif critique §2.19), conformément à la consigne utilisateur
 sur le regroupement des commits (voir mémoire `feedback_commit_granularity`).
 
+### 2.20 Bug SSR trouvé en marge de §2.19 : `/offres` affichait toujours le squelette de chargement
+
+En creusant l'erreur 500 de §2.19 avec `curl` (sans JavaScript, donc HTML
+strictement tel que servi par le serveur), remarqué que `/offres` — page
+que le code commente explicitement « la première page est rendue côté
+serveur (SEO + partage d'URL) » — affichait en réalité **toujours** le
+squelette de chargement (`ResultsSkeleton`, `role="status"`) au premier
+rendu, jamais les vraies offres, y compris pour un crawler ou tout client
+sans JS. Sans lien avec §2.19 (aucune erreur, juste un rendu incorrect),
+mais un vrai défaut SEO/UX passé inaperçu jusqu'ici car toutes les
+vérifications précédentes de cette session sur `/offres` inspectaient soit
+le panneau de filtres (`FacetPanel`, rendu directement depuis
+`initialResult.facets`, jamais concerné), soit une autre page.
+
+Cause : `useQuery` (TanStack Query) sans `initialData` — au tout premier
+rendu, `isFetching` est vrai et `data` est `undefined` avant toute
+requête, donc `showSkeleton = isFetching && !isPlaceholderData && !data`
+est vrai même si `initialResult` (déjà chargé côté serveur) est
+disponible.
+
+Corrigé avec `initialData` scopé à la requête initiale exacte via un
+`useRef` capturant `queryString` au montage : `initialData: queryString
+=== initialQueryStringRef.current ? initialResult : undefined`. N'affecte
+que le tout premier rendu — un changement de filtre produit un nouveau
+`queryString` qui ne correspond plus à la ref, donc le comportement de
+chargement pour les recherches suivantes est inchangé.
+
+Vérifié en conditions réelles avec `curl` (sans JavaScript, donc test
+strict du rendu serveur) : `/offres` sans filtre → 12 vraies cartes, aucun
+squelette ; `/offres?pays=DE` → idem ; `/offres?page=2` → idem ; recherche
+sans résultat → état vide correct, toujours sans squelette. `tsc --noEmit`,
+ESLint, Prettier, suite de tests complète (119 tests), `docker compose
+build app` réel.
+
+**Non commité à ce stade** — regroupé pour un prochain commit substantiel
+(voir mémoire `feedback_commit_granularity`).
+
 ---
 
 ## 3. Ce qui N'A PAS été fait (le reste du cahier des charges)

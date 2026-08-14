@@ -2,7 +2,7 @@
 
 import { keepPreviousData, useQuery } from "@tanstack/react-query";
 import { parseAsInteger, parseAsString, parseAsStringLiteral, useQueryStates } from "nuqs";
-import { useCallback, useMemo, useState } from "react";
+import { useCallback, useMemo, useRef, useState } from "react";
 import { SearchX, SlidersHorizontal } from "lucide-react";
 import type { OfferSearchResult } from "@/server/search/query";
 import type { MatchCandidate } from "@/server/match/score";
@@ -72,6 +72,12 @@ export function SearchClient({
     return params.toString();
   }, [state]);
 
+  // Capturé une seule fois au montage : les mêmes paramètres d'URL ont déjà
+  // été utilisés côté serveur pour produire `initialResult`. Sert à ne
+  // réutiliser cette donnée SSR que pour la requête initiale exacte, jamais
+  // pour une recherche suivante après changement de filtre.
+  const initialQueryStringRef = useRef(queryString);
+
   const { data, isFetching, isPlaceholderData } = useQuery<OfferSearchResult>({
     queryKey: ["search", queryString],
     queryFn: async () => {
@@ -79,6 +85,13 @@ export function SearchClient({
       if (!res.ok) throw new Error("Recherche indisponible");
       return res.json();
     },
+    // Sans ceci, le premier rendu (y compris le HTML servi par le serveur,
+    // avant hydratation) affichait toujours le squelette de chargement au
+    // lieu des offres déjà connues via `initialResult` — la recherche
+    // paraissait vide à toute requête sans JavaScript (SEO, crawlers,
+    // partage de lien) alors que le commentaire du composant parent
+    // affirmait explicitement un rendu SSR à cette fin.
+    initialData: queryString === initialQueryStringRef.current ? initialResult : undefined,
     placeholderData: keepPreviousData,
   });
 
