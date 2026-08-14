@@ -7,8 +7,12 @@ import { Markdown } from "@/components/markdown";
 import { OfferCard, formatDateFr, formatSalary, timeAgo } from "@/components/offers/offer-card";
 import { CompanyLogo } from "@/components/offers/company-logo";
 import { SaveOfferButton } from "@/components/offers/save-offer-button";
+import { AlreadyAppliedButton } from "@/components/applications/already-applied-button";
+import { HideOfferButton } from "@/components/offers/hide-offer-button";
+import { MatchScoreCard } from "@/components/offers/match-score-card";
 import { findSimilarOffers } from "@/server/offers/similar";
 import { offerToDocument } from "@/server/search/sync";
+import { computeMatchScore } from "@/server/match/score";
 import { CONTRACT_LABELS, EDUCATION_LABELS, REMOTE_LABELS } from "@/lib/search-params";
 
 export const dynamic = "force-dynamic";
@@ -80,18 +84,42 @@ export default async function OffrePage({ params }: { params: { slug: string } }
   const offer = await getOffer(params.slug);
   if (!offer) notFound();
 
-  const [session, similar, saved] = await Promise.all([
-    auth(),
+  const session = await auth();
+  const userId = session?.user?.id ?? null;
+
+  const [similar, saved, tracked, hidden, candidateProfile] = await Promise.all([
     findSimilarOffers(offer),
-    (async () => {
-      const s = await auth();
-      if (!s?.user?.id) return false;
-      const existing = await prisma.savedOffer.findUnique({
-        where: { userId_offerId: { userId: s.user.id, offerId: offer.id } },
-      });
-      return Boolean(existing);
-    })(),
+    userId
+      ? prisma.savedOffer
+          .findUnique({ where: { userId_offerId: { userId, offerId: offer.id } } })
+          .then(Boolean)
+      : Promise.resolve(false),
+    userId
+      ? prisma.application
+          .findUnique({ where: { userId_offerId: { userId, offerId: offer.id } } })
+          .then(Boolean)
+      : Promise.resolve(false),
+    userId
+      ? prisma.hiddenOffer
+          .findUnique({ where: { userId_offerId: { userId, offerId: offer.id } } })
+          .then(Boolean)
+      : Promise.resolve(false),
+    userId
+      ? prisma.user.findUnique({
+          where: { id: userId },
+          select: { educationLevel: true, targetSpecialty: true, city: true },
+        })
+      : Promise.resolve(null),
   ]);
+
+  const matchResult = candidateProfile
+    ? computeMatchScore(candidateProfile, {
+        educationLevel: offer.educationLevel,
+        specialty: offer.specialty,
+        city: offer.city,
+        remotePolicy: offer.remotePolicy,
+      })
+    : null;
 
   const isExpired = offer.status === "EXPIRED";
   const salary = formatSalary(offer.salaryMin, offer.salaryMax);
@@ -182,6 +210,16 @@ export default async function OffrePage({ params }: { params: { slug: string } }
                 initialSaved={saved}
                 isLoggedIn={Boolean(session?.user)}
               />
+              <AlreadyAppliedButton
+                offerId={offer.id}
+                initialTracked={tracked}
+                isLoggedIn={Boolean(session?.user)}
+              />
+              <HideOfferButton
+                offerId={offer.id}
+                initialHidden={hidden}
+                isLoggedIn={Boolean(session?.user)}
+              />
             </div>
 
             <dl className="rule mt-4 space-y-2 pt-4 text-sm">
@@ -208,6 +246,8 @@ export default async function OffrePage({ params }: { params: { slug: string } }
               </div>
             </dl>
           </div>
+
+          <MatchScoreCard isLoggedIn={Boolean(session?.user)} result={matchResult} />
 
           <div className="card mt-4 p-5">
             <h2 className="font-display text-lg font-bold">{offer.company.name}</h2>
