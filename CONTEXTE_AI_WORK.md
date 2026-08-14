@@ -428,6 +428,30 @@ Deux écarts réels trouvés et corrigés :
 
 ---
 
+### 2.14 Drapeau pays sur la page de détail d'offre (cohérence avec `OfferCard`)
+
+`OfferCard` affiche déjà un drapeau à côté de la ville pour toute offre hors
+France (§2.8), mais la page de détail `/offres/[slug]` ne le faisait pas
+alors qu'elle affiche la même info (ville, dans un `<span className="ticket">`).
+Un·e utilisateur·rice cliquant depuis une carte avec drapeau atterrissait sur
+une page de détail qui « perdait » l'indication pays. Corrigé en réutilisant
+exactement le même motif (`COUNTRY_FLAGS[offer.countryCode] ?? "🌍"`, masqué
+pour `FR`) dans `src/app/offres/[slug]/page.tsx`.
+
+Vérification préalable (fork) : les pages entreprise (`entreprises/[slug]`,
+`entreprises`) affichent leurs offres via `OfferCard`, donc pas de trou là.
+`Company` n'a pas de champ pays (seulement `sector`/`size`/`website`) —
+« pays d'implantation de l'entreprise » resterait une fonctionnalité dérivée
+à part entière, pas une correction de cohérence, donc non traité ici.
+
+Vérifié en conditions réelles : `tsc --noEmit`, ESLint, Prettier, suite de
+tests complète (119 tests), `docker compose build app` réel, deux pages
+d'offre réelles servies après rebuild — une offre Berlin (N26) affiche 🇩🇪,
+une offre française n'affiche aucun drapeau (non-régression), confirmées
+par `curl`.
+
+---
+
 ## 3. Ce qui N'A PAS été fait (le reste du cahier des charges)
 
 Le cahier des charges complet est dans `europe_asia_ai_job_platform_mvp_prompt.md`

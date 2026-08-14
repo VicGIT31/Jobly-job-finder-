@@ -16,7 +16,12 @@ import { findSimilarOffers } from "@/server/offers/similar";
 import { offerToDocument } from "@/server/search/sync";
 import { computeMatchScore } from "@/server/match/score";
 import { computeCvMatch } from "@/server/cv/analyze";
-import { CONTRACT_LABELS, EDUCATION_LABELS, REMOTE_LABELS } from "@/lib/search-params";
+import {
+  CONTRACT_LABELS,
+  COUNTRY_FLAGS,
+  EDUCATION_LABELS,
+  REMOTE_LABELS,
+} from "@/lib/search-params";
 
 export const dynamic = "force-dynamic";
 
@@ -185,7 +190,12 @@ export default async function OffrePage({ params }: { params: { slug: string } }
 
           <div className="mt-4 flex flex-wrap items-center gap-2">
             <span className="stamp">{CONTRACT_LABELS[offer.contractType]}</span>
-            <span className="ticket">{offer.city}</span>
+            <span className="ticket">
+              {offer.countryCode !== "FR" && (
+                <span aria-hidden="true">{COUNTRY_FLAGS[offer.countryCode] ?? "🌍"}</span>
+              )}
+              {offer.city}
+            </span>
             <span className="ticket">{REMOTE_LABELS[offer.remotePolicy]}</span>
             <span className="ticket">{EDUCATION_LABELS[offer.educationLevel]}</span>
             {salary && <span className="ticket font-semibold">{salary}</span>}
