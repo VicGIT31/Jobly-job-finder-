@@ -260,6 +260,25 @@ CA 3, AE 2 — 16 pays, filtrables en direct depuis `/offres`.
   base sur le compte démo, carte de correspondance confirmée affichée sur
   une vraie page offre.
 
+### 2.10 Export et suppression de compte (RGPD) — spec §45-46, §48-49
+
+- `GET /api/mon-espace/export` : export JSON téléchargeable de tout ce que
+  le candidat possède (profil, candidatures + historique de statut, offres
+  sauvegardées/masquées, recherches sauvegardées, clics de candidature).
+  N'inclut pas les offres elles-mêmes (donnée publique, pas personnelle),
+  seulement le lien du candidat à ces offres. Vérifié en conditions réelles.
+- `deleteAccount` (server action) : suppression immédiate et définitive,
+  pas de période de grâce. Le CV (S3/MinIO) est supprimé explicitement
+  avant la suppression du compte car il n'est pas couvert par les cascades
+  Prisma ; tout le reste (candidatures, historique, offres sauvegardées/
+  masquées, recherches, sessions) l'est via `onDelete: Cascade`. Les clics
+  de candidature (`ApplyClick`) sont anonymisés (`onDelete: SetNull`)
+  plutôt que supprimés, pour ne pas fausser les statistiques d'ingestion
+  déjà agrégées.
+- Page `/mon-espace/confidentialite`, bouton de suppression avec
+  confirmation explicite (`window.confirm`), pas de case pré-cochée nulle
+  part dans ce flux.
+
 ---
 
 ## 3. Ce qui N'A PAS été fait (le reste du cahier des charges)
@@ -298,10 +317,10 @@ probable :
    s'appuyer sur `computeMatchScore` (§2.3) + date de publication +
    éventuellement une estimation de complexité du formulaire externe (pas
    mesurable tant qu'il n'y a pas d'autofill réel).
-6. **Compagnies pages enrichies, alertes multi-canal, RGPD export/delete
-   dédié** (spec §31, §45-46, §48-49) — l'export/suppression RGPD n'existe
-   pas encore en tant que tel (pas de bouton « Télécharger mes données » /
-   « Supprimer mon compte » dans `/mon-espace`).
+6. **Compagnies pages enrichies, alertes multi-canal** (spec §31, §48-49) —
+   RGPD export/delete fait (§2.10). Reste : pages entreprise enrichies
+   (salaires, benefits, patterns de télétravail agrégés), alertes par
+   canal autre qu'email.
 7. **Salaires/devises/autorisation de travail sur les offres
    internationales** (spec §5-6) — aucun de ces champs n'existe encore sur
    `JobOffer` pour les offres non françaises ; `salaryMin`/`salaryMax` sont
