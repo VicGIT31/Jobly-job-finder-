@@ -4,6 +4,7 @@ import { notFound } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import { OfferCard } from "@/components/offers/offer-card";
 import { offerToDocument } from "@/server/search/sync";
+import { COUNTRY_FLAGS, COUNTRY_LABELS } from "@/lib/search-params";
 
 export const dynamic = "force-dynamic";
 
@@ -37,6 +38,13 @@ export default async function EntreprisePage({ params }: { params: { slug: strin
   const company = await getCompany(params.slug);
   if (!company) notFound();
 
+  // Pays dérivés des offres actives (pas de champ dédié sur Company) —
+  // affiché seulement au-delà d'un seul pays, pour ne pas ajouter de bruit
+  // aux entreprises purement françaises (spec: focus Europe/France).
+  const countries = Array.from(new Set(company.offers.map((o) => o.countryCode))).sort((a, b) =>
+    a === "FR" ? -1 : b === "FR" ? 1 : a.localeCompare(b),
+  );
+
   return (
     <div className="mx-auto max-w-6xl px-4 py-8">
       <nav aria-label="Fil d'Ariane" className="text-sm text-ink/60">
@@ -67,6 +75,17 @@ export default async function EntreprisePage({ params }: { params: { slug: strin
             </>
           )}
         </p>
+        {countries.length > 1 && (
+          <p className="mt-2 flex flex-wrap items-center gap-1.5 text-sm text-ink/70">
+            <span className="text-ink/50">Recrute en :</span>
+            {countries.map((c) => (
+              <span key={c} className="ticket">
+                {c !== "FR" && <span aria-hidden="true">{COUNTRY_FLAGS[c] ?? "🌍"}</span>}
+                {COUNTRY_LABELS[c] ?? c}
+              </span>
+            ))}
+          </p>
+        )}
         <p className="mt-4 max-w-3xl leading-relaxed text-ink/85">{company.description}</p>
       </header>
 

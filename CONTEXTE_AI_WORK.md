@@ -476,6 +476,30 @@ effectivement `hidden lg:block` dans le HTML, confirmés par `curl`.
 
 ---
 
+### 2.16 Pays de recrutement sur la page entreprise (dérivé, pas de champ ajouté)
+
+Suite du point relevé par le fork en §2.13 (« Company n'a pas de champ
+pays… fonctionnalité dérivée à part entière, à traiter séparément »).
+`entreprises/[slug]/page.tsx` chargeait déjà toutes les offres actives de
+l'entreprise (`getCompany`) — aucun changement de schéma ni de requête
+nécessaire : les pays sont dérivés côté page (`new Set(offers.map(o =>
+o.countryCode))`, France épinglée en premier si présente).
+
+Affiché seulement si l'entreprise a des offres dans **plus d'un** pays
+(`countries.length > 1`) — délibéré : ne pas ajouter de ligne à chaque
+entreprise purement française (la majorité), seulement là où l'info a une
+vraie valeur (ex. GitLab : 8 pays). Mêmes pastilles `ticket` + drapeaux que
+partout ailleurs, aucune nouvelle classe.
+
+Vérifié en conditions réelles : `tsc --noEmit`, ESLint, Prettier, suite de
+tests complète (119 tests), `docker compose build app` réel, deux pages
+entreprise réelles servies après rebuild — GitLab affiche ses 8 pays
+(Émirats, Canada, Royaume-Uni, Inde, Japon, Singapour, États-Unis, "Autre /
+non précisé"), une entreprise mono-pays n'affiche aucune ligne « Recrute en »
+(non-régression), confirmées par `curl`.
+
+---
+
 ## 3. Ce qui N'A PAS été fait (le reste du cahier des charges)
 
 Le cahier des charges complet est dans `europe_asia_ai_job_platform_mvp_prompt.md`
