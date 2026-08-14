@@ -452,6 +452,30 @@ par `curl`.
 
 ---
 
+### 2.15 Filtres repliables sur mobile — vrai trou UX, pas cosmétique
+
+En vérifiant le comportement responsive de `search-client.tsx` (le layout
+`grid lg:grid-cols-[260px_1fr]` ne collabore qu'à partir de `lg`), trouvé
+que `FacetPanel` — désormais jusqu'à 9 groupes de filtres après §2.13 —
+s'affichait intégralement empilé au-dessus des résultats sur mobile, sans
+repli possible. Sur téléphone, il fallait faire défiler tout le panneau de
+filtres avant d'atteindre la moindre offre à chaque visite de `/offres` —
+probablement la majorité du trafic d'un site pour étudiants.
+
+Corrigé avec un bouton bascule visible uniquement sous `lg` (`lg:hidden`),
+icône `SlidersHorizontal` (déjà dans `lucide-react`, aucune nouvelle
+dépendance), badge du nombre de filtres actifs, `aria-expanded`/
+`aria-controls` corrects. Le panneau reste toujours visible sur desktop
+(`hidden lg:block`, replié par défaut uniquement sous `lg`) : aucun
+changement de comportement desktop.
+
+Vérifié en conditions réelles : `tsc --noEmit`, ESLint, Prettier, suite de
+tests complète (119 tests), `docker compose build app` réel, page `/offres`
+servie après rebuild avec `aria-expanded="false"` et le panneau
+effectivement `hidden lg:block` dans le HTML, confirmés par `curl`.
+
+---
+
 ## 3. Ce qui N'A PAS été fait (le reste du cahier des charges)
 
 Le cahier des charges complet est dans `europe_asia_ai_job_platform_mvp_prompt.md`

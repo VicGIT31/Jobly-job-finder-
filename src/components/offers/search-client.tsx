@@ -2,8 +2,8 @@
 
 import { keepPreviousData, useQuery } from "@tanstack/react-query";
 import { parseAsInteger, parseAsString, parseAsStringLiteral, useQueryStates } from "nuqs";
-import { useCallback, useMemo } from "react";
-import { SearchX } from "lucide-react";
+import { useCallback, useMemo, useState } from "react";
+import { SearchX, SlidersHorizontal } from "lucide-react";
 import type { OfferSearchResult } from "@/server/search/query";
 import {
   CONTRACT_LABELS,
@@ -49,6 +49,7 @@ export function SearchClient({
   isLoggedIn: boolean;
 }) {
   const [state, setState] = useQueryStates(searchStateParsers, { history: "replace" });
+  const [filtersOpen, setFiltersOpen] = useState(false);
 
   const queryString = useMemo(() => {
     const params = new URLSearchParams();
@@ -153,30 +154,48 @@ export function SearchClient({
 
   return (
     <div className="grid gap-8 lg:grid-cols-[260px_1fr]">
-      <FacetPanel
-        facets={result.facets}
-        selection={{
-          contrat: csv(state.contrat),
-          remote: csv(state.remote),
-          niveau: csv(state.niveau),
-          specialite: csv(state.specialite),
-          pays: csv(state.pays),
-          secteur: csv(state.secteur),
-          datePub: state.datePub ?? undefined,
-          rayon: state.rayon ?? undefined,
-          ville: state.ville,
-        }}
-        onToggle={toggleFacet}
-        onDatePub={(v) => void setState({ datePub: v ?? null, page: 1 })}
-        onRayon={(v) => void setState({ rayon: v ?? null, page: 1 })}
-        onCity={(city) =>
-          void setState({
-            ville: city ?? null,
-            rayon: city ? TOP_CITY_RADIUS_KM : null,
-            page: 1,
-          })
-        }
-      />
+      <button
+        type="button"
+        className="btn-outline flex !min-h-[40px] items-center justify-center gap-2 text-sm lg:hidden"
+        aria-expanded={filtersOpen}
+        aria-controls="facet-panel"
+        onClick={() => setFiltersOpen((open) => !open)}
+      >
+        <SlidersHorizontal aria-hidden="true" size={16} />
+        {filtersOpen ? "Masquer les filtres" : "Filtres"}
+        {activeTickets.length > 0 && (
+          <span className="rounded-full bg-cobalt px-1.5 py-0.5 text-xs font-semibold text-white">
+            {activeTickets.length}
+          </span>
+        )}
+      </button>
+
+      <div id="facet-panel" className={filtersOpen ? "block" : "hidden lg:block"}>
+        <FacetPanel
+          facets={result.facets}
+          selection={{
+            contrat: csv(state.contrat),
+            remote: csv(state.remote),
+            niveau: csv(state.niveau),
+            specialite: csv(state.specialite),
+            pays: csv(state.pays),
+            secteur: csv(state.secteur),
+            datePub: state.datePub ?? undefined,
+            rayon: state.rayon ?? undefined,
+            ville: state.ville,
+          }}
+          onToggle={toggleFacet}
+          onDatePub={(v) => void setState({ datePub: v ?? null, page: 1 })}
+          onRayon={(v) => void setState({ rayon: v ?? null, page: 1 })}
+          onCity={(city) =>
+            void setState({
+              ville: city ?? null,
+              rayon: city ? TOP_CITY_RADIUS_KM : null,
+              page: 1,
+            })
+          }
+        />
+      </div>
 
       <div>
         <search role="search" aria-label="Recherche d'offres">
