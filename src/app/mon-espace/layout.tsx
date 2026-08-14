@@ -55,6 +55,12 @@ export default async function MonEspaceLayout({ children }: { children: React.Re
         >
           Insights
         </Link>
+        <Link
+          href="/mon-espace/confidentialite"
+          className="px-3 py-2 text-sm font-semibold hover:bg-ink/5"
+        >
+          Confidentialité
+        </Link>
         <Link href="/mon-espace/alertes" className="px-3 py-2 text-sm font-semibold hover:bg-ink/5">
           Alertes
         </Link>

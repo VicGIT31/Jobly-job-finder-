@@ -165,3 +165,30 @@ export async function deleteAlert(searchId: string): Promise<void> {
 export async function logout(): Promise<void> {
   await signOut({ redirectTo: "/" });
 }
+
+/**
+ * « Supprimer mon compte et mes données » (spec §45, RGPD). Suppression
+ * définitive et immédiate — pas de période de grâce, cohérent avec
+ * l'absence de période de rétention configurée ailleurs dans le produit.
+ * Le CV (S3/MinIO) n'est pas couvert par la cascade de la base : supprimé
+ * explicitement avant la suppression du compte. Toutes les autres données
+ * (candidatures, offres sauvegardées/masquées, recherches sauvegardées,
+ * sessions) sont supprimées par les contraintes `onDelete: Cascade` du
+ * schéma ; seuls les clics de candidature (`ApplyClick`) sont anonymisés
+ * (`onDelete: SetNull`) plutôt que supprimés, pour ne pas fausser les
+ * statistiques d'ingestion déjà agrégées.
+ */
+export async function deleteAccount(): Promise<void> {
+  const userId = await requireUserId();
+  if (!userId) return;
+
+  const user = await prisma.user.findUnique({ where: { id: userId }, select: { cvKey: true } });
+  if (user?.cvKey) {
+    await getStorage()
+      .delete(user.cvKey)
+      .catch(() => undefined);
+  }
+
+  await prisma.user.delete({ where: { id: userId } });
+  await signOut({ redirectTo: "/" });
+}
