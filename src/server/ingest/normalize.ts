@@ -25,6 +25,8 @@ export const rawOfferSchema = z.object({
   publishedAt: z.coerce.date().optional(),
   // Logo de l'entreprise tel qu'exposé par la source.
   companyLogoUrl: z.string().url().max(1000).optional(),
+  // ISO 3166-1 alpha-2. Absent = source française historique ("FR").
+  countryCode: z.string().length(2).optional(),
 });
 
 export type RawOffer = z.infer<typeof rawOfferSchema>;
@@ -52,6 +54,7 @@ export type NormalizedOffer = {
   scrapedAt: Date;
   publishedAt: Date | null;
   companyLogoUrl: string | null;
+  countryCode: string;
 };
 
 const CONTRACT_MAP: Record<string, ContractType> = {
@@ -71,14 +74,29 @@ const CONTRACT_MAP: Record<string, ContractType> = {
   "contrat pro": "ALTERNANCE",
   vie: "VIE",
   "volontariat international": "VIE",
+  // Clés dédiées aux connecteurs internationaux (sources/arbetsformedlingen.ts,
+  // sources/ats-boards.ts…) : volontairement distinctes des clés françaises
+  // ci-dessus pour ne jamais changer le classement d'une source existante.
+  employment_full_time: "FULL_TIME",
+  employment_part_time: "PART_TIME",
+  employment_contract: "CONTRACT",
+  employment_freelance: "FREELANCE",
+  employment_internship: "STAGE",
+  employment_apprenticeship: "ALTERNANCE",
 };
 
 /**
- * Jobly ne référence que les stages et alternances. Les autres contrats
- * (CDI, CDD, VIE…) sont reconnus par CONTRACT_MAP mais rejetés à l'ingestion,
- * pour distinguer « hors périmètre » de « vocabulaire inconnu » dans les logs.
+ * Jobly ne référence que les stages et alternances **pour ses sources
+ * françaises historiques**. Les autres contrats (CDI, CDD, VIE…) sont
+ * reconnus par CONTRACT_MAP mais rejetés à l'ingestion par défaut, pour
+ * distinguer « hors périmètre » de « vocabulaire inconnu » dans les logs.
+ *
+ * Les connecteurs internationaux (spec §2, §54 : full-time, part-time,
+ * contract, freelance en plus des stages/alternances) passent leur propre
+ * `acceptedContracts` à `normalizeOffer`/`processIngest` — le défaut ci-dessous
+ * ne change pas pour les 7 connecteurs existants.
  */
-const ACCEPTED_CONTRACTS: ReadonlySet<ContractType> = new Set(["STAGE", "ALTERNANCE"]);
+const DEFAULT_ACCEPTED_CONTRACTS: ReadonlySet<ContractType> = new Set(["STAGE", "ALTERNANCE"]);
 
 const REMOTE_MAP: Record<string, RemotePolicy> = {
   onsite: "ONSITE",
@@ -140,21 +158,25 @@ export class NormalizationError extends Error {
   }
 }
 
+export type NormalizeOptions = {
+  /** Périmètre de contrats accepté par la source appelante. Défaut : stage/alternance uniquement. */
+  acceptedContracts?: ReadonlySet<ContractType>;
+};
+
 /**
  * Normalise une offre brute validée en offre prête à insérer.
  * Lève NormalizationError si un champ énuméré est inconnu.
  */
-export function normalizeOffer(raw: RawOffer): NormalizedOffer {
+export function normalizeOffer(raw: RawOffer, options: NormalizeOptions = {}): NormalizedOffer {
+  const acceptedContracts = options.acceptedContracts ?? DEFAULT_ACCEPTED_CONTRACTS;
+
   const contractKey = cleanWhitespace(raw.contractType).toLowerCase();
   const contractType = CONTRACT_MAP[contractKey];
   if (!contractType) {
     throw new NormalizationError(`Type de contrat inconnu : "${raw.contractType}"`, "contractType");
   }
-  if (!ACCEPTED_CONTRACTS.has(contractType)) {
-    throw new NormalizationError(
-      `Contrat hors périmètre : "${raw.contractType}" (seuls stage et alternance sont référencés)`,
-      "contractType",
-    );
+  if (!acceptedContracts.has(contractType)) {
+    throw new NormalizationError(`Contrat hors périmètre : "${raw.contractType}"`, "contractType");
   }
 
   const remoteKey = cleanWhitespace(raw.remotePolicy ?? "onsite").toLowerCase();
@@ -197,5 +219,6 @@ export function normalizeOffer(raw: RawOffer): NormalizedOffer {
     scrapedAt: raw.scrapedAt ?? new Date(),
     publishedAt: raw.publishedAt ?? null,
     companyLogoUrl: raw.companyLogoUrl ?? null,
+    countryCode: (raw.countryCode ?? "FR").toUpperCase(),
   };
 }

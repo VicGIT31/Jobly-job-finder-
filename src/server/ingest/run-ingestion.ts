@@ -2,6 +2,8 @@ import { prisma } from "@/lib/prisma";
 import { processIngest, type IngestSummary } from "./ingest";
 import { resetHttpState } from "./http";
 import { ApecConnector } from "./sources/apec";
+import { ArbetsformedlingenConnector } from "./sources/arbetsformedlingen";
+import { AtsBoardsConnector } from "./sources/ats-boards";
 import { FranceTravailConnector } from "./sources/france-travail";
 import { FreeWorkConnector } from "./sources/free-work";
 import { HelloWorkConnector } from "./sources/hellowork";
@@ -18,6 +20,11 @@ const CONNECTORS: SourceConnector[] = [
   new FreeWorkConnector(),
   new JSearchConnector(),
   new TheMuseConnector(),
+  // Sources internationales (Europe/Asie) — voir SOURCES_EUROPE_ASIA.md.
+  // Périmètre de contrats plus large que les sources françaises ci-dessus :
+  // chacune déclare son propre `acceptedContracts`.
+  new ArbetsformedlingenConnector(),
+  new AtsBoardsConnector(),
 ];
 
 export type IngestionRunResult = {
@@ -67,7 +74,9 @@ async function runConnector(connector: SourceConnector): Promise<IngestionRunRes
   const started = Date.now();
   try {
     const offers = await connector.fetchOffers();
-    const summary = await processIngest(connector.sourceSite, offers);
+    const summary = await processIngest(connector.sourceSite, offers, {
+      acceptedContracts: connector.acceptedContracts,
+    });
     const durationMs = Date.now() - started;
     console.log(
       `[ingestion] ${connector.label} : ${offers.length} récupérées → ` +

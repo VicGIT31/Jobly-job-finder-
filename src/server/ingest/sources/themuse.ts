@@ -1,6 +1,7 @@
 import type { RawOffer } from "@/server/ingest/normalize";
 import { inferEducationLevel, inferRemotePolicy } from "@/server/ingest/enrich";
 import { RateLimitedError, fetchJson } from "@/server/ingest/http";
+import { htmlToText } from "@/server/ingest/html-to-text";
 import { geocodeCityFull } from "./geocode";
 import { TECH_SECTOR, type SourceConnector } from "./types";
 
@@ -50,20 +51,6 @@ type MuseJob = {
   publication_date?: string;
   refs?: { landing_page?: string };
 };
-
-function htmlToText(html: string): string {
-  return html
-    .replace(/<\/(p|div|li|h[1-6])>/gi, "\n")
-    .replace(/<li[^>]*>/gi, "- ")
-    .replace(/<br\s*\/?>/gi, "\n")
-    .replace(/<[^>]+>/g, "")
-    .replace(/&nbsp;/g, " ")
-    .replace(/&amp;/g, "&")
-    .replace(/&lt;/g, "<")
-    .replace(/&gt;/g, ">")
-    .replace(/\n{2,}/g, "\n")
-    .trim();
-}
 
 /** Ville française du poste (locations "Ville, France"), ou null. */
 function frenchCity(locations: MuseJob["locations"]): string | null {

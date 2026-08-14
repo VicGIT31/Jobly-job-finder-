@@ -1,3 +1,4 @@
+import type { ContractType } from "@prisma/client";
 import type { RawOffer } from "@/server/ingest/normalize";
 
 /**
@@ -13,8 +14,15 @@ export interface SourceConnector {
   readonly label: string;
   /** True si la source est configurée (clés présentes) et peut être appelée. */
   isEnabled(): boolean;
-  /** Récupère les offres brutes de stage / alternance tech en France. */
+  /** Récupère les offres brutes tech de la source. */
   fetchOffers(): Promise<RawOffer[]>;
+  /**
+   * Périmètre de contrats accepté pour cette source. Absent = stage/alternance
+   * uniquement (comportement historique des connecteurs français). Les
+   * connecteurs internationaux déclarent un périmètre plus large ici plutôt
+   * que de changer le défaut global — voir `ingest/normalize.ts`.
+   */
+  readonly acceptedContracts?: ReadonlySet<ContractType>;
 }
 
 /** Secteurs tech ciblés — sert d'étiquette `sector` par défaut. */

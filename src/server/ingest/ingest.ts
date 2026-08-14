@@ -3,7 +3,12 @@ import { prisma } from "@/lib/prisma";
 import { slugifyFr } from "@/lib/slug";
 import { classifySpecialty } from "./classify";
 import { computeDedupHash } from "./dedup";
-import { normalizeOffer, rawOfferSchema, NormalizationError } from "./normalize";
+import {
+  normalizeOffer,
+  rawOfferSchema,
+  NormalizationError,
+  type NormalizeOptions,
+} from "./normalize";
 import { syncOffersToSearch } from "@/server/search/sync";
 
 export type IngestSummary = {
@@ -22,6 +27,7 @@ export type IngestSummary = {
 export async function processIngest(
   sourceSite: string,
   rawOffers: unknown[],
+  options: NormalizeOptions = {},
 ): Promise<IngestSummary> {
   const summary: IngestSummary = {
     received: rawOffers.length,
@@ -53,7 +59,7 @@ export async function processIngest(
 
     let normalized;
     try {
-      normalized = normalizeOffer(parsed.data);
+      normalized = normalizeOffer(parsed.data, options);
     } catch (err) {
       const reason = err instanceof NormalizationError ? err.message : "Normalisation impossible";
       summary.rejected++;
@@ -145,6 +151,7 @@ export async function processIngest(
           companyId: company.id,
           contractType: normalized.contractType,
           city: normalized.city,
+          countryCode: normalized.countryCode,
           latitude: normalized.latitude,
           longitude: normalized.longitude,
           remotePolicy: normalized.remotePolicy,

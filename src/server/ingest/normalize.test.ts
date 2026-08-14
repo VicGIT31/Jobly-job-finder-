@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import type { ContractType } from "@prisma/client";
 import { normalizeOffer, rawOfferSchema, NormalizationError } from "./normalize";
 
 const validRaw = {
@@ -78,5 +79,48 @@ describe("normalizeOffer", () => {
   it("capitalise les villes composées", () => {
     const offer = normalizeOffer(rawOfferSchema.parse({ ...validRaw, city: "saint-étienne" }));
     expect(offer.city).toBe("Saint-Étienne");
+  });
+
+  it("countryCode par défaut à FR si absent (sources françaises historiques)", () => {
+    const offer = normalizeOffer(rawOfferSchema.parse(validRaw));
+    expect(offer.countryCode).toBe("FR");
+  });
+
+  it("countryCode transmis tel quel (en majuscules) quand fourni", () => {
+    const offer = normalizeOffer(rawOfferSchema.parse({ ...validRaw, countryCode: "se" }));
+    expect(offer.countryCode).toBe("SE");
+  });
+
+  describe("acceptedContracts (sources internationales)", () => {
+    it("accepte FULL_TIME/PART_TIME/CONTRACT quand explicitement autorisés", () => {
+      const accepted = new Set<ContractType>(["FULL_TIME", "PART_TIME", "CONTRACT"]);
+
+      const fullTime = normalizeOffer(
+        rawOfferSchema.parse({ ...validRaw, contractType: "employment_full_time" }),
+        { acceptedContracts: accepted },
+      );
+      expect(fullTime.contractType).toBe("FULL_TIME");
+
+      const partTime = normalizeOffer(
+        rawOfferSchema.parse({ ...validRaw, contractType: "employment_part_time" }),
+        { acceptedContracts: accepted },
+      );
+      expect(partTime.contractType).toBe("PART_TIME");
+    });
+
+    it("continue de rejeter STAGE/ALTERNANCE hors du set explicitement passé", () => {
+      const accepted = new Set<ContractType>(["FULL_TIME"]);
+      expect(() =>
+        normalizeOffer(rawOfferSchema.parse({ ...validRaw, contractType: "stage" }), {
+          acceptedContracts: accepted,
+        }),
+      ).toThrow(/hors périmètre/);
+    });
+
+    it("le défaut global (sans options) reste stage/alternance uniquement", () => {
+      expect(() =>
+        normalizeOffer(rawOfferSchema.parse({ ...validRaw, contractType: "employment_full_time" })),
+      ).toThrow(/hors périmètre/);
+    });
   });
 });
