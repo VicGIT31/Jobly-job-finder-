@@ -1,6 +1,8 @@
 import type { Metadata } from "next";
 import { auth } from "@/lib/auth";
+import { prisma } from "@/lib/prisma";
 import { searchOffers } from "@/server/search/query";
+import { excludeHiddenOffers } from "@/server/offers/hidden-filter";
 import { parseOfferSearchParams } from "@/lib/search-params";
 import { SearchClient } from "@/components/offers/search-client";
 
@@ -23,6 +25,17 @@ export default async function OffresPage({
 }) {
   const input = parseOfferSearchParams(searchParams);
   const [initialResult, session] = await Promise.all([searchOffers(input), auth()]);
+
+  if (session?.user?.id) {
+    const hidden = await prisma.hiddenOffer.findMany({
+      where: { userId: session.user.id },
+      select: { offerId: true },
+    });
+    if (hidden.length > 0) {
+      const hiddenIds = new Set(hidden.map((h) => h.offerId));
+      initialResult.hits = excludeHiddenOffers(initialResult.hits, hiddenIds);
+    }
+  }
 
   return (
     <div className="mx-auto max-w-6xl px-4 py-8">
