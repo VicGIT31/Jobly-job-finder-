@@ -396,6 +396,38 @@ dev, mark the required env var, never fake a success ») et repris du motif
 
 ---
 
+### 2.13 Facette « Pays » en pastilles + copie Europe sur `/offres`
+
+Suite directe du `/goal` actif (« focus on europe and france, redesign it
+to make it look way better for the ux/ui »). Investigation préalable (fork
+de recherche) : les drapeaux pays étaient déjà affichés sur `OfferCard` et
+dans les libellés de la facette « Pays » (§2.8) — pas un trou fonctionnel.
+Deux écarts réels trouvés et corrigés :
+
+- **`src/components/offers/facet-panel.tsx`** — la facette « Pays » utilisait
+  `FacetGroup` (liste de cases à cocher empilées), seule facette du haut du
+  panneau dans ce style alors que « Spécialité » et « Grandes villes »
+  utilisent des pastilles (`ticket`) avec drapeau + libellé + compteur.
+  Remplacée par le même motif pastille, cohérent visuellement et avec le
+  reste du panneau. Aucune nouvelle classe Tailwind.
+- **`src/app/offres/page.tsx`** — le sous-titre et la meta `description` de
+  la page de recherche (la principale surface de navigation du site) ne
+  mentionnaient jamais le périmètre Europe malgré le filtre pays existant.
+  Ajout d'une phrase courte (« Stage et alternance en France, plus des
+  offres tech en Europe ») sans changer le titre H1 ni le positionnement
+  principal.
+- **`src/components/offers/search-client.tsx`** — icône `SearchX` ajoutée à
+  l'état vide (`EmptyState`), qui n'avait aucune icône contrairement au
+  reste des cartes/panneaux redessinés en §2.11.
+- **Vérifié en conditions réelles** : `tsc --noEmit`, ESLint, Prettier,
+  suite de tests complète (119 tests, inchangés — aucun test ne couvre le
+  rendu de `FacetPanel`), `docker compose build app` réel, page `/offres`
+  servie après rebuild avec la nouvelle copie et les pastilles pays
+  affichant les vrais compteurs (🇺🇸 458, 🇬🇧 35, 🇩🇪 24, 🇪🇸 17…) confirmés
+  par `curl`.
+
+---
+
 ## 3. Ce qui N'A PAS été fait (le reste du cahier des charges)
 
 Le cahier des charges complet est dans `europe_asia_ai_job_platform_mvp_prompt.md`

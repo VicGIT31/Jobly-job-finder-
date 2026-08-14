@@ -3,6 +3,7 @@
 import { keepPreviousData, useQuery } from "@tanstack/react-query";
 import { parseAsInteger, parseAsString, parseAsStringLiteral, useQueryStates } from "nuqs";
 import { useCallback, useMemo } from "react";
+import { SearchX } from "lucide-react";
 import type { OfferSearchResult } from "@/server/search/query";
 import {
   CONTRACT_LABELS,
@@ -296,7 +297,8 @@ export function SearchClient({
 function EmptyState({ onReset }: { onReset: () => void }) {
   return (
     <div className="rounded-xl border border-dashed border-ink/20 p-10 text-center">
-      <p className="font-display text-2xl font-bold">Aucune offre ne correspond</p>
+      <SearchX aria-hidden="true" size={32} className="mx-auto text-ink/30" />
+      <p className="mt-3 font-display text-2xl font-bold">Aucune offre ne correspond</p>
       <p className="mx-auto mt-2 max-w-md text-sm text-ink/70">
         Essayez d'élargir votre recherche : moins de filtres, un rayon plus grand, ou un mot-clé
         plus général.

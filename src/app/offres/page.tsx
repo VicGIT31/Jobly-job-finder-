@@ -11,7 +11,7 @@ export const dynamic = "force-dynamic";
 export const metadata: Metadata = {
   title: "Offres de stage et d'alternance",
   description:
-    "Recherchez parmi des centaines d'offres de stage et d'alternance pour étudiants et jeunes diplômés. Filtres par ville, contrat, secteur, télétravail.",
+    "Recherchez parmi des centaines d'offres de stage et d'alternance en France, avec des offres tech complémentaires en Europe. Filtres par ville, pays, contrat, secteur, télétravail.",
 };
 
 /**
@@ -43,7 +43,8 @@ export default async function OffresPage({
         Les offres<span className="text-cobalt">.</span>
       </h1>
       <p className="mt-1 text-ink/70">
-        Chaque offre vient d'un site source — postuler vous y amène directement.
+        Chaque offre vient d'un site source — postuler vous y amène directement. Stage et alternance
+        en France, plus des offres tech en Europe (filtre « Pays »).
       </p>
       <div className="mt-6">
         <SearchClient initialResult={initialResult} isLoggedIn={Boolean(session?.user)} />

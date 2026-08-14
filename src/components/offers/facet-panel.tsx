@@ -185,12 +185,43 @@ export function FacetPanel({
         selected={selection.contrat}
         onToggle={(v) => onToggle("contrat", v)}
       />
-      <FacetGroup
-        title="Pays"
-        options={countryOptions}
-        selected={selection.pays}
-        onToggle={(v) => onToggle("pays", v)}
-      />
+
+      {countryOptions.length > 0 && (
+        <fieldset className="rule pt-4">
+          <legend className="pb-2 text-xs font-bold uppercase tracking-widest">
+            Pays
+            <span className="ml-1 font-normal normal-case tracking-normal text-ink/50">
+              (hors France)
+            </span>
+          </legend>
+          <div className="flex flex-wrap gap-1.5">
+            {countryOptions.map((opt) => {
+              const active = selection.pays.includes(opt.value);
+              return (
+                <button
+                  key={opt.value}
+                  type="button"
+                  aria-pressed={active}
+                  className={
+                    active
+                      ? "ticket border-cobalt bg-cobalt text-white"
+                      : "ticket hover:border-ink/30"
+                  }
+                  onClick={() => onToggle("pays", opt.value)}
+                >
+                  {opt.label}
+                  <span
+                    className={`text-xs tabular-nums ${active ? "text-white/70" : "text-ink/50"}`}
+                  >
+                    {opt.count}
+                  </span>
+                </button>
+              );
+            })}
+          </div>
+        </fieldset>
+      )}
+
       <FacetGroup
         title="Télétravail"
         options={remoteOptions}
