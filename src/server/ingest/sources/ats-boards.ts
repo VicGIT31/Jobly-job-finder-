@@ -32,22 +32,30 @@ type Board = { ats: AtsKind; slug: string };
 const BOARDS: Board[] = [
   { ats: "greenhouse", slug: "gitlab" },
   { ats: "greenhouse", slug: "teneo" },
+  { ats: "greenhouse", slug: "n26" },
+  { ats: "greenhouse", slug: "wise" },
   { ats: "lever", slug: "lever" },
   { ats: "lever", slug: "plaid" },
   { ats: "ashby", slug: "notion" },
   { ats: "ashby", slug: "openai" },
   { ats: "ashby", slug: "ramp" },
+  { ats: "ashby", slug: "linear" },
+  { ats: "ashby", slug: "railway" },
 ];
 
 /** Nom d'affichage propre pour les board slugs (souvent en minuscules dans l'URL). */
 const DISPLAY_NAME: Record<string, string> = {
   gitlab: "GitLab",
   teneo: "Teneo",
+  n26: "N26",
+  wise: "Wise",
   lever: "Lever",
   plaid: "Plaid",
   notion: "Notion",
   openai: "OpenAI",
   ramp: "Ramp",
+  linear: "Linear",
+  railway: "Railway",
 };
 
 /** Correspondance nom de pays (anglais, tel qu'exposé par les ATS) → ISO 3166-1 alpha-2. */
@@ -88,11 +96,76 @@ const COUNTRY_NAME_TO_ISO: Record<string, string> = {
   australia: "AU",
 };
 
-/** Dernier segment d'une chaîne "Ville, Pays" / "Remote, Pays" → code pays, "XX" si inconnu. */
+/**
+ * Grandes villes tech sans suffixe pays dans la localisation source (ex.
+ * Greenhouse renvoie souvent juste "Berlin", pas "Berlin, Germany" — observé
+ * sur N26/Wise en conditions réelles). Repli utilisé quand le dernier
+ * segment ne correspond à aucun nom de pays.
+ */
+const CITY_TO_ISO: Record<string, string> = {
+  berlin: "DE",
+  munich: "DE",
+  hamburg: "DE",
+  frankfurt: "DE",
+  barcelona: "ES",
+  madrid: "ES",
+  paris: "FR",
+  vienna: "AT",
+  milan: "IT",
+  rome: "IT",
+  london: "GB",
+  dublin: "IE",
+  amsterdam: "NL",
+  rotterdam: "NL",
+  stockholm: "SE",
+  copenhagen: "DK",
+  oslo: "NO",
+  helsinki: "FI",
+  brussels: "BE",
+  lisbon: "PT",
+  warsaw: "PL",
+  prague: "CZ",
+  zurich: "CH",
+  geneva: "CH",
+  singapore: "SG",
+  bangalore: "IN",
+  bengaluru: "IN",
+  mumbai: "IN",
+  delhi: "IN",
+  hyderabad: "IN",
+  tokyo: "JP",
+  osaka: "JP",
+  seoul: "KR",
+  "hong kong": "HK",
+  dubai: "AE",
+  "abu dhabi": "AE",
+  "kuala lumpur": "MY",
+  jakarta: "ID",
+  bangkok: "TH",
+  manila: "PH",
+  taipei: "TW",
+  toronto: "CA",
+  vancouver: "CA",
+  sydney: "AU",
+  melbourne: "AU",
+};
+
+/**
+ * "Ville, Pays" / "Remote, Pays" → code pays via nom de pays, sinon via nom
+ * de ville connue (CITY_TO_ISO), sinon "XX". Une localisation multi-villes
+ * ("Berlin, Barcelona") retient la première reconnue.
+ */
 function guessCountryFromLocation(location: string | null | undefined): string {
   if (!location) return "XX";
-  const lastSegment = location.split(",").pop()?.trim().toLowerCase() ?? "";
-  return COUNTRY_NAME_TO_ISO[lastSegment] ?? "XX";
+  const segments = location.split(",").map((s) => s.trim().toLowerCase());
+
+  const lastSegment = segments[segments.length - 1] ?? "";
+  if (COUNTRY_NAME_TO_ISO[lastSegment]) return COUNTRY_NAME_TO_ISO[lastSegment];
+
+  for (const segment of segments) {
+    if (CITY_TO_ISO[segment]) return CITY_TO_ISO[segment];
+  }
+  return "XX";
 }
 
 function isTechRole(title: string): boolean {

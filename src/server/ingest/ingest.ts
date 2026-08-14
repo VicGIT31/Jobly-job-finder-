@@ -94,6 +94,10 @@ export async function processIngest(
           scrapedAt: normalized.scrapedAt,
           // Reclassement à chaque passage : profite des règles affinées depuis.
           specialty,
+          // Idem pour le pays : une heuristique de détection affinée entre
+          // deux cycles corrige les offres déjà en base, pas seulement les
+          // nouvelles (observé : XX → DE après ajout de CITY_TO_ISO).
+          countryCode: normalized.countryCode,
           // Une offre bloquée en modération reste hors ligne, même si la source
           // continue de la publier : seule la console peut la débloquer.
           ...(existing.blockedAt ? {} : { status: "ACTIVE" as const }),
