@@ -20,6 +20,15 @@ enum ContractType {
   STAGE
   ALTERNANCE
   VIE
+  // Types employeur génériques utilisés par les sources internationales
+  // (spec europe_asia_ai_job_platform_mvp_prompt.md §7). Le périmètre
+  // stage/alternance strict (`ACCEPTED_CONTRACTS` dans normalize.ts) reste
+  // inchangé pour les sources françaises existantes — ces valeurs ne sont
+  // acceptées que pour les connecteurs qui le demandent explicitement.
+  FULL_TIME
+  PART_TIME
+  CONTRACT
+  FREELANCE
 }
 
 enum RemotePolicy {
@@ -201,6 +210,10 @@ model JobOffer {
 
   contractType   ContractType
   city           String
+  // ISO 3166-1 alpha-2. Toutes les offres existantes (sources françaises)
+  // valent "FR" par défaut — ajouté pour l'extension Europe/Asie sans
+  // migration de données ni changement de comportement pour l'existant.
+  countryCode    String         @default("FR")
   latitude       Float?
   longitude      Float?
   remotePolicy   RemotePolicy   @default(ONSITE)
@@ -237,6 +250,7 @@ model JobOffer {
   @@index([lastSeenAt])
   @@index([blockedAt])
   @@index([specialty, status])
+  @@index([countryCode, status])
   @@map("job_offers")
 }
 
