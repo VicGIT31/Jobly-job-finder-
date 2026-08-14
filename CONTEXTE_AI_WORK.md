@@ -25,6 +25,21 @@ qui a été construit est **déterministe, sans appel IA**. Les fonctionnalités
 qui nécessitent réellement un LLM (résumé d'offre, réponses de candidature,
 recherche en langage naturel) n'ont **pas** été commencées — voir §4.
 
+**Sur la refonte visuelle (spec §35-38)** : évaluée, jugée **non nécessaire**
+pour l'instant. Le design system actuel (`globals.css`, `tailwind.config.ts`
+— fond blanc, encre neutre, accent indigo unique, cartes sobres, espacement
+8px, pas de dégradés/glassmorphism/sparkles) correspond déjà à ce que le
+cahier des charges demande (« Linear + Notion + Stripe, plus chaleureux »,
+§35 « éviter dégradés violets excessifs, glassmorphism, clutter »). Toutes
+les features de cette session (tracker, insights, masquer une offre…)
+réutilisent ces tokens existants sans rien ajouter. Refaire le design
+maintenant irait à l'encontre de l'instruction explicite du spec (§66) :
+« Do not spend days perfecting the landing page while the core job-search
+loop is broken » — la priorité reste les fonctionnalités manquantes (§3),
+pas l'esthétique d'un système déjà cohérent. À revisiter seulement si le
+pivot multi-pays change la structure de l'information (ex. sélecteur de
+pays/devise dans le header) au point de casser la mise en page actuelle.
+
 ---
 
 ## 2. Fonctionnalités livrées cette session
@@ -43,8 +58,9 @@ mdp `jobly123`).
 - `src/server/applications/actions.ts` : ajout manuel, changement de statut,
   notes, suppression — server actions classiques (`"use server"`), pas d'API
   REST (suit le pattern déjà en place dans `server/account/actions.ts`).
-- UI : `/mon-espace/candidatures` — Kanban (`src/components/applications/
-  application-board.tsx`) avec drag-and-drop natif HTML5 + `<select>`
+- UI : `/mon-espace/candidatures` — Kanban
+  (`src/components/applications/application-board.tsx`) avec drag-and-drop
+  natif HTML5 + `<select>`
   accessible en secours, notes auto-sauvegardées, ajout manuel, colonnes
   Refusées/Retirées repliées. **Vue Liste** ajoutée ensuite (toggle
   Tableau/Liste, filtre texte + statut) — spec §24.
@@ -79,8 +95,9 @@ mdp `jobly123`).
 - Route `POST/DELETE /api/offres/:offerId/masquage`, bouton
   `HideOfferButton` sur la page offre, page `/mon-espace/masquees` pour
   réafficher.
-- **Exclusion des résultats de recherche** : `src/server/offers/
-  hidden-filter.ts` (`excludeHiddenOffers`, pure + testée), appliqué **après**
+- **Exclusion des résultats de recherche** :
+  `src/server/offers/hidden-filter.ts` (`excludeHiddenOffers`, pure +
+  testée), appliqué **après**
   `searchOffers()` dans `/offres/page.tsx` (SSR) et `/api/search/route.ts`
   (fetch client). Volontairement **pas** injecté dans
   `src/server/search/query.ts` : ce moteur (Meilisearch + repli PostgreSQL,
@@ -90,6 +107,35 @@ mdp `jobly123`).
   moins de résultats que `PAGE_SIZE`, et `totalHits` n'est pas recalculé.
   Acceptable au volume actuel ; à corriger proprement (filtre au niveau
   Meilisearch/SQL) si le nombre d'offres masquées par utilisateur grandit.
+
+### 2.5 Vue Liste du suivi de candidature — spec §24
+
+Bascule Tableau/Liste sur `/mon-espace/candidatures` (même composant
+`application-board.tsx`), avec filtre texte (entreprise/poste) et filtre par
+statut. Colonnes limitées à ce que le modèle `Application` contient
+réellement (Entreprise, Poste, Statut, Postulé) — le spec liste aussi
+Location/Salaire/Resume/Source, non stockés sur `Application` aujourd'hui
+(la localisation/salaire vivent sur `JobOffer`, pas dupliqués sur la
+candidature). À enrichir si ces colonnes deviennent nécessaires.
+
+### 2.6 Insights (funnel de candidature) — spec §29, sans IA
+
+- `src/server/insights/compute.ts` : `computeInsights`, pure et testée (5
+  tests). Funnel **Postulé → Réponse obtenue → Entretien → Offre** calculé
+  sur `ApplicationStatusHistory` (« a atteint ce statut au moins une fois »,
+  pas le statut courant — une candidature `REJECTED` qui est passée par
+  `INTERVIEW` compte toujours dans l'étape Entretien).
+- `hasEnoughData` (seuil : 3 candidatures postulées minimum) respecte
+  l'instruction du spec « Only display conclusions when there is enough
+  data » — en dessous du seuil, la page affiche un état vide plutôt que des
+  taux basés sur un échantillon non significatif.
+- Page `/mon-espace/insights` : cette semaine (candidatures/entretiens/
+  offres), entonnoir en barres, taux de réponse et taux d'entretien.
+- Non fait : « Applications by country/role/source », « best-performing
+  resume », « median time to response » (spec §29) — demanderait soit plus
+  de données structurées (source par candidature déjà disponible via
+  `sourceUrl`/offre liée, à agréger), soit le multi-pays (§3.1) pour avoir
+  un axe pays pertinent.
 
 ---
 
@@ -104,63 +150,15 @@ probable :
    (pays, devises, autorisation de travail), ingestion multi-sources
    internationales, UI de localisation. **Ne pas commencer sans en discuter
    avec l'utilisateur** — c'est un changement d'identité produit, pas une
-   feature.
+   feature. **La recherche de sources est faite** : voir
+   `SOURCES_EUROPE_ASIA.md` (APIs officielles par pays, agrégateurs
+   multi-pays, adaptateurs ATS publics, plan d'implémentation par ordre de
+   priorité). Rien de ce document n'est encore intégré ni testé en
+   conditions réelles — c'est un plan de recherche, pas du code.
 2. **IA réelle** (spec §41) — aucune clé configurée. Si on l'ajoute :
    construire une couche d'abstraction provider (spec §69 : « build the
    abstraction, mock adapter for dev, mark the required env var, never fake
    a success »). Cas d'usage prioritaires : parsing CV à l'upload (le CV est
    stocké mais jamais lu), recherche en langage naturel, résumé d'offre
    structuré (Résumé/Responsabilités/Requis), réponses de candidature.
-3. **Extension navigateur + autofill** (spec §15-17) — gros morceau,
-   nécessite un nouveau projet (Manifest V3) hors de ce repo Next.js.
-4. **Analyse CV / tailoring** (spec §21-22) — nécessite d'extraire le texte
-   du PDF (`pdf-parse` ou équivalent) puis comparaison de mots-clés avec la
-   description de poste. Faisable sans IA pour une V1 (comparaison lexicale
-   simple, dans l'esprit de `computeMatchScore`).
-5. **Priority Score / effort estimate** (spec §61-62) — peut maintenant
-   s'appuyer sur `computeMatchScore` (§2.3 ci-dessus) + date de publication +
-   éventuellement une estimation de complexité du formulaire externe (pas
-   mesurable tant qu'il n'y a pas d'autofill réel).
-6. **Insights / analytics candidat** (spec §29) — funnel Saved→Applied→
-   Interview→Offer calculable dès maintenant à partir d'`Application` +
-   `ApplicationStatusHistory` (déjà en base). Bonne prochaine tranche P0,
-   ne nécessite aucune nouvelle donnée.
-7. **Compagnies pages enrichies, alertes multi-canal, RGPD export/delete
-   dédié** (spec §31, §45-46, §48-49) — l'export/suppression RGPD n'existe
-   pas encore en tant que tel (pas de bouton « Télécharger mes données » /
-   « Supprimer mon compte » dans `/mon-espace`).
-
----
-
-## 4. Repères techniques pour reprendre sans se perdre
-
-- **Pas de Node/npm en local sur cette machine.** Toute commande npm/prisma
-  passe par un conteneur jetable relié au réseau docker-compose existant :
-  ```bash
-  docker run --rm \
-    --network internship-finders_default \
-    -v "$(pwd)":/app -w /app \
-    -e DATABASE_URL="postgresql://nextstep:nextstep@postgres:5432/nextstep?schema=public" \
-    node:20-alpine \
-    sh -c "npx prisma migrate dev --name ma_migration --skip-seed"
-  ```
-  (nécessite que `docker compose up -d postgres` tourne déjà). Même pattern
-  pour `tsc --noEmit`, `npm run lint`, `npm run test`, `npx prettier --write`.
-- **Relancer l'app après un changement de code** : `docker compose up -d
-  --build app` (rebuild l'image, réapplique les migrations via
-  `prisma migrate deploy` au démarrage, réindexe Meilisearch). Le stack
-  complet (postgres/redis/meilisearch/minio) n'a pas besoin d'être relancé.
-- **Convention de commit du projet** (`CONTEXTE.md` §7) : 1 commit par
-  fichier, préfixes `MOD:`/`ADD:`/`RM:`, messages en français. Cette session
-  a été committée en ~10 commits groupés par fonctionnalité (demande
-  explicite de l'utilisateur), pas 1-par-fichier — voir le log git pour le
-  détail exact des commits de cette session.
-- **Tests** : 98 tests passent (`npm run test`), tous les nouveaux modules
-  purs (`follow-up.ts`, `score.ts`, `tracker.ts` côté logique,
-  `hidden-filter.ts`) sont testés unitairement sans dépendance DB, dans
-  l'esprit de `src/server/apply/redirect.ts` (déjà présent avant cette
-  session).
-- **Design** : aucune nouvelle classe Tailwind custom — tout réutilise les
-  tokens existants (`card`, `btn-cobalt`, `btn-outline`, `stamp`, `ticket`,
-  `input-ink`, couleurs `ink`/`cobalt`/`surface`). Continuer dans cet esprit
-  plutôt que d'introduire un nouveau système visuel.
+3. **Ex
