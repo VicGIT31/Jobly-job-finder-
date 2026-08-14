@@ -330,6 +330,72 @@ existants (pas de nouveau système de design, pas de nouvelle palette) :
 
 ---
 
+### 2.12 Brouillon de réponse de candidature par IA — spec §19, §41, §56, §69
+
+Première fonctionnalité IA réelle du produit, construite exactement selon
+le motif imposé par le spec §69 (« build the abstraction, mock adapter for
+dev, mark the required env var, never fake a success ») et repris du motif
+`SourceConnector` déjà utilisé pour les connecteurs de sources d'offres :
+
+- **`src/server/ai/provider.ts`** — interface `AiProvider` (`isEnabled()`,
+  `isRealAi: boolean`, `generateApplicationAnswer()`) + `AiProviderError`.
+  `isRealAi` existe précisément pour que l'UI ne puisse jamais étiqueter un
+  gabarit comme « généré par IA » (spec §56, piège explicitement interdit).
+- **`src/server/ai/mock-provider.ts`** — `MockProvider`, `isRealAi = false`,
+  `isEnabled()` toujours vrai (repli garanti). Gabarit déterministe,
+  n'utilise que les champs de profil explicitement fournis (headline,
+  école, ville, spécialité) — jamais d'expérience ou de projet inventé.
+  Termine toujours par `[Brouillon à personnaliser…]`. Couvert par
+  `mock-provider.test.ts` (non-fabrication, adaptation du ton, avertissement
+  de brouillon).
+- **`src/server/ai/anthropic-provider.ts`** — `AnthropicProvider`,
+  `isRealAi = true`. Appel `fetch` direct à l'API Messages d'Anthropic
+  (pas de SDK — dépendance disproportionnée pour un seul appel), modèle
+  `claude-haiku-4-5` (brouillon court et cadré, coût maîtrisé pour une
+  fonctionnalité gratuite). Prompt système : interdiction absolue d'inventer
+  expérience/compétence/diplôme non fournis. `isEnabled()` teste
+  `ANTHROPIC_API_KEY`. Un appel réel qui échoue lève `AiProviderError` — pas
+  de repli silencieux vers le mock quand le provider réel est actif
+  (§69 : « do not pretend the external call succeeded »).
+- **`src/server/ai/index.ts`** — `getAiProvider()`, sélecteur identique au
+  motif des connecteurs de sources. Couvert par `index.test.ts` (repli sur
+  `MockProvider` sans clé, sélection d'`AnthropicProvider` avec clé).
+- **`src/server/ai/actions.ts`** — server action `generateApplicationAnswer`,
+  motif `requireUserId` déjà utilisé dans `account/actions.ts`. Récupère le
+  profil (`name`, `headline`, `school`, `city`, `targetSpecialty` → libellé
+  via `SPECIALTY_LABELS`) et l'offre (`title`, `description` tronquée à 600
+  caractères, `company.name`) depuis Prisma, appelle le provider sélectionné,
+  retourne `{ ok, text, isRealAi, providerName }`.
+- **`src/components/offers/ai-draft-panel.tsx`** — composant client
+  (`useMutation`, motif identique à `HideOfferButton`), question + sélecteur
+  de ton (concis/professionnel/enthousiaste/technique/naturel) + bouton +
+  zone de résultat en lecture seule. Le libellé du résultat change
+  explicitement selon `isRealAi` (« Brouillon généré par IA » vs « Brouillon
+  gabarit (sans IA) »).
+- **Intégration** : `src/app/offres/[slug]/page.tsx`, dans l'`<aside>`,
+  juste après `CvMatchCard` — même emplacement/convention que
+  `MatchScoreCard`/`CvMatchCard` (gate `isLoggedIn`, styles `card p-5`).
+- **`ANTHROPIC_API_KEY`** ajoutée à `.env.example` (optionnelle, documentée).
+  Aucune clé n'est configurée dans cet environnement : `getAiProvider()`
+  retombe donc sur `MockProvider` en pratique ici — vérifié en lisant
+  `process.env.ANTHROPIC_API_KEY` dans le conteneur `app` après rebuild
+  (vide).
+- **Vérifié** : `tsc --noEmit`, ESLint, Prettier, suite de tests complète
+  (119 tests, dont les 6 nouveaux), `docker compose build app` réel (pas
+  seulement `next dev`), page `/offres/[slug]` réellement servie après
+  rebuild avec le panneau rendu à l'emplacement attendu (état déconnecté
+  confirmé par `curl` sur une offre réelle). **Limite assumée** : le
+  round-trip complet de la server action en tant qu'utilisateur connecté
+  (auth + Prisma + génération) n'a pas été exercé via une vraie requête
+  HTTP — reconstruire l'ID de server action Next.js à la main depuis le
+  manifest buildé s'est révélé disproportionné pour cette vérification ;
+  la couverture repose à la place sur la lecture de code (le motif
+  `requireUserId`/Prisma est copié exact d'`account/actions.ts`, déjà en
+  production) + les tests unitaires du provider + le build réel qui inclut
+  la route.
+
+---
+
 ## 3. Ce qui N'A PAS été fait (le reste du cahier des charges)
 
 Le cahier des charges complet est dans `europe_asia_ai_job_platform_mvp_prompt.md`
@@ -348,12 +414,16 @@ probable :
    pas juste de code). `SOURCES_EUROPE_ASIA.md` reste la carte pour la
    suite des sources (EURES, Allemagne officielle, Corée, Adzuna, Reed,
    Jooble…).
-2. **IA réelle** (spec §41) — aucune clé configurée. Si on l'ajoute :
-   construire une couche d'abstraction provider (spec §69 : « build the
-   abstraction, mock adapter for dev, mark the required env var, never fake
-   a success »). Cas d'usage prioritaires : parsing CV à l'upload (le CV est
-   stocké mais jamais lu), recherche en langage naturel, résumé d'offre
-   structuré (Résumé/Responsabilités/Requis), réponses de candidature.
+2. **IA réelle (spec §41) — abstraction + un cas d'usage faits (§2.12) ;
+   reste non fait.** L'abstraction provider (spec §69) et le premier cas
+   d'usage (brouillon de réponse de candidature) sont en production, avec
+   repli honnête sans clé (§2.12). Toujours aucune clé configurée dans cet
+   environnement. Cas d'usage encore non traités, dans l'ordre de valeur
+   probable : parsing CV à l'upload (le CV est stocké et lu lexicalement
+   depuis §2.9, mais jamais analysé par un modèle), résumé d'offre structuré
+   (Résumé/Responsabilités/Requis), recherche en langage naturel. Ces trois
+   peuvent réutiliser directement `AiProvider`/`getAiProvider()` — pas
+   besoin de refaire l'abstraction.
 3. **Extension navigateur + autofill** (spec §15-17) — gros morceau,
    nécessite un nouveau projet (Manifest V3) hors de ce repo Next.js.
 4. **Analyse CV — fait (§2.9) ; tailoring — pas fait** (spec §21-22). La

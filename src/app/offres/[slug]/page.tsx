@@ -11,6 +11,7 @@ import { AlreadyAppliedButton } from "@/components/applications/already-applied-
 import { HideOfferButton } from "@/components/offers/hide-offer-button";
 import { MatchScoreCard } from "@/components/offers/match-score-card";
 import { CvMatchCard } from "@/components/offers/cv-match-card";
+import { AiDraftPanel } from "@/components/offers/ai-draft-panel";
 import { findSimilarOffers } from "@/server/offers/similar";
 import { offerToDocument } from "@/server/search/sync";
 import { computeMatchScore } from "@/server/match/score";
@@ -267,6 +268,7 @@ export default async function OffrePage({ params }: { params: { slug: string } }
             hasCv={Boolean(candidateProfile?.cvText)}
             result={cvMatchResult}
           />
+          <AiDraftPanel offerId={offer.id} isLoggedIn={Boolean(session?.user)} />
 
           <div className="card mt-4 p-5">
             <h2 className="font-display text-lg font-bold">{offer.company.name}</h2>
