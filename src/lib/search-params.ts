@@ -101,6 +101,32 @@ export const COUNTRY_LABELS: Record<string, string> = {
 };
 export const COUNTRIES = Object.keys(COUNTRY_LABELS);
 
+/**
+ * Pays européens mis en avant sur l'accueil (§"focus Europe et France").
+ * Sous-ensemble de COUNTRY_LABELS : une mise en avant éditoriale, pas une
+ * restriction technique — le filtre `/offres?pays=` reste ouvert à tous les
+ * pays indexés (voir SOURCES_EUROPE_ASIA.md pour le reste, notamment Asie).
+ */
+export const EUROPEAN_COUNTRIES = [
+  "FR",
+  "GB",
+  "DE",
+  "ES",
+  "IT",
+  "NL",
+  "IE",
+  "SE",
+  "PL",
+  "AT",
+  "CH",
+  "BE",
+  "PT",
+  "DK",
+  "NO",
+  "FI",
+  "CZ",
+];
+
 // Couvre tout l'enum Prisma : d'anciennes offres hors périmètre peuvent
 // subsister en base (admin) même si seuls stage/alternance sont exposés.
 export const CONTRACT_LABELS: Record<ContractType, string> = {
