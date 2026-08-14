@@ -623,6 +623,63 @@ build app` réel.
 **Non commité à ce stade** — regroupé pour un prochain commit substantiel
 (voir mémoire `feedback_commit_granularity`).
 
+### 2.21 Drapeau France sur l'accueil + logos manquants (demande utilisateur directe)
+
+Trois demandes de l'utilisateur dans le même message : un bug visuel précis
+(« the french logo is the european one »), deux clés API absentes, et une
+étude des APIs de scraping d'offres/logos.
+
+- **Bug drapeau (trouvé exact, corrigé)** : `src/app/page.tsx`, section
+  « Explorez l'Europe ». `COUNTRY_FLAGS` exclut volontairement `FR` (choix
+  délibéré ailleurs : pas de drapeau redondant sur chaque offre française,
+  voir §2.8). Mais ici, sur la carte qui représente explicitement le pays
+  « France » parmi d'autres, `COUNTRY_FLAGS["FR"] ?? "🇪🇺"` retombait donc
+  sur le drapeau européen au lieu du drapeau français. Corrigé par un cas
+  spécial `FR` avant le repli. Vérifié en direct (`curl`) : la carte France
+  affiche maintenant 🇫🇷.
+- **Clés « job offers » manquantes** : `FRANCE_TRAVAIL_CLIENT_ID/SECRET` et
+  `JSEARCH_API_KEY` sont vides dans `.env` (confirmé par les logs
+  d'ingestion : « désactivée, identifiants absents » pour les deux). Sans
+  clé, Jobly tourne uniquement sur les sources sans authentification
+  (Free-Work, APEC, LinkedIn invité, HelloWork, Arbetsförmedlingen, boards
+  ATS, The Muse — d'où les ~1500 offres déjà en base). Ces deux clés
+  restent la plus grosse source de volume manquante, notamment pour la
+  France (France Travail est la source officielle exhaustive) — impossible
+  à créer moi-même, ce sont des inscriptions développeur côté utilisateur
+  (francetravail.io, openwebninja.com), déjà documentées dans
+  `.env.example`.
+- **Clé « company logo » manquante — recherche effectuée avant tout code**
+  (fork avec WebSearch, pas de supposition) : **Clearbit Logo API, l'option
+  gratuite historique sans clé, a fermé le 8 décembre 2025** après le
+  rachat par HubSpot — bien que ce soit ce que j'aurais supposé sans
+  vérifier. Alternatives actuelles avec clé gratuite : Logo.dev (500k
+  req/mois, attribution obligatoire) et Brandfetch (500k req/mois, sans
+  attribution — meilleure option gratuite). Sans clé utilisateur, mis en
+  œuvre un repli immédiat gratuit et sans clé (favicon Google) pour les 10
+  entreprises du connecteur ATS boards dont le domaine réel est connu et
+  vérifié à la main (`src/server/ingest/sources/ats-boards.ts`) — ces
+  offres n'avaient jamais de logo car ni Greenhouse, ni Lever, ni Ashby
+  n'en fournissent (contrairement à France Travail, JSearch, LinkedIn, The
+  Muse, Arbetsförmedlingen, Free-Work qui le font déjà). `teneo`
+  volontairement exclu de la liste : plusieurs entreprises distinctes
+  partagent ce nom, domaine ambigu — un mauvais domaine afficherait le
+  logo d'une autre entreprise, pire que le monogramme neutre actuel.
+  Étude complète (tableau comparatif, sources) : **`SOURCES_EUROPE_ASIA.md`
+  §7 (nouveau)**.
+- **Étude des APIs de scraping d'offres** : `SOURCES_EUROPE_ASIA.md`
+  existait déjà et couvre substantiellement cette demande (Tier 3 = APIs
+  publiques par ATS/entreprise, exactement « scraping sur le site de
+  l'entreprise »). Pointé vers ce document plutôt que dupliqué la
+  recherche ; complété avec la partie logos manquante (§7 ci-dessus).
+- Vérifié en conditions réelles : `tsc --noEmit`, ESLint, Prettier, suite
+  de tests complète (119 tests), `docker compose build app` réel,
+  `npm run ingest:now` (cycle réel, pas de nouvelle offre — les 624 offres
+  ATS déjà connues), backfill confirmé en base pour 7 entreprises
+  (GitLab, N26, OpenAI, Notion, Ramp, Linear, Railway — Wise/Plaid/Lever
+  n'ont actuellement aucune offre tech active sur leur board, rien à
+  backfiller), URL de favicon vérifiée directement (`200 OK`,
+  `image/png`) et rendu confirmé sur `/entreprises/gitlab`.
+
 ---
 
 ## 3. Ce qui N'A PAS été fait (le reste du cahier des charges)

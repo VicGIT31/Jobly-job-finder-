@@ -172,8 +172,50 @@ Aucune clé n'est requise pour les étapes 1-4.
 
 ---
 
-## 7. Sources de cette recherche (2026-08-14, non vérifiées en conditions réelles)
+## 7. Logos d'entreprise — sources et repli actuel
 
+Sujet distinct des sources d'offres ci-dessus, mais posé la même question au
+sens large : « quelle API utiliser ». Contexte : `CompanyLogo`
+(`src/components/offers/company-logo.tsx`) affiche un monogramme neutre
+quand aucun `logoUrl` n'est connu. La plupart des connecteurs (France
+Travail, Arbetsförmedlingen, Free-Work, JSearch, LinkedIn, The Muse)
+fournissent déjà un logo directement dans leur réponse — **seuls APEC,
+HelloWork et les boards ATS génériques (Greenhouse/Lever/Ashby) n'en
+fournissent aucun.** `Company.website` existe dans le schéma mais n'est
+quasiment jamais renseigné à l'ingestion — un vrai frein pour toute
+recherche de logo par domaine.
+
+**Recherché le 2026-08-14** (WebSearch, vérifié en conditions réelles, pas
+supposé) :
+
+| Service                                                       | Auth                                | Palier gratuit                                                   | Entrée  | Notes                                                                                                                                |
+| ------------------------------------------------------------- | ----------------------------------- | ---------------------------------------------------------------- | ------- | ------------------------------------------------------------------------------------------------------------------------------------ |
+| **Clearbit Logo API**                                         | —                                   | **Fermé** (arrêté le 8 déc. 2025 après le rachat par HubSpot)    | domaine | À ne plus utiliser — la doc Clearbit redirige elle-même vers Logo.dev.                                                               |
+| **Logo.dev**                                                  | Clé gratuite (inscription, sans CB) | 500k req/mois, attribution visible obligatoire au palier gratuit | domaine | Chemin de migration direct depuis Clearbit (même forme d'URL) ; jamais d'image cassée (repli monogramme intégré, toujours `200 OK`). |
+| **Brandfetch Logo API**                                       | Clé gratuite                        | 500k req/mois, **pas d'attribution requise**                     | domaine | Meilleure option gratuite des deux — pas de mention obligatoire dans l'UI.                                                           |
+| **Favicon Google** (`google.com/s2/favicons?domain=…&sz=128`) | Aucune                              | Non documenté, toujours actif en 2026                            | domaine | Qualité modeste, mais gratuit, sans clé, zéro configuration. Utilisé ci-dessous.                                                     |
+
+**Mis en œuvre maintenant** (`src/server/ingest/sources/ats-boards.ts`) :
+domaine réel connu et vérifié à la main pour 10 des 11 entreprises de
+`BOARDS` (`gitlab.com`, `n26.com`, `wise.com`, `lever.co`, `plaid.com`,
+`notion.so`, `openai.com`, `ramp.com`, `linear.app`, `railway.app`) →
+`companyLogoUrl` rempli via le favicon Google, gratuit, sans clé. `teneo`
+volontairement exclu : plusieurs entreprises distinctes partagent ce nom,
+domaine ambigu — mieux vaut le monogramme neutre qu'un logo d'une mauvaise
+entreprise.
+
+**Prochaine étape si la qualité devient un problème réel** : ajouter une
+clé Brandfetch (recommandé, pas d'attribution) ou Logo.dev, et une étape
+d'enrichissement qui résout un domaine à partir du nom d'entreprise pour
+APEC/HelloWork/ATS — non fait ici, aucune clé n'existe encore côté
+utilisateur et deviner un domaine à partir d'un simple nom serait risqué
+sans vérification humaine (même risque que `teneo` ci-dessus, à plus
+grande échelle).
+
+## 8. Sources de cette recherche (2026-08-14, non vérifiées en conditions réelles)
+
+- [Logo.dev](https://www.logo.dev)
+- [Brandfetch Logo API](https://brandfetch.com/developers/logo-api)
 - [EURES Job Mobility Portal](https://eures.europa.eu/index_en)
 - [bundesAPI/jobsuche-api (GitHub)](https://github.com/bundesAPI/jobsuche-api)
 - [Arbetsförmedlingen — APIs and open data](https://arbetsformedlingen.se/other-languages/english-engelska/about-the-website/apis-and-open-data)

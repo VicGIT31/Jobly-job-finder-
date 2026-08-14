@@ -146,7 +146,7 @@ export default async function HomePage() {
                 className="card group flex items-center gap-3 p-4 hover:shadow-lift"
               >
                 <span aria-hidden="true" className="text-2xl">
-                  {COUNTRY_FLAGS[c.code] ?? "🇪🇺"}
+                  {c.code === "FR" ? "🇫🇷" : (COUNTRY_FLAGS[c.code] ?? "🇪🇺")}
                 </span>
                 <span className="min-w-0">
                   <span className="block truncate font-semibold group-hover:text-cobalt">

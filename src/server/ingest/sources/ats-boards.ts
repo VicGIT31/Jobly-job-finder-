@@ -58,6 +58,39 @@ const DISPLAY_NAME: Record<string, string> = {
   railway: "Railway",
 };
 
+/**
+ * Domaine réel de l'entreprise, uniquement pour les board slugs qu'on peut
+ * vérifier avec certitude (jamais deviné — un mauvais domaine afficherait le
+ * logo d'une autre entreprise, pire qu'aucun logo). "teneo" volontairement
+ * absent : plusieurs entreprises distinctes partagent ce nom, domaine
+ * ambigu. Sert de repli logo (favicon Google, gratuit, sans clé) pour les
+ * connecteurs qui ne reçoivent aucune URL de logo de l'ATS lui-même — voir
+ * `logoUrlFor()` ci-dessous et SOURCES_EUROPE_ASIA.md §8.
+ */
+const DOMAIN: Record<string, string> = {
+  gitlab: "gitlab.com",
+  n26: "n26.com",
+  wise: "wise.com",
+  lever: "lever.co",
+  plaid: "plaid.com",
+  notion: "notion.so",
+  openai: "openai.com",
+  ramp: "ramp.com",
+  linear: "linear.app",
+  railway: "railway.app",
+};
+
+/**
+ * Repli gratuit et sans clé (favicon Google) quand le domaine est connu.
+ * Qualité modeste (Clearbit, l'ancien service standard, a fermé fin 2025) —
+ * voir SOURCES_EUROPE_ASIA.md §8 pour une option de meilleure qualité avec
+ * clé (Brandfetch/Logo.dev) si la qualité devient un problème réel.
+ */
+function logoUrlFor(slug: string): string | undefined {
+  const domain = DOMAIN[slug];
+  return domain ? `https://www.google.com/s2/favicons?domain=${domain}&sz=128` : undefined;
+}
+
 /** Correspondance nom de pays (anglais, tel qu'exposé par les ATS) → ISO 3166-1 alpha-2. */
 const COUNTRY_NAME_TO_ISO: Record<string, string> = {
   "united states": "US",
@@ -214,6 +247,7 @@ async function fetchGreenhouse(slug: string): Promise<RawOffer[]> {
       scrapedAt: new Date(),
       countryCode: guessCountryFromLocation(location),
       ...(job.first_published ? { publishedAt: new Date(job.first_published) } : {}),
+      ...(logoUrlFor(slug) ? { companyLogoUrl: logoUrlFor(slug) } : {}),
     });
   }
   return raw;
@@ -263,6 +297,7 @@ async function fetchLever(slug: string): Promise<RawOffer[]> {
       scrapedAt: new Date(),
       countryCode: guessCountryFromLocation(location),
       ...(posting.createdAt ? { publishedAt: new Date(posting.createdAt) } : {}),
+      ...(logoUrlFor(slug) ? { companyLogoUrl: logoUrlFor(slug) } : {}),
     });
   }
   return raw;
@@ -329,6 +364,7 @@ async function fetchAshby(slug: string): Promise<RawOffer[]> {
         ? (COUNTRY_NAME_TO_ISO[country.toLowerCase()] ?? "XX")
         : guessCountryFromLocation(job.location),
       ...(job.publishedAt ? { publishedAt: new Date(job.publishedAt) } : {}),
+      ...(logoUrlFor(slug) ? { companyLogoUrl: logoUrlFor(slug) } : {}),
     });
   }
   return raw;
