@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { FileText } from "lucide-react";
 import type { CvMatchResult } from "@/server/cv/analyze";
 
 /**
@@ -20,7 +21,10 @@ export function CvMatchCard({
   if (!hasCv) {
     return (
       <div className="card mt-4 p-5">
-        <h2 className="font-display text-lg font-bold">Correspondance CV</h2>
+        <h2 className="flex items-center gap-2 font-display text-lg font-bold">
+          <FileText aria-hidden="true" size={18} className="text-cobalt" />
+          Correspondance CV
+        </h2>
         <p className="mt-2 text-sm text-ink/60">
           <Link href="/mon-espace" className="text-cobalt underline-offset-4 hover:underline">
             Ajoutez votre CV
@@ -34,7 +38,10 @@ export function CvMatchCard({
   if (!result) {
     return (
       <div className="card mt-4 p-5">
-        <h2 className="font-display text-lg font-bold">Correspondance CV</h2>
+        <h2 className="flex items-center gap-2 font-display text-lg font-bold">
+          <FileText aria-hidden="true" size={18} className="text-cobalt" />
+          Correspondance CV
+        </h2>
         <p className="mt-2 text-sm text-ink/60">
           Cette offre ne mentionne pas de compétences techniques reconnues à comparer.
         </p>
@@ -44,7 +51,10 @@ export function CvMatchCard({
 
   return (
     <div className="card mt-4 p-5">
-      <h2 className="font-display text-lg font-bold">Correspondance CV</h2>
+      <h2 className="flex items-center gap-2 font-display text-lg font-bold">
+        <FileText aria-hidden="true" size={18} className="text-cobalt" />
+        Correspondance CV
+      </h2>
       <p className="mt-1">
         <span className="font-display text-3xl font-bold tabular-nums">{result.score}%</span>{" "}
         <span className="text-sm text-ink/60">des mots-clés de l'offre trouvés dans votre CV</span>
@@ -52,6 +62,9 @@ export function CvMatchCard({
       <p className="mt-0.5 text-xs text-ink/45">
         Comparaison lexicale simple, pas une analyse par IA.
       </p>
+      <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-surface">
+        <div className="h-full rounded-full bg-cobalt/70" style={{ width: `${result.score}%` }} />
+      </div>
 
       {result.found.length > 0 && (
         <div className="mt-3">

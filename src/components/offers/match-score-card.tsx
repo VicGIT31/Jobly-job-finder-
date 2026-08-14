@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { Target } from "lucide-react";
 import type { MatchResult } from "@/server/match/score";
 
 function scoreTier(score: number): { label: string; className: string } {
@@ -25,7 +26,10 @@ export function MatchScoreCard({
   if (!isLoggedIn) {
     return (
       <div className="card mt-4 p-5">
-        <h2 className="font-display text-lg font-bold">Correspondance</h2>
+        <h2 className="flex items-center gap-2 font-display text-lg font-bold">
+          <Target aria-hidden="true" size={18} className="text-cobalt" />
+          Correspondance
+        </h2>
         <p className="mt-2 text-sm text-ink/60">
           <Link href="/connexion" className="text-cobalt underline-offset-4 hover:underline">
             Connectez-vous
@@ -39,7 +43,10 @@ export function MatchScoreCard({
   if (!result) {
     return (
       <div className="card mt-4 p-5">
-        <h2 className="font-display text-lg font-bold">Correspondance</h2>
+        <h2 className="flex items-center gap-2 font-display text-lg font-bold">
+          <Target aria-hidden="true" size={18} className="text-cobalt" />
+          Correspondance
+        </h2>
         <p className="mt-2 text-sm text-ink/60">
           Complétez vos préférences (niveau d'études, spécialité, ville) pour voir votre score de
           correspondance sur cette offre.
@@ -58,7 +65,10 @@ export function MatchScoreCard({
 
   return (
     <div className="card mt-4 p-5">
-      <h2 className="font-display text-lg font-bold">Correspondance</h2>
+      <h2 className="flex items-center gap-2 font-display text-lg font-bold">
+        <Target aria-hidden="true" size={18} className="text-cobalt" />
+        Correspondance
+      </h2>
       <p className="mt-1">
         <span className="font-display text-3xl font-bold tabular-nums">{result.score}%</span>{" "}
         <span className={`text-sm font-semibold ${tier.className}`}>{tier.label}</span>
@@ -67,14 +77,20 @@ export function MatchScoreCard({
         Estimation basée sur votre profil, pas une décision de l'employeur.
       </p>
 
-      <ul className="mt-3 space-y-2 text-sm">
+      <ul className="mt-4 space-y-3 text-sm">
         {result.factors.map((factor) => (
-          <li key={factor.key} className="flex items-start justify-between gap-3">
-            <div>
+          <li key={factor.key}>
+            <div className="flex items-start justify-between gap-3">
               <p className="font-medium">{factor.label}</p>
-              <p className="text-xs text-ink/55">{factor.explanation}</p>
+              <span className="shrink-0 tabular-nums text-ink/70">{factor.score}%</span>
             </div>
-            <span className="shrink-0 tabular-nums text-ink/70">{factor.score}%</span>
+            <p className="text-xs text-ink/55">{factor.explanation}</p>
+            <div className="mt-1 h-1.5 overflow-hidden rounded-full bg-surface">
+              <div
+                className="h-full rounded-full bg-cobalt/70"
+                style={{ width: `${factor.score}%` }}
+              />
+            </div>
           </li>
         ))}
       </ul>
