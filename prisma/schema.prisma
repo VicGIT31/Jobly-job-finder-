@@ -71,40 +71,62 @@ enum IngestResult {
   REJECTED
 }
 
+/**
+ * État d'une candidature dans le suivi personnel (`/mon-espace/candidatures`).
+ * SAVED = offre mise de côté sans candidature envoyée (créé aussi par
+ * `SavedOffer`, mais ici c'est une entrée explicite du suivi). REJECTED et
+ * WITHDRAWN restent visibles mais hors du tableau actif.
+ */
+enum ApplicationStatus {
+  SAVED
+  APPLIED
+  ASSESSMENT
+  INTERVIEW
+  OFFER
+  REJECTED
+  WITHDRAWN
+}
+
 // ---------- Auth (Auth.js) ----------
 
 model User {
-  id             String    @id @default(cuid())
-  name           String?
-  email          String    @unique
+  id            String    @id @default(cuid())
+  name          String?
+  email         String    @unique
   // Identifiant de connexion alternatif à l'email (comptes internes). Optionnel
   // et unique : la plupart des comptes candidats n'en ont pas.
-  username       String?   @unique
-  emailVerified  DateTime?
-  image          String?
-  passwordHash   String?
-  role           Role      @default(USER)
+  username      String?   @unique
+  emailVerified DateTime?
+  image         String?
+  passwordHash  String?
+  role          Role      @default(USER)
   // Compte suspendu par un administrateur : la connexion est refusée tant que
   // la date est renseignée (le compte et ses données sont conservés).
-  suspendedAt    DateTime?
+  suspendedAt   DateTime?
 
   // Profil candidat
-  school         String?
-  graduationYear Int?
-  headline       String?
-  city           String?
-  cvKey          String?   // clé S3 du CV
-  cvFilename     String?
-  cvUploadedAt   DateTime?
+  school          String?
+  graduationYear  Int?
+  headline        String?
+  city            String?
+  // Préférences utilisées par le score de correspondance transparent
+  // (`src/server/match/score.ts`) : `null` = non renseigné, jamais deviné.
+  educationLevel  EducationLevel?
+  targetSpecialty TechSpecialty?
+  cvKey           String? // clé S3 du CV
+  cvFilename      String?
+  cvUploadedAt    DateTime?
 
-  accounts       Account[]
-  sessions       Session[]
-  savedOffers    SavedOffer[]
-  savedSearches  SavedSearch[]
-  applyClicks    ApplyClick[]
+  accounts      Account[]
+  sessions      Session[]
+  savedOffers   SavedOffer[]
+  hiddenOffers  HiddenOffer[]
+  savedSearches SavedSearch[]
+  applyClicks   ApplyClick[]
+  applications  Application[]
 
-  createdAt      DateTime  @default(now())
-  updatedAt      DateTime  @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   @@map("users")
 }
@@ -151,31 +173,31 @@ model VerificationToken {
 // ---------- Métier ----------
 
 model Company {
-  id          String     @id @default(cuid())
+  id          String  @id @default(cuid())
   name        String
-  slug        String     @unique
+  slug        String  @unique
   logoUrl     String?
   description String
   sector      String
   size        String // ex. "1-10", "11-50", "51-200", "201-1000", "1000+"
   website     String?
-  featured    Boolean    @default(false)
+  featured    Boolean @default(false)
 
-  offers      JobOffer[]
+  offers JobOffer[]
 
-  createdAt   DateTime   @default(now())
-  updatedAt   DateTime   @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   @@map("companies")
 }
 
 model JobOffer {
-  id             String         @id @default(cuid())
-  title          String
-  slug           String         @unique
-  description    String // markdown/HTML riche
-  companyId      String
-  company        Company        @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  id          String  @id @default(cuid())
+  title       String
+  slug        String  @unique
+  description String // markdown/HTML riche
+  companyId   String
+  company     Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
 
   contractType   ContractType
   city           String
@@ -189,24 +211,26 @@ model JobOffer {
   specialty      TechSpecialty  @default(AUTRE)
 
   // Provenance scraping
-  sourceUrl      String
-  sourceSite     String
-  scrapedAt      DateTime
-  lastSeenAt     DateTime
-  dedupHash      String         @unique
-  status         OfferStatus    @default(ACTIVE)
+  sourceUrl  String
+  sourceSite String
+  scrapedAt  DateTime
+  lastSeenAt DateTime
+  dedupHash  String      @unique
+  status     OfferStatus @default(ACTIVE)
   // Offre bloquée par un modérateur. Sans ce drapeau, l'ingestion suivante la
   // retrouverait sur la source et la repasserait en ACTIVE : la modération
   // serait annulée toute seule au bout de 30 minutes.
-  blockedAt      DateTime?
+  blockedAt  DateTime?
 
-  publishedAt    DateTime       @default(now())
+  publishedAt DateTime @default(now())
 
-  savedBy        SavedOffer[]
-  applyClicks    ApplyClick[]
+  savedBy      SavedOffer[]
+  hiddenBy     HiddenOffer[]
+  applyClicks  ApplyClick[]
+  applications Application[]
 
-  createdAt      DateTime       @default(now())
-  updatedAt      DateTime       @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   @@index([status, publishedAt])
   @@index([companyId, status])
@@ -226,6 +250,23 @@ model SavedOffer {
 
   @@unique([userId, offerId])
   @@map("saved_offers")
+}
+
+/**
+ * Offre masquée par un candidat (§8/§9 : « previously dismissed jobs »).
+ * Exclue des résultats de recherche pour cet utilisateur — voir
+ * `src/server/offers/hidden-filter.ts`.
+ */
+model HiddenOffer {
+  id        String   @id @default(cuid())
+  userId    String
+  offerId   String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  offer     JobOffer @relation(fields: [offerId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+
+  @@unique([userId, offerId])
+  @@map("hidden_offers")
 }
 
 model SavedSearch {
@@ -257,6 +298,56 @@ model ApplyClick {
 }
 
 /**
+ * Suivi de candidature personnel (tableau Kanban `/mon-espace/candidatures`).
+ * `offerId` est optionnel : une candidature peut être liée à une offre scrapée
+ * (créée automatiquement au clic « Postuler ») ou ajoutée manuellement (offre
+ * externe hors périmètre Jobly). Les champs `companyName`/`jobTitle` sont
+ * dupliqués depuis l'offre au moment de la création : la candidature doit
+ * rester lisible même si l'offre expire ou est supprimée.
+ */
+model Application {
+  id      String    @id @default(cuid())
+  userId  String
+  user    User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  offerId String?
+  offer   JobOffer? @relation(fields: [offerId], references: [id], onDelete: SetNull)
+
+  companyName    String
+  jobTitle       String
+  companyLogoUrl String?
+  sourceUrl      String?
+
+  status    ApplicationStatus @default(SAVED)
+  notes     String?
+  appliedAt DateTime?
+
+  history ApplicationStatusHistory[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Une seule entrée de suivi par offre et par utilisateur (les entrées
+  // manuelles, offerId = null, ne sont pas concernées par cette contrainte).
+  @@unique([userId, offerId])
+  @@index([userId, status])
+  @@map("applications")
+}
+
+/**
+ * Historique des changements de statut d'une candidature (jamais écrasé).
+ */
+model ApplicationStatusHistory {
+  id            String            @id @default(cuid())
+  applicationId String
+  application   Application       @relation(fields: [applicationId], references: [id], onDelete: Cascade)
+  status        ApplicationStatus
+  changedAt     DateTime          @default(now())
+
+  @@index([applicationId, changedAt])
+  @@map("application_status_history")
+}
+
+/**
  * Réglages du site pilotés depuis le panneau d'administration (SEO, contenu de
  * la page d'accueil, paramètres d'ingestion). Un enregistrement par clé, valeur
  * JSON libre : ajouter un réglage ne demande pas de migration.
@@ -270,7 +361,9 @@ model SiteSetting {
   @@map("site_settings")
 }
 
-/** Journal d'audit : trace toute action d'administration (qui, quoi, quand). */
+/**
+ * Journal d'audit : trace toute action d'administration (qui, quoi, quand).
+ */
 model AuditLog {
   id         String   @id @default(cuid())
   actorId    String?
