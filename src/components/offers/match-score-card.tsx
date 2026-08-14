@@ -1,15 +1,6 @@
 import Link from "next/link";
 import { Target } from "lucide-react";
-import type { MatchResult } from "@/server/match/score";
-
-function scoreTier(score: number): { label: string; className: string } {
-  if (score >= 85)
-    return { label: "Très bon match", className: "text-emerald-700 dark:text-emerald-400" };
-  if (score >= 65) return { label: "Bon match", className: "text-cobalt" };
-  if (score >= 40)
-    return { label: "Match partiel", className: "text-amber-700 dark:text-amber-400" };
-  return { label: "Match faible", className: "text-ink/60" };
-}
+import { scoreTier, type MatchResult } from "@/server/match/score";
 
 /**
  * Score de correspondance côté candidat (§11 du cahier des charges) : jamais

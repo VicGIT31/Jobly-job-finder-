@@ -500,6 +500,94 @@ non précisé"), une entreprise mono-pays n'affiche aucune ligne « Recrute en �
 
 ---
 
+### 2.17 Header/nav principale : état actif + menu mobile (vrai bug de débordement)
+
+Fork d'audit sur le chrome persistant (header/footer, jamais touché
+jusqu'ici) : `site-header.tsx` n'avait ni indicateur de page active (même
+trou que `mon-espace-nav.tsx` avant sa refonte), ni menu mobile — la `nav`
+était un simple `flex` sans `flex-wrap` ni repli, donc les liens
+débordaient sur petit écran plutôt que de s'empiler. Pas juste cosmétique :
+un vrai bug de layout sur mobile.
+
+Extrait dans **`src/components/site-nav.tsx`** (nouveau composant client,
+même motif que `mon-espace-nav.tsx` — `usePathname()` pour l'état actif,
+`SiteHeader` reste un Server Component pour `auth()`) :
+
+- Nav desktop inchangée visuellement (`hidden sm:flex`), avec
+  `aria-current="page"` + fond `bg-cobalt` sur le lien actif.
+- Bouton hamburger (`Menu`/`X` de `lucide-react`) visible uniquement sous
+  `sm`, ouvre un panneau `absolute` avec les mêmes liens empilés + bascule
+  de thème + bouton connexion/mon espace, fermeture au clic sur un lien.
+- `ThemeToggle` déplacé de `SiteHeader` vers `SiteNav` (déjà un composant
+  client) pour qu'il apparaisse dans les deux versions (desktop et menu
+  mobile) sans dupliquer la logique.
+
+Vérifié en conditions réelles : `tsc --noEmit`, ESLint, Prettier, suite de
+tests complète (119 tests), `docker compose build app` réel, page réelle
+servie après rebuild avec `aria-current="page"` sur le lien actif et le
+bouton mobile (`aria-controls="menu-mobile"`, `aria-expanded="false"`)
+confirmés par `curl`.
+
+### 2.18 Score de correspondance sur les cartes d'offre (spec §11, §61-62)
+
+Jusqu'ici le score de correspondance (`computeMatchScore`, §2.3) n'était
+visible que sur la page de détail d'une offre — il fallait ouvrir chaque
+offre une par une pour savoir si elle correspondait au profil. Réutilise
+directement l'infrastructure existante, aucune nouvelle donnée nécessaire :
+
+- **`src/server/match/score.ts`** — `scoreTier()` extrait de
+  `match-score-card.tsx` (dupliqué) vers ce module, exporté et réutilisé par
+  les deux composants qui l'affichent désormais.
+- **`src/components/offers/offer-card.tsx`** — prop optionnelle
+  `candidateProfile`; si fournie, calcule `computeMatchScore` avec les
+  champs déjà présents sur `OfferDocument` (`educationLevel`, `specialty`,
+  `city`, `remotePolicy`) et affiche un badge compact (`48% match`, couleur
+  du palier) sous le badge de contrat. Rien n'est affiché sans profil.
+- **`src/app/offres/page.tsx`** → **`search-client.tsx`** : le profil
+  candidat est désormais chargé côté serveur (même motif que la page de
+  détail) et transmis à chaque carte de résultat.
+- **`src/app/offres/[slug]/page.tsx`** : le `candidateProfile` déjà chargé
+  pour cette page est aussi transmis aux cartes de la section « Offres
+  similaires » (auparavant sans score).
+
+### 2.19 Bug critique corrigé : page offre en erreur 500 pour tout utilisateur connecté
+
+**Trouvé en vérifiant §2.18 en conditions réelles, connecté** (login via le
+flux credentials NextAuth réel — `camille@jobly.test`, cookie de session
+signé réel, pas un raccourci) : `/offres/[slug]` renvoyait une erreur 500
+pour **tout** utilisateur connecté, depuis l'introduction de `AiDraftPanel`
+en §2.12 — jamais détecté avant car §2.12 n'avait été vérifié que côté
+déconnecté.
+
+Cause : `src/server/ai/actions.ts` (fichier `"use server"`) exportait aussi
+`AI_TONES` et `AI_TONE_LABELS`, deux constantes. Un fichier `"use server"`
+ne peut exporter que des fonctions async (Server Actions) — exporter une
+constante casse au runtime dès qu'un composant client la consomme
+réellement (`AI_TONES.map(...)` dans `AiDraftPanel` reçoit une référence
+d'action sérialisée, pas le tableau, d'où `TypeError: u.map is not a
+function`). Isolé par élimination : reproduction de `computeMatchScore` et
+`computeCvMatch` en script Node isolé (aucune erreur), test avec/sans
+authentification sur la même offre (200 déconnecté, 500 connecté) — pointait
+vers le seul composant authentifié-only nouveau, `AiDraftPanel`.
+
+Corrigé en déplaçant les deux constantes vers un nouveau module
+**`src/server/ai/tones.ts`** (pas de directive `"use server"`), importé par
+`ai-draft-panel.tsx` ; `actions.ts` n'exporte plus que la Server Action.
+
+Vérifié en conditions réelles avec une vraie session authentifiée (login
+credentials réel, pas de raccourci de base de données) : `/offres/[slug]`
+`200` avec badge de match (`48% match`), panneau IA complet
+(`Brouillon de réponse`, sélecteur de ton), `/offres` `200`, `/mon-espace`
+`200`. Non-régression déconnectée confirmée (`200`, même offre, sans clé
+ANTHROPIC_API_KEY donc `MockProvider`). `tsc --noEmit`, ESLint, Prettier,
+suite de tests complète (119 tests), `docker compose build app` réel.
+
+**Commité en un seul commit substantiel** (nav §2.17 + score sur cartes
+§2.18 + correctif critique §2.19), conformément à la consigne utilisateur
+sur le regroupement des commits (voir mémoire `feedback_commit_granularity`).
+
+---
+
 ## 3. Ce qui N'A PAS été fait (le reste du cahier des charges)
 
 Le cahier des charges complet est dans `europe_asia_ai_job_platform_mvp_prompt.md`
@@ -578,55 +666,4 @@ probable :
   (`git@github.com:...`) mais aucune clé SSH n'est disponible sur cette
   machine — `git push` échoue avec `Permission denied (publickey)`. Utiliser
   le credential helper de `gh` (authentifié) sur une URL HTTPS explicite,
-  sans toucher à la config git globale :
-  ```bash
-  git -c credential.helper='!gh auth git-credential' \
-    push https://github.com/VicGIT31/Internship-finders.git main
-  ```
-  Puis pour resynchroniser la ref de suivi locale (`git push` sur une URL
-  explicite ne le fait pas automatiquement) :
-  ```bash
-  git -c credential.helper='!gh auth git-credential' \
-    -c url."https://github.com/".insteadOf="git@github.com:" \
-    fetch origin main
-  ```
-- **Identité des commits** : les commits de cette session sont tous
-  attribués à `VicD <183367904+VicGIT31@users.noreply.github.com>` (email
-  noreply GitHub lié au compte `VicGIT31`), fixé explicitement via
-  `--author`/`GIT_COMMITTER_*` par commit plutôt que via `git config`
-  (jamais modifié durablement sur cette machine, à la demande de
-  l'utilisateur).
-- **Convention de commit du projet** (`CONTEXTE.md` §7) : 1 commit par
-  fichier, préfixes `MOD:`/`ADD:`/`RM:`, messages en français. Cette
-  session a été committée en commits groupés par fonctionnalité (demande
-  explicite de l'utilisateur pour le premier lot : « 10 commits »), pas
-  1-par-fichier — voir le log git pour le détail exact.
-- **Tests** : 113 tests passent (`npm run test`), tous les nouveaux modules
-  purs (`follow-up.ts`, `score.ts`, `tracker.ts` côté logique,
-  `hidden-filter.ts`, `insights/compute.ts`, `cv/analyze.ts`) sont testés
-  unitairement sans dépendance DB, dans l'esprit de
-  `src/server/apply/redirect.ts` (déjà présent avant cette session). Les
-  connecteurs eux-mêmes (`arbetsformedlingen.ts`, `ats-boards.ts`) et
-  l'extraction PDF (`extract-text.ts`) n'ont pas de tests unitaires —
-  vérifiés uniquement en conditions réelles (curl direct, cycles
-  d'ingestion complets, PDF généré via `cupsfilter`). À corriger si ces
-  modules deviennent critiques.
-- **`pdf-parse` : ne jamais importer le point d'entrée public**
-  (`import pdfParse from "pdf-parse"`) dans du code qui sera bundlé par
-  Next.js — voir §2.9. Toujours `pdf-parse/lib/pdf-parse.js`, avec la
-  déclaration de types dans `src/types/pdf-parse.d.ts`. L'erreur si on se
-  trompe n'apparaît qu'au `docker compose build` (pas en dev, pas en
-  `tsc --noEmit`), donc facile à rater avant un rebuild complet.
-- **Édition de ce fichier — attention réelle, pas juste une note** : cette
-  session a perdu du contenu par troncature silencieuse **deux fois** avec
-  des `Edit`/`Write` sur ce fichier précis (voir l'avertissement en tête de
-  fichier ; la deuxième fois s'est produite sur le `Write` de
-  reconstruction lui-même, pas sur un `Edit` ultérieur). Après toute
-  modification substantielle de ce document, vérifier `wc -l` et la
-  présence de tous les `##`/`###` attendus (`grep -n "^##"`) avant de
-  committer — ne pas supposer que l'outil a écrit ce qui a été demandé.
-- **Design** : aucune nouvelle classe Tailwind custom cette session — tout
-  réutilise les tokens existants (`card`, `btn-cobalt`, `btn-outline`,
-  `stamp`, `ticket`, `input-ink`, couleurs `ink`/`cobalt`/`surface`).
-  Continuer dans cet esprit plutôt que d'introduire un nouveau système
-  visuel.
+  sans

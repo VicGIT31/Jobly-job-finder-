@@ -300,7 +300,11 @@ export default async function OffrePage({ params }: { params: { slug: string } }
           </h2>
           <div className="mt-4 grid gap-3 md:grid-cols-2 lg:grid-cols-3">
             {similar.map((o) => (
-              <OfferCard key={o.id} offer={offerToDocument(o)} />
+              <OfferCard
+                key={o.id}
+                offer={offerToDocument(o)}
+                candidateProfile={candidateProfile}
+              />
             ))}
           </div>
         </section>

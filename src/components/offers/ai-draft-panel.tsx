@@ -4,7 +4,8 @@ import { useMutation } from "@tanstack/react-query";
 import { useState } from "react";
 import { Sparkles } from "lucide-react";
 import Link from "next/link";
-import { generateApplicationAnswer, AI_TONES, AI_TONE_LABELS } from "@/server/ai/actions";
+import { generateApplicationAnswer } from "@/server/ai/actions";
+import { AI_TONES, AI_TONE_LABELS } from "@/server/ai/tones";
 import type { Tone } from "@/server/ai/provider";
 
 const DEFAULT_QUESTION = "Pourquoi voulez-vous rejoindre cette entreprise ?";

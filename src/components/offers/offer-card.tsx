@@ -1,7 +1,9 @@
 import Link from "next/link";
 import { Clock, Laptop, MapPin, Wallet } from "lucide-react";
+import type { EducationLevel, RemotePolicy, TechSpecialty } from "@prisma/client";
 import type { OfferDocument } from "@/server/search/sync";
 import { CONTRACT_LABELS, COUNTRY_FLAGS, REMOTE_LABELS } from "@/lib/search-params";
+import { computeMatchScore, scoreTier, type MatchCandidate } from "@/server/match/score";
 import { CompanyLogo } from "./company-logo";
 
 export function formatSalary(min: number | null, max: number | null): string | null {
@@ -31,9 +33,25 @@ export function timeAgo(ts: number): string {
   return `il y a ${months} mois`;
 }
 
-export function OfferCard({ offer }: { offer: OfferDocument }) {
+export function OfferCard({
+  offer,
+  candidateProfile,
+}: {
+  offer: OfferDocument;
+  /** Profil du candidat connecté, pour afficher le score de correspondance sur la carte (spec §11). */
+  candidateProfile?: MatchCandidate | null;
+}) {
   const salary = formatSalary(offer.salaryMin, offer.salaryMax);
   const isNew = Date.now() - offer.publishedAtTs < 3 * 86_400_000;
+
+  const matchResult = candidateProfile
+    ? computeMatchScore(candidateProfile, {
+        educationLevel: offer.educationLevel as EducationLevel,
+        specialty: offer.specialty as TechSpecialty,
+        city: offer.city,
+        remotePolicy: offer.remotePolicy as RemotePolicy,
+      })
+    : null;
 
   return (
     <article className="card group relative p-5 transition-all duration-150 hover:-translate-y-0.5 hover:shadow-lift">
@@ -57,13 +75,23 @@ export function OfferCard({ offer }: { offer: OfferDocument }) {
             </Link>
           </h3>
         </div>
-        <span
-          className="stamp shrink-0"
-          aria-label={`Contrat : ${CONTRACT_LABELS[offer.contractType as keyof typeof CONTRACT_LABELS] ?? offer.contractType}`}
-        >
-          {CONTRACT_LABELS[offer.contractType as keyof typeof CONTRACT_LABELS] ??
-            offer.contractType}
-        </span>
+        <div className="flex shrink-0 flex-col items-end gap-1">
+          <span
+            className="stamp"
+            aria-label={`Contrat : ${CONTRACT_LABELS[offer.contractType as keyof typeof CONTRACT_LABELS] ?? offer.contractType}`}
+          >
+            {CONTRACT_LABELS[offer.contractType as keyof typeof CONTRACT_LABELS] ??
+              offer.contractType}
+          </span>
+          {matchResult && (
+            <span
+              className={`text-xs font-semibold tabular-nums ${scoreTier(matchResult.score).className}`}
+              title="Estimation basée sur votre profil, pas une décision de l'employeur."
+            >
+              {matchResult.score}% match
+            </span>
+          )}
+        </div>
       </div>
 
       <dl className="mt-3.5 flex flex-wrap items-center gap-x-4 gap-y-1.5 text-sm text-ink/70">

@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { auth } from "@/lib/auth";
 import { JoblyLogo } from "@/components/brand/jobly-logo";
-import { ThemeToggle } from "@/components/theme-toggle";
+import { SiteNav } from "@/components/site-nav";
 
 export async function SiteHeader() {
   const session = await auth();
@@ -15,42 +15,11 @@ export async function SiteHeader() {
       >
         Aller au contenu
       </a>
-      <div className="mx-auto flex max-w-6xl items-center justify-between gap-4 px-4 py-3">
+      <div className="relative mx-auto flex max-w-6xl items-center justify-between gap-4 px-4 py-3">
         <Link href="/" aria-label="Jobly — accueil" className="rounded-lg">
           <JoblyLogo size="md" />
         </Link>
-        <nav aria-label="Navigation principale" className="flex items-center gap-1 sm:gap-2">
-          <Link
-            href="/offres"
-            className="rounded-lg px-3 py-2 text-sm font-medium text-ink/70 transition-colors hover:bg-surface hover:text-ink"
-          >
-            Offres
-          </Link>
-          <Link
-            href="/entreprises"
-            className="rounded-lg px-3 py-2 text-sm font-medium text-ink/70 transition-colors hover:bg-surface hover:text-ink"
-          >
-            Entreprises
-          </Link>
-          {user?.role === "ADMIN" && (
-            <Link
-              href="/admin"
-              className="rounded-lg px-3 py-2 text-sm font-medium text-ink/70 transition-colors hover:bg-surface hover:text-ink"
-            >
-              Admin
-            </Link>
-          )}
-          <ThemeToggle />
-          {user ? (
-            <Link href="/mon-espace" className="btn-outline !min-h-[40px] !px-4 !py-1.5 text-sm">
-              Mon espace
-            </Link>
-          ) : (
-            <Link href="/connexion" className="btn-cobalt !min-h-[40px] !px-4 !py-1.5 text-sm">
-              Connexion
-            </Link>
-          )}
-        </nav>
+        <SiteNav isAdmin={user?.role === "ADMIN"} isLoggedIn={Boolean(user)} />
       </div>
     </header>
   );

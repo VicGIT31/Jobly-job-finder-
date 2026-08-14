@@ -79,19 +79,3 @@ export async function generateApplicationAnswer(
     return { ok: false, error: message };
   }
 }
-
-export const AI_TONES: readonly Tone[] = [
-  "concise",
-  "professional",
-  "enthusiastic",
-  "technical",
-  "conversational",
-];
-
-export const AI_TONE_LABELS: Record<Tone, string> = {
-  concise: "Concis",
-  professional: "Professionnel",
-  enthusiastic: "Enthousiaste",
-  technical: "Technique",
-  conversational: "Naturel",
-};

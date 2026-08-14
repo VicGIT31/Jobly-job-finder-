@@ -5,6 +5,7 @@ import { parseAsInteger, parseAsString, parseAsStringLiteral, useQueryStates } f
 import { useCallback, useMemo, useState } from "react";
 import { SearchX, SlidersHorizontal } from "lucide-react";
 import type { OfferSearchResult } from "@/server/search/query";
+import type { MatchCandidate } from "@/server/match/score";
 import {
   CONTRACT_LABELS,
   COUNTRY_FLAGS,
@@ -44,9 +45,12 @@ const uncsv = (values: string[]): string => values.join(",");
 export function SearchClient({
   initialResult,
   isLoggedIn,
+  candidateProfile,
 }: {
   initialResult: OfferSearchResult;
   isLoggedIn: boolean;
+  /** Profil du candidat connecté, pour le score de correspondance sur chaque carte (spec §11). */
+  candidateProfile?: MatchCandidate | null;
 }) {
   const [state, setState] = useQueryStates(searchStateParsers, { history: "replace" });
   const [filtersOpen, setFiltersOpen] = useState(false);
@@ -279,7 +283,7 @@ export function SearchClient({
           ) : (
             <div className={`grid gap-3 ${isPlaceholderData ? "opacity-60" : ""}`}>
               {result.hits.map((offer) => (
-                <OfferCard key={offer.id} offer={offer} />
+                <OfferCard key={offer.id} offer={offer} candidateProfile={candidateProfile} />
               ))}
             </div>
           )}

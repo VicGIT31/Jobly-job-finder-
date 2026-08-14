@@ -26,9 +26,17 @@ export default async function OffresPage({
   const input = parseOfferSearchParams(searchParams);
   const [initialResult, session] = await Promise.all([searchOffers(input), auth()]);
 
-  if (session?.user?.id) {
+  const userId = session?.user?.id ?? null;
+  const candidateProfile = userId
+    ? await prisma.user.findUnique({
+        where: { id: userId },
+        select: { educationLevel: true, targetSpecialty: true, city: true },
+      })
+    : null;
+
+  if (userId) {
     const hidden = await prisma.hiddenOffer.findMany({
-      where: { userId: session.user.id },
+      where: { userId },
       select: { offerId: true },
     });
     if (hidden.length > 0) {
@@ -47,7 +55,11 @@ export default async function OffresPage({
         en France, plus des offres tech en Europe (filtre « Pays »).
       </p>
       <div className="mt-6">
-        <SearchClient initialResult={initialResult} isLoggedIn={Boolean(session?.user)} />
+        <SearchClient
+          initialResult={initialResult}
+          isLoggedIn={Boolean(session?.user)}
+          candidateProfile={candidateProfile}
+        />
       </div>
     </div>
   );

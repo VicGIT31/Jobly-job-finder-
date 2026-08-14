@@ -41,6 +41,16 @@ export type MatchResult = {
   factors: MatchFactor[];
 };
 
+/** Palier lisible d'un score de correspondance — partagé entre les composants qui l'affichent. */
+export function scoreTier(score: number): { label: string; className: string } {
+  if (score >= 85)
+    return { label: "Très bon match", className: "text-emerald-700 dark:text-emerald-400" };
+  if (score >= 65) return { label: "Bon match", className: "text-cobalt" };
+  if (score >= 40)
+    return { label: "Match partiel", className: "text-amber-700 dark:text-amber-400" };
+  return { label: "Match faible", className: "text-ink/60" };
+}
+
 function educationFactor(
   candidateLevel: EducationLevel | null,
   requiredLevel: EducationLevel,
