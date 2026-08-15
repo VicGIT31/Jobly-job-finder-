@@ -682,6 +682,74 @@ Trois demandes de l'utilisateur dans le même message : un bug visuel précis
 
 ---
 
+### 2.22 Bug stage/alternance corrigé (data + code), filtres catégorie entreprise, tri « Pertinence » réparé
+
+Trois demandes directes de l'utilisateur (`/goal`) : filtres Fintech/Big
+Tech/Deep Tech avec regroupement d'entreprises, correction du bug « je
+filtre sur Stage, des alternances ressortent », amélioration du tri.
+
+- **Bug stage/alternance — cause exacte trouvée, pas supposée** : 252 offres
+  (in fine 290 avec la description en plus du titre) titrées « Alternance…
+  » étaient stockées avec `contractType = STAGE`, toutes issues de
+  HelloWork. `sources/hellowork.ts` consultait le champ structuré
+  schema.org `employmentType` **avant** le texte du titre/description — or
+  HelloWork expose « INTERN » aussi bien pour les stages que les
+  alternances (schema.org n'a pas de valeur dédiée « apprentissage »),
+  alors que le titre le dit explicitement dans l'immense majorité des
+  annonces. Corrigé à trois niveaux : (1) priorité inversée dans le
+  connecteur (texte d'abord) ; (2) `ingest.ts` reclasse désormais aussi
+  `contractType` sur les doublons rafraîchis (même motif déjà en place
+  pour `specialty`/`countryCode`, §2.7) — sans ça, la correction du
+  connecteur n'aurait profité qu'aux nouvelles offres ; (3)
+  `scripts/contract-backfill.ts` (`npm run contract:backfill`), corrige les
+  offres déjà en base, exécuté réellement : **290 offres corrigées sur 460
+  vérifiées**. Vérifié en conditions réelles : `select count(*) … where
+contractType='STAGE' and title ilike '%alternance%'` → 0 (était 252),
+  `curl /api/search?contrat=STAGE` → aucun titre « Alternance » dans les
+  résultats.
+- **Tri « Pertinence » réparé** : sans mot-clé de recherche (le cas le plus
+  courant — cliquer un filtre sans rien taper), `sort` valait `undefined`
+  en mode pertinence, donc aucun rang de tri ne départageait les ex æquo :
+  ordre non déterministe, dépendant de l'ID interne Meilisearch. Corrigé en
+  retombant sur `publishedAtTs:desc` dès qu'il n'y a pas de texte à
+  comparer (`rankingRules` place `sort` après les règles de pertinence
+  textuelle — voir `src/lib/meilisearch.ts` — donc avec un vrai mot-clé la
+  pertinence textuelle reste prioritaire, seuls les ex æquo sont
+  départagés par date). Vérifié : deux appels identiques à
+  `/api/search?tri=pertinence` renvoient maintenant le même ordre.
+- **Filtres catégorie d'entreprise (Fintech, Big Tech, Deep Tech, Grande
+  distribution + les collections déjà existantes Licornes/Top 10 tech
+  françaises)** : `company-collections.ts` existait déjà (vitrines de la
+  page d'accueil, motif de correspondance par segment de slug) mais n'était
+  utilisé nulle part comme filtre de recherche. Séparé en deux fichiers —
+  `src/lib/company-collections.ts` (données statiques + `matchesMember`,
+  sans `prisma`, importable côté client) et
+  `src/server/companies/collections.ts` (`resolveCollections()` pour
+  l'accueil + nouvelle `companySlugsForCollection()` pour la recherche) —
+  pour que `facet-panel.tsx` (composant client) puisse importer les
+  libellés/icônes sans tirer `prisma` dans le bundle navigateur. Nouveau
+  paramètre `categorie` dans `search-params.ts`, traduit en filtre
+  `companySlug IN […]` (Meilisearch et repli PostgreSQL — `companySlug` est
+  déjà un attribut filtrable existant, aucun réindexage nécessaire).
+  « GAFAM » renommé « Big Tech » et élargi (Netflix, Nvidia, Salesforce,
+  Oracle, IBM, Adobe, Cisco). Entreprises des nouvelles collections
+  choisies à partir de données réelles de la base (jamais devinées) :
+  Fintech vérifié sur N26/Ramp/Plaid/Wise/BNP Paribas/Natixis (117 offres
+  réelles), Deep Tech sur OpenAI/Dassault Systèmes/Safran (457 offres),
+  Grande distribution sur Decathlon/Carrefour/Auchan/Veepee (25 offres).
+  « Big Tech » (GAFAM) reste à 0 offre actuellement — collection valide,
+  simplement aucune offre Google/Amazon/Apple/Meta/Microsoft en base pour
+  l'instant, comportement attendu et vérifié sans erreur.
+- Vérifié en conditions réelles pour l'ensemble : `tsc --noEmit`, ESLint,
+  Prettier, suite de tests complète (119 tests), `docker compose build app`
+  réel, `curl` sur chaque nouvelle catégorie (comptes et entreprises
+  listées confirmés exacts), composition de filtres (`categorie=fintech&
+contrat=STAGE` → 22 résultats, tous STAGE), valeur de catégorie invalide
+  gérée sans erreur (200, filtre ignoré), page d'accueil et pages
+  entreprise non régressées après le déplacement du fichier.
+
+---
+
 ## 3. Ce qui N'A PAS été fait (le reste du cahier des charges)
 
 Le cahier des charges complet est dans `europe_asia_ai_job_platform_mvp_prompt.md`

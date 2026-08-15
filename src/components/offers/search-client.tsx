@@ -7,6 +7,8 @@ import { SearchX, SlidersHorizontal } from "lucide-react";
 import type { OfferSearchResult } from "@/server/search/query";
 import type { MatchCandidate } from "@/server/match/score";
 import {
+  COLLECTION_ICONS,
+  COLLECTION_LABELS,
   CONTRACT_LABELS,
   COUNTRY_FLAGS,
   COUNTRY_LABELS,
@@ -34,6 +36,7 @@ const searchStateParsers = {
   specialite: parseAsString.withDefault(""),
   pays: parseAsString.withDefault(""),
   secteur: parseAsString.withDefault(""),
+  categorie: parseAsString.withDefault(""),
   datePub: parseAsString,
   tri: parseAsStringLiteral(SORTS).withDefault("date"),
   page: parseAsInteger.withDefault(1),
@@ -66,6 +69,7 @@ export function SearchClient({
     if (state.specialite) params.set("specialite", state.specialite);
     if (state.pays) params.set("pays", state.pays);
     if (state.secteur) params.set("secteur", state.secteur);
+    if (state.categorie) params.set("categorie", state.categorie);
     if (state.datePub) params.set("datePub", state.datePub);
     if (state.tri !== "date") params.set("tri", state.tri);
     if (state.page > 1) params.set("page", String(state.page));
@@ -98,7 +102,10 @@ export function SearchClient({
   const result = data ?? initialResult;
 
   const toggleFacet = useCallback(
-    (facet: "contrat" | "remote" | "niveau" | "specialite" | "pays" | "secteur", value: string) => {
+    (
+      facet: "contrat" | "remote" | "niveau" | "specialite" | "pays" | "secteur" | "categorie",
+      value: string,
+    ) => {
       const current = csv(state[facet]);
       const next = current.includes(value)
         ? current.filter((v) => v !== value)
@@ -150,6 +157,13 @@ export function SearchClient({
     for (const s of csv(state.secteur)) {
       tickets.push({ key: `secteur-${s}`, label: s, remove: () => toggleFacet("secteur", s) });
     }
+    for (const cat of csv(state.categorie)) {
+      tickets.push({
+        key: `categorie-${cat}`,
+        label: `${COLLECTION_ICONS[cat] ?? ""} ${COLLECTION_LABELS[cat] ?? cat}`.trim(),
+        remove: () => toggleFacet("categorie", cat),
+      });
+    }
     if (state.datePub) {
       tickets.push({
         key: "datePub",
@@ -197,6 +211,7 @@ export function SearchClient({
             specialite: csv(state.specialite),
             pays: csv(state.pays),
             secteur: csv(state.secteur),
+            categorie: csv(state.categorie),
             datePub: state.datePub ?? undefined,
             rayon: state.rayon ?? undefined,
             ville: state.ville,

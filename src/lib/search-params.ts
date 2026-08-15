@@ -1,5 +1,6 @@
 import { z } from "zod";
 import type { ContractType } from "@prisma/client";
+import { COLLECTIONS } from "@/lib/company-collections";
 
 /**
  * Contrats exposés au public. Historiquement stage/alternance uniquement
@@ -189,6 +190,15 @@ const csv = <T extends string>(allowed: readonly T[]) =>
     .optional()
     .transform((v) => (v ? v.split(",").filter((x): x is T => allowed.includes(x as T)) : []));
 
+/** Clés de collection valides pour le filtre `categorie` — dérivées de `COLLECTIONS`. */
+export const COLLECTION_KEYS = COLLECTIONS.map((c) => c.key);
+export const COLLECTION_LABELS: Record<string, string> = Object.fromEntries(
+  COLLECTIONS.map((c) => [c.key, c.label]),
+);
+export const COLLECTION_ICONS: Record<string, string> = Object.fromEntries(
+  COLLECTIONS.map((c) => [c.key, c.icon]),
+);
+
 /** Schéma des query params de /offres — source de vérité partagée serveur/client. */
 export const offerSearchParamsSchema = z.object({
   q: z.string().max(200).optional().default(""),
@@ -202,6 +212,7 @@ export const offerSearchParamsSchema = z.object({
   niveau: csv(EDUCATION_LEVELS),
   specialite: csv(SPECIALTIES),
   pays: csv(COUNTRIES),
+  categorie: csv(COLLECTION_KEYS),
   secteur: z
     .string()
     .optional()

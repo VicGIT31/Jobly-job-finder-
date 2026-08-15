@@ -3,6 +3,8 @@ import { prisma } from "@/lib/prisma";
 import { getMeili, OFFERS_INDEX } from "@/lib/meilisearch";
 import { dateRangeToTimestamp, PAGE_SIZE, type OfferSearchInput } from "@/lib/search-params";
 import { geocodeCityFull } from "@/server/ingest/sources/geocode";
+import { companySlugsForCollection } from "@/server/companies/collections";
+import type { CollectionKey } from "@/lib/company-collections";
 import type { OfferDocument } from "./sync";
 import { offerToDocument } from "./sync";
 
@@ -32,19 +34,50 @@ async function resolveCityGeo(city: string): Promise<{ lat: number; lng: number 
 }
 
 /**
+ * Slugs d'entreprise des catégories sélectionnées (union, dédupliquée) — les
+ * collections ne sont pas un champ indexé, contrairement à pays/spécialité/
+ * contrat : on les traduit ici en une liste de `companySlug` à filtrer,
+ * consommée par les deux moteurs de recherche. `null` = aucun filtre
+ * catégorie actif ; tableau vide = catégorie(s) sélectionnée(s) sans aucune
+ * entreprise correspondante en base (résultat vide, pas "tout").
+ */
+async function resolveCategorySlugs(categorie: string[]): Promise<string[] | null> {
+  if (categorie.length === 0) return null;
+  const lists = await Promise.all(
+    categorie.map((key) => companySlugsForCollection(key as CollectionKey)),
+  );
+  return [...new Set(lists.flat())];
+}
+
+const EMPTY_RESULT: OfferSearchResult = {
+  hits: [],
+  totalHits: 0,
+  page: 1,
+  totalPages: 1,
+  facets: {},
+  engine: "meilisearch",
+};
+
+/**
  * Recherche d'offres : Meilisearch en premier (typo-tolérance, facettes, géo),
  * repli PostgreSQL si le moteur est indisponible.
  */
 export async function searchOffers(input: OfferSearchInput): Promise<OfferSearchResult> {
+  const categorySlugs = await resolveCategorySlugs(input.categorie);
+  if (categorySlugs?.length === 0) return EMPTY_RESULT;
+
   try {
-    return await searchWithMeilisearch(input);
+    return await searchWithMeilisearch(input, categorySlugs);
   } catch (err) {
     console.error("[search] Meilisearch indisponible, repli PostgreSQL :", err);
-    return searchWithPostgres(input);
+    return searchWithPostgres(input, categorySlugs);
   }
 }
 
-async function searchWithMeilisearch(input: OfferSearchInput): Promise<OfferSearchResult> {
+async function searchWithMeilisearch(
+  input: OfferSearchInput,
+  categorySlugs: string[] | null,
+): Promise<OfferSearchResult> {
   const filters: string[] = ['status = "ACTIVE"'];
 
   if (input.contrat.length) {
@@ -64,6 +97,9 @@ async function searchWithMeilisearch(input: OfferSearchInput): Promise<OfferSear
   }
   if (input.secteur.length) {
     filters.push(`sector IN [${input.secteur.map((s) => `"${s.replace(/"/g, "")}"`).join(", ")}]`);
+  }
+  if (categorySlugs) {
+    filters.push(`companySlug IN [${categorySlugs.map((s) => `"${s}"`).join(", ")}]`);
   }
   if (input.datePub) {
     filters.push(`publishedAtTs >= ${dateRangeToTimestamp(input.datePub)}`);
@@ -92,7 +128,14 @@ async function searchWithMeilisearch(input: OfferSearchInput): Promise<OfferSear
       "educationLevel",
       "countryCode",
     ],
-    sort: input.tri === "date" ? ["publishedAtTs:desc"] : undefined,
+    // "Pertinence" sans mot-clé n'a rien à classer par pertinence (aucun
+    // texte à comparer) : sans repli, l'ordre dépend de l'ID interne
+    // Meilisearch, imprévisible pour l'utilisateur. On retombe alors sur la
+    // date, comme "Plus récentes". Avec un mot-clé, la pertinence textuelle
+    // reste prioritaire — seuls les ex æquo de pertinence sont alors
+    // départagés par date (position de `sort` dans `rankingRules`, voir
+    // src/lib/meilisearch.ts).
+    sort: input.tri === "date" || !input.q ? ["publishedAtTs:desc"] : undefined,
     hitsPerPage: PAGE_SIZE,
     page: input.page,
   })) as {
@@ -115,7 +158,11 @@ async function searchWithMeilisearch(input: OfferSearchInput): Promise<OfferSear
 
 // ---------- Repli PostgreSQL ----------
 
-function buildWhere(input: OfferSearchInput, withGeo?: { lat: number; lng: number; km: number }) {
+function buildWhere(
+  input: OfferSearchInput,
+  categorySlugs: string[] | null,
+  withGeo?: { lat: number; lng: number; km: number },
+) {
   const where: Prisma.JobOfferWhereInput = { status: "ACTIVE" };
 
   if (input.q) {
@@ -136,6 +183,7 @@ function buildWhere(input: OfferSearchInput, withGeo?: { lat: number; lng: numbe
   if (input.specialite.length) where.specialty = { in: input.specialite };
   if (input.pays.length) where.countryCode = { in: input.pays };
   if (input.secteur.length) where.sector = { in: input.secteur };
+  if (categorySlugs) where.company = { slug: { in: categorySlugs } };
   if (input.datePub) where.publishedAt = { gte: new Date(dateRangeToTimestamp(input.datePub)) };
 
   if (withGeo) {
@@ -151,14 +199,17 @@ function buildWhere(input: OfferSearchInput, withGeo?: { lat: number; lng: numbe
   return where;
 }
 
-async function searchWithPostgres(input: OfferSearchInput): Promise<OfferSearchResult> {
+async function searchWithPostgres(
+  input: OfferSearchInput,
+  categorySlugs: string[] | null,
+): Promise<OfferSearchResult> {
   let geoBox: { lat: number; lng: number; km: number } | undefined;
   if (input.ville && input.rayon) {
     const geo = await resolveCityGeo(input.ville);
     if (geo) geoBox = { ...geo, km: input.rayon };
   }
 
-  const where = buildWhere(input, geoBox);
+  const where = buildWhere(input, categorySlugs, geoBox);
 
   const [
     offers,

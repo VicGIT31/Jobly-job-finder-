@@ -2,6 +2,9 @@
 
 import type { FacetCounts } from "@/server/search/query";
 import {
+  COLLECTION_ICONS,
+  COLLECTION_KEYS,
+  COLLECTION_LABELS,
   CONTRACT_LABELS,
   CONTRACT_TYPES,
   COUNTRY_FLAGS,
@@ -62,6 +65,7 @@ export type FacetSelection = {
   specialite: string[];
   pays: string[];
   secteur: string[];
+  categorie: string[];
   datePub?: string;
   rayon?: number;
   ville: string;
@@ -78,7 +82,7 @@ export function FacetPanel({
   facets: FacetCounts;
   selection: FacetSelection;
   onToggle: (
-    facet: "contrat" | "remote" | "niveau" | "specialite" | "pays" | "secteur",
+    facet: "contrat" | "remote" | "niveau" | "specialite" | "pays" | "secteur" | "categorie",
     value: string,
   ) => void;
   onDatePub: (value?: string) => void;
@@ -144,6 +148,31 @@ export function FacetPanel({
                 >
                   {count}
                 </span>
+              </button>
+            );
+          })}
+        </div>
+      </fieldset>
+
+      <fieldset className="rule pt-4">
+        <legend className="pb-2 text-xs font-bold uppercase tracking-widest">Catégorie</legend>
+        <div className="flex flex-wrap gap-1.5">
+          {COLLECTION_KEYS.map((key) => {
+            const active = selection.categorie.includes(key);
+            return (
+              <button
+                key={key}
+                type="button"
+                aria-pressed={active}
+                className={
+                  active
+                    ? "ticket border-cobalt bg-cobalt text-white"
+                    : "ticket hover:border-ink/30"
+                }
+                onClick={() => onToggle("categorie", key)}
+              >
+                <span aria-hidden="true">{COLLECTION_ICONS[key]}</span>
+                {COLLECTION_LABELS[key]}
               </button>
             );
           })}

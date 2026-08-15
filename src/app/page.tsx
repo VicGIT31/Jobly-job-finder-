@@ -4,7 +4,7 @@ import { prisma } from "@/lib/prisma";
 import { OfferCard } from "@/components/offers/offer-card";
 import { offerToDocument } from "@/server/search/sync";
 import { HomeSearch } from "@/components/home-search";
-import { resolveCollections } from "@/lib/company-collections";
+import { resolveCollections } from "@/server/companies/collections";
 import {
   COUNTRY_FLAGS,
   COUNTRY_LABELS,

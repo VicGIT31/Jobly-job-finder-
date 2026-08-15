@@ -1,8 +1,6 @@
-import { prisma } from "@/lib/prisma";
-
 /**
- * Vitrines d'entreprises de la page d'accueil : GAFAM, fleurons tech français,
- * licornes françaises.
+ * Vitrines et filtres d'entreprises : GAFAM/Big Tech, fleurons tech français,
+ * licornes françaises, fintech, deep tech, grande distribution.
  *
  * Les fiches entreprises sont créées automatiquement à l'ingestion, à partir du
  * nom que porte l'annonce : on trouve donc « Capgemini », « Capgemini Engineering »
@@ -10,9 +8,14 @@ import { prisma } from "@/lib/prisma";
  * Une liste de slugs exacts raterait la moitié des offres — chaque membre déclare
  * donc des **motifs** cherchés sur les segments du slug (`-`), ce qui évite aussi
  * les faux positifs (« meta » ne doit pas attraper « metallurgie »).
+ *
+ * Fichier volontairement sans dépendance serveur (pas de `prisma`) : consommé
+ * à la fois par des composants client (`facet-panel.tsx`, filtre de recherche)
+ * et par le résolveur serveur (`@/server/companies/collections`).
  */
 
-export type CollectionKey = "gafam" | "tech-francaises" | "licornes";
+export type CollectionKey =
+  "gafam" | "tech-francaises" | "licornes" | "fintech" | "deep-tech" | "grande-distribution";
 
 type Member = {
   /** Nom affiché, indépendant de l'orthographe des annonces. */
@@ -38,7 +41,7 @@ export type Collection = {
 export const COLLECTIONS: Collection[] = [
   {
     key: "gafam",
-    label: "GAFAM",
+    label: "Big Tech",
     tagline: "Les géants américains qui recrutent en France",
     icon: "🌍",
     members: [
@@ -47,6 +50,13 @@ export const COLLECTIONS: Collection[] = [
       { name: "Apple", patterns: ["apple"] },
       { name: "Meta", patterns: ["facebook", "instagram", "whatsapp"], exact: ["meta"] },
       { name: "Microsoft", patterns: ["microsoft", "linkedin", "github", "azure"] },
+      { name: "Netflix", patterns: ["netflix"] },
+      { name: "Nvidia", patterns: ["nvidia"] },
+      { name: "Salesforce", patterns: ["salesforce"] },
+      { name: "Oracle", patterns: ["oracle"] },
+      { name: "IBM", patterns: [], exact: ["ibm"] },
+      { name: "Adobe", patterns: ["adobe"] },
+      { name: "Cisco", patterns: ["cisco"] },
     ],
   },
   {
@@ -102,6 +112,62 @@ export const COLLECTIONS: Collection[] = [
       { name: "Scaleway", patterns: ["scaleway"] },
     ],
   },
+  {
+    key: "fintech",
+    label: "Fintech",
+    tagline: "Banques nouvelle génération, paiement, gestion financière",
+    icon: "💳",
+    members: [
+      { name: "N26", patterns: [], exact: ["n26"] },
+      { name: "Wise", patterns: [], exact: ["wise"] },
+      { name: "Plaid", patterns: ["plaid"] },
+      { name: "Ramp", patterns: [], exact: ["ramp"] },
+      { name: "Qonto", patterns: ["qonto"] },
+      { name: "Alan", patterns: [], exact: ["alan"] },
+      { name: "Lydia", patterns: ["lydia"] },
+      { name: "PayFit", patterns: ["payfit"] },
+      { name: "Spendesk", patterns: ["spendesk"] },
+      { name: "Pennylane", patterns: ["pennylane"] },
+      { name: "Younited", patterns: ["younited"] },
+      { name: "Ledger", patterns: [], exact: ["ledger"] },
+      { name: "Boursorama", patterns: ["boursorama"] },
+      { name: "BNP Paribas", patterns: ["bnp", "bnp-paribas"] },
+      { name: "Natixis", patterns: ["natixis"] },
+      { name: "Crédit Agricole", patterns: ["credit-agricole"] },
+      { name: "Worldline", patterns: ["worldline", "ingenico"] },
+    ],
+  },
+  {
+    key: "deep-tech",
+    label: "Deep Tech",
+    tagline: "IA, robotique, aérospatial : la recherche appliquée à grande échelle",
+    icon: "🔬",
+    members: [
+      { name: "OpenAI", patterns: ["openai"] },
+      { name: "Exotec", patterns: ["exotec"] },
+      { name: "Dataiku", patterns: ["dataiku"] },
+      { name: "Dassault Systèmes", patterns: ["dassault"] },
+      { name: "Thales", patterns: ["thales"] },
+      { name: "Safran", patterns: ["safran"] },
+      { name: "CEA", patterns: [], exact: ["cea"] },
+      { name: "Scaleway", patterns: ["scaleway"] },
+    ],
+  },
+  {
+    key: "grande-distribution",
+    label: "Grande distribution",
+    tagline: "Retail et e-commerce à grande échelle",
+    icon: "🛒",
+    members: [
+      { name: "Decathlon", patterns: ["decathlon"] },
+      { name: "Carrefour", patterns: ["carrefour"] },
+      { name: "Auchan", patterns: ["auchan"] },
+      { name: "Back Market", patterns: ["backmarket", "back-market"] },
+      { name: "ManoMano", patterns: ["manomano"] },
+      { name: "Veepee", patterns: ["veepee", "vente-privee"] },
+      { name: "Vestiaire Collective", patterns: ["vestiaire"] },
+    ],
+  },
 ];
 
 export type CollectionCompany = {
@@ -120,7 +186,7 @@ export type ResolvedCollection = Collection & {
  * « Back Market » est ingéré tantôt en `back-market`, tantôt en `backmarket` :
  * on compare segment par segment, plus la concaténation complète du slug.
  */
-function matchesMember(slug: string, member: Member): boolean {
+export function matchesMember(slug: string, member: Member): boolean {
   if (member.exact?.includes(slug)) return true;
   const segments = slug.split("-");
   const collapsed = segments.join("");
@@ -133,41 +199,7 @@ function matchesMember(slug: string, member: Member): boolean {
   );
 }
 
-/**
- * Résout les collections contre la base : une entreprise n'apparaît que si elle
- * a au moins une offre active. Une vitrine sans offre est masquée plutôt que
- * d'afficher des logos qui ne mènent nulle part.
- */
-export async function resolveCollections(): Promise<ResolvedCollection[]> {
-  const companies = await prisma.company.findMany({
-    where: { offers: { some: { status: "ACTIVE" } } },
-    select: {
-      slug: true,
-      name: true,
-      logoUrl: true,
-      _count: { select: { offers: { where: { status: "ACTIVE" } } } },
-    },
-  });
-
-  return COLLECTIONS.map((collection) => {
-    const matched: CollectionCompany[] = [];
-
-    for (const company of companies) {
-      if (!collection.members.some((member) => matchesMember(company.slug, member))) continue;
-      matched.push({
-        slug: company.slug,
-        name: company.name,
-        logoUrl: company.logoUrl,
-        offerCount: company._count.offers,
-      });
-    }
-
-    matched.sort((a, b) => b.offerCount - a.offerCount || a.name.localeCompare(b.name));
-
-    return {
-      ...collection,
-      companies: matched,
-      totalOffers: matched.reduce((sum, c) => sum + c.offerCount, 0),
-    };
-  }).filter((collection) => collection.companies.length > 0);
+/** L'entreprise identifiée par ce slug appartient-elle à cette collection ? */
+export function slugMatchesCollection(slug: string, collection: Collection): boolean {
+  return collection.members.some((member) => matchesMember(slug, member));
 }

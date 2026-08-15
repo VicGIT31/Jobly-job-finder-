@@ -70,11 +70,17 @@ async function toRawOffer(listing: Listing): Promise<RawOffer | null> {
   const description = jsonLdText(posting.description ?? "");
   if (description.length < 20) return null;
 
-  // Contrat : le champ structuré d'abord, le texte ensuite, le filtre de
-  // recherche en dernier recours.
+  // Contrat : le texte d'abord (titre/description), le champ structuré
+  // ensuite, le filtre de recherche en dernier recours. Le champ structuré
+  // schema.org `employmentType` de HelloWork ne distingue pas stage et
+  // alternance — les deux sont exposés sous "INTERN" — alors que le titre
+  // le dit explicitement dans l'immense majorité des annonces (« Alternance
+  // … » vs « Stage … »). Trouvé en conditions réelles : 252 offres dont le
+  // titre contient « Alternance » stockées avec contractType = STAGE tant
+  // que le champ structuré était consulté en premier.
   const contractType =
-    employmentContractType(posting) ??
     inferContractType(title, description.slice(0, 1200)) ??
+    employmentContractType(posting) ??
     listing.fallbackContract;
 
   const geo = await geocodeCityFull(city);
