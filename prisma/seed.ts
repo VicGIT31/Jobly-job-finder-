@@ -2,8 +2,8 @@
  * Seed Jobly — comptes de démonstration uniquement.
  *
  * Les offres et entreprises ne sont plus fictives : elles proviennent de
- * l'ingestion temps réel des sources réelles (France Travail, The Muse), lancée
- * par le worker au démarrage puis toutes les 30 min. Voir `src/server/ingest`.
+ * l'ingestion temps réel des sources réelles (catalogue public gratuit), lancée
+ * par le worker au démarrage puis toutes les 120 min par défaut. Voir `src/server/ingest`.
  * Ce seed reste volontairement hors-ligne et idempotent (upsert par email).
  *
  * ⚠️ Aucun compte ADMIN n'est créé ici : le mot de passe de démo est public

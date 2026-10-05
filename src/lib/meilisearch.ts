@@ -44,6 +44,6 @@ export async function configureOffersIndex(): Promise<void> {
       enabled: true,
       minWordSizeForTypos: { oneTypo: 4, twoTypos: 8 },
     },
-    pagination: { maxTotalHits: 1000 },
+    pagination: { maxTotalHits: 50000 },
   });
 }

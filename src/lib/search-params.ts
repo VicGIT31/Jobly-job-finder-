@@ -2,21 +2,8 @@ import { z } from "zod";
 import type { ContractType } from "@prisma/client";
 import { COLLECTIONS } from "@/lib/company-collections";
 
-/**
- * Contrats exposés au public. Historiquement stage/alternance uniquement
- * (sources françaises) ; les 4 types employeur génériques couvrent les
- * sources internationales ajoutées depuis (voir SOURCES_EUROPE_ASIA.md).
- * CDI/CDD/VIE restent hors filtre public : vocabulaire français legacy,
- * toujours rejeté à l'ingestion pour les sources françaises (normalize.ts).
- */
-export const CONTRACT_TYPES = [
-  "STAGE",
-  "ALTERNANCE",
-  "FULL_TIME",
-  "PART_TIME",
-  "CONTRACT",
-  "FREELANCE",
-] as const;
+/** Jobly propose uniquement des stages et des alternances. */
+export const CONTRACT_TYPES = ["STAGE", "ALTERNANCE"] as const;
 export const REMOTE_POLICIES = ["ONSITE", "HYBRID", "FULL"] as const;
 export const EDUCATION_LEVELS = [
   "BAC",
@@ -220,7 +207,7 @@ export const offerSearchParamsSchema = z.object({
   datePub: z.enum(DATE_RANGES).optional(),
   // Tri par date de publication réelle (site d'origine) par défaut.
   tri: z.enum(SORTS).optional().default("date"),
-  page: z.coerce.number().int().min(1).max(100).optional().default(1),
+  page: z.coerce.number().int().min(1).max(5000).optional().default(1),
 });
 
 export type OfferSearchInput = z.output<typeof offerSearchParamsSchema>;

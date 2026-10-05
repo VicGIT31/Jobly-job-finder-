@@ -32,6 +32,25 @@ describe("rawOfferSchema", () => {
 });
 
 describe("normalizeOffer", () => {
+  it("rejette un CDI malgré une étiquette alternance fournie par le filtre de recherche", () => {
+    expect(() =>
+      normalizeOffer({
+        ...validRaw,
+        title: "Développeur logiciel (H/F)",
+        contractType: "alternance",
+        description:
+          "Capacité d'apprentissage en autonomie. Company:AIRBUS DS SLC SASContract Type:PermanentClasse Emploi (France): Classe F12",
+      }),
+    ).toThrow("Contrat explicite");
+  });
+  it("conserve un vrai stage qui propose une embauche en CDI à son issue", () => {
+    expect(
+      normalizeOffer({
+        ...validRaw,
+        description: "Stage de développement logiciel, avec possibilité de CDI à l'issue du stage.",
+      }).contractType,
+    ).toBe("STAGE");
+  });
   it("normalise les espaces, la ville et mappe les enums", () => {
     const offer = normalizeOffer(rawOfferSchema.parse(validRaw));
     expect(offer.title).toBe("Stage — Développeur Backend");

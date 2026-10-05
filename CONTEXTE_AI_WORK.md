@@ -1,3 +1,5 @@
+> **Mise à jour 2026-10-05 :** ce document est un historique. Les connecteurs JSearch et France Travail OAuth ont été supprimés. Le cycle courant collecte gratuitement en France, sans clé fournisseur ; voir [SOURCES.md](SOURCES.md) et [ANALYSE_COLLECTE.md](ANALYSE_COLLECTE.md).
+
 # CONTEXTE_AI_WORK.md — Session IA du 2026-08-14
 
 > Complète `CONTEXTE.md` (à lire en premier pour l'état général du projet).

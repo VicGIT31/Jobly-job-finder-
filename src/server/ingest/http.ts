@@ -24,19 +24,23 @@ export class RateLimitedError extends Error {
   }
 }
 
-/**
- * Navigateurs récents — la rotation évite qu'un User-Agent unique soit
- * identifié comme robot par les défenses les plus simples.
- */
-const USER_AGENTS = [
-  "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36",
-  "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0.0.0 Safari/537.36",
-  "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/129.0.0.0 Safari/537.36",
-  "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.6 Safari/605.1.15",
-] as const;
+import { readCachedBody, writeCachedBody } from "./public-cache";
 
-export function randomUserAgent(): string {
-  return USER_AGENTS[Math.floor(Math.random() * USER_AGENTS.length)];
+export class AccessDeniedError extends RateLimitedError {
+  constructor(
+    host: string,
+    readonly status: number,
+  ) {
+    super(host);
+    this.name = "AccessDeniedError";
+    this.message = `Accès public refusé sur ${host} (HTTP ${status})`;
+  }
+}
+
+type HttpFailure = { url: string; status: number | null; message: string };
+const failures: HttpFailure[] = [];
+export function getHttpFailures(): readonly HttpFailure[] {
+  return failures;
 }
 
 export type FetchOptions = {
@@ -55,6 +59,8 @@ export type FetchOptions = {
   minIntervalMs?: number;
   /** Codes HTTP considérés comme du rate-limit. Défaut 429, 503. */
   rateLimitStatuses?: number[];
+  /** Cache persistant réservé aux réponses publiques GET, en millisecondes. */
+  cacheTtlMs?: number;
 };
 
 const DEFAULTS = {
@@ -76,6 +82,8 @@ const CIRCUIT_THRESHOLD = 6;
 const lastCallAt = new Map<string, number>();
 /** Compteur d'événements de rate-limit par hôte, pour le disjoncteur. */
 const rateLimitHits = new Map<string, number>();
+/** Les Retry-After longs survivent au changement de cycle. */
+const cooldownUntil = new Map<string, number>();
 
 const sleep = (ms: number): Promise<void> => new Promise((resolve) => setTimeout(resolve, ms));
 
@@ -86,21 +94,25 @@ const sleep = (ms: number): Promise<void> => new Promise((resolve) => setTimeout
 export function resetHttpState(): void {
   lastCallAt.clear();
   rateLimitHits.clear();
+  failures.length = 0;
 }
 
 /** True si l'hôte a été coupé par le disjoncteur pour le cycle courant. */
 export function isHostCircuitOpen(host: string): boolean {
+  const until = cooldownUntil.get(host);
+  if (until && until > Date.now()) return true;
+  if (until) cooldownUntil.delete(host);
   return (rateLimitHits.get(host) ?? 0) >= CIRCUIT_THRESHOLD;
 }
 
 /** Espace les appels vers un même hôte d'au moins `minIntervalMs`. */
 async function throttle(host: string, minIntervalMs: number): Promise<void> {
-  const previous = lastCallAt.get(host);
-  if (previous !== undefined) {
-    const wait = previous + minIntervalMs - Date.now();
-    if (wait > 0) await sleep(wait);
-  }
-  lastCallAt.set(host, Date.now());
+  // Réserver le créneau AVANT de dormir : les workers concurrents ne prennent
+  // plus tous le même créneau (ancienne course dans le pool de détails).
+  const slot = Math.max(Date.now(), (lastCallAt.get(host) ?? 0) + minIntervalMs);
+  lastCallAt.set(host, slot);
+  const wait = slot - Date.now();
+  if (wait > 0) await sleep(wait);
 }
 
 /** Lit `Retry-After` (secondes ou date HTTP) et le borne à 30 s. */
@@ -108,10 +120,10 @@ function retryAfterMs(response: Response): number | null {
   const header = response.headers.get("retry-after");
   if (!header) return null;
   const seconds = Number(header);
-  if (Number.isFinite(seconds)) return Math.min(seconds * 1000, 30_000);
+  if (Number.isFinite(seconds)) return Math.max(seconds * 1000, 0);
   const date = Date.parse(header);
   if (Number.isNaN(date)) return null;
-  return Math.min(Math.max(date - Date.now(), 0), 30_000);
+  return Math.max(date - Date.now(), 0);
 }
 
 /**
@@ -132,6 +144,7 @@ export async function fetchWithRetry(
 
   for (let attempt = 0; attempt <= config.retries; attempt++) {
     await throttle(host, config.minIntervalMs);
+    if (isHostCircuitOpen(host)) throw new RateLimitedError(host);
 
     let response: Response | null = null;
     try {
@@ -139,7 +152,7 @@ export async function fetchWithRetry(
         method: config.method ?? "GET",
         ...(config.body !== undefined ? { body: config.body } : {}),
         headers: {
-          "User-Agent": randomUserAgent(),
+          "User-Agent": "Jobly/1.0 (public job listings; personal use)",
           "Accept-Language": "fr-FR,fr;q=0.9,en;q=0.8",
           ...config.headers,
         },
@@ -158,11 +171,28 @@ export async function fetchWithRetry(
       return response;
     }
 
+    failures.push({
+      url: target.href,
+      status: response?.status ?? null,
+      message: response ? `HTTP ${response.status}` : "Réseau ou délai dépassé",
+    });
+    if (response?.status === 401 || response?.status === 403) {
+      rateLimitHits.set(host, CIRCUIT_THRESHOLD);
+      throw new AccessDeniedError(host, response.status);
+    }
+
     if (response && config.rateLimitStatuses.includes(response.status)) {
       const hits = (rateLimitHits.get(host) ?? 0) + 1;
       rateLimitHits.set(host, hits);
       if (hits >= CIRCUIT_THRESHOLD) throw new RateLimitedError(host);
       const wait = retryAfterMs(response) ?? config.backoffMs * 2 ** attempt;
+      // Ne pas rejouer AVANT un Retry-After long et ne pas immobiliser le cycle.
+      if (wait > 30_000) {
+        cooldownUntil.set(host, Date.now() + wait);
+        rateLimitHits.set(host, CIRCUIT_THRESHOLD);
+        throw new RateLimitedError(host);
+      }
+      if (attempt === config.retries) return null;
       await sleep(wait + Math.random() * 400);
       continue;
     }
@@ -183,10 +213,27 @@ export async function fetchText(
   url: string | URL,
   options: FetchOptions = {},
 ): Promise<string | null> {
+  const key = `${String(url)}|${options.headers?.Accept ?? "text"}`;
+  const cacheable =
+    (options.cacheTtlMs ?? 0) > 0 &&
+    (!options.method || options.method === "GET") &&
+    !options.headers?.Authorization &&
+    !options.body;
+  if (cacheable) {
+    const cached = await readCachedBody(key, options.cacheTtlMs!);
+    if (cached !== null) return cached;
+  }
   const response = await fetchWithRetry(url, options);
   if (!response) return null;
   try {
-    return await response.text();
+    const bytes = new Uint8Array(await response.arrayBuffer());
+    // Les sitemaps WTTJ sont des fichiers .gz, sans Content-Encoding HTTP.
+    const body =
+      bytes[0] === 0x1f && bytes[1] === 0x8b
+        ? (await import("node:zlib")).gunzipSync(bytes).toString("utf8")
+        : new TextDecoder().decode(bytes);
+    if (cacheable) await writeCachedBody(key, body);
+    return body;
   } catch {
     return null;
   }
@@ -197,13 +244,13 @@ export async function fetchJson<T>(
   url: string | URL,
   options: FetchOptions = {},
 ): Promise<T | null> {
-  const response = await fetchWithRetry(url, {
+  const body = await fetchText(url, {
     ...options,
     headers: { Accept: "application/json", ...options.headers },
   });
-  if (!response) return null;
+  if (body === null) return null;
   try {
-    return (await response.json()) as T;
+    return JSON.parse(body) as T;
   } catch {
     return null;
   }

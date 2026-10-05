@@ -7,8 +7,9 @@ export const dynamic = "force-dynamic";
 /** POST /api/offres/:offerId/sauvegarde — sauvegarde une offre. */
 export async function POST(
   _request: NextRequest,
-  { params }: { params: { offerId: string } },
+  { params: pendingParams }: { params: Promise<{ offerId: string }> },
 ): Promise<NextResponse> {
+  const params = await pendingParams;
   const session = await auth();
   if (!session?.user?.id) {
     return NextResponse.json({ error: "Connexion requise" }, { status: 401 });
@@ -31,8 +32,9 @@ export async function POST(
 /** DELETE /api/offres/:offerId/sauvegarde — retire une offre sauvegardée. */
 export async function DELETE(
   _request: NextRequest,
-  { params }: { params: { offerId: string } },
+  { params: pendingParams }: { params: Promise<{ offerId: string }> },
 ): Promise<NextResponse> {
+  const params = await pendingParams;
   const session = await auth();
   if (!session?.user?.id) {
     return NextResponse.json({ error: "Connexion requise" }, { status: 401 });

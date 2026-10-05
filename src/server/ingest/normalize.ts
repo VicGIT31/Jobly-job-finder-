@@ -1,5 +1,6 @@
 import { z } from "zod";
 import type { ContractType, EducationLevel, RemotePolicy } from "@prisma/client";
+import { nonStudentContractEvidence } from "./contract-evidence";
 
 /** Offre brute telle que reçue du scraper (champs volontairement souples). */
 export const rawOfferSchema = z.object({
@@ -7,6 +8,7 @@ export const rawOfferSchema = z.object({
   companyName: z.string().min(1).max(120),
   city: z.string().min(1).max(120),
   description: z.string().min(20),
+  descriptionIsExcerpt: z.boolean().optional(),
   contractType: z.string(),
   remotePolicy: z.string().optional(),
   educationLevel: z.string().optional(),
@@ -16,7 +18,7 @@ export const rawOfferSchema = z.object({
   latitude: z.number().min(-90).max(90).optional(),
   longitude: z.number().min(-180).max(180).optional(),
   sourceUrl: z.string().url(),
-  // Attribution par offre : un connecteur agrégateur (JSearch) peut remonter des
+  // Attribution par offre : un connecteur peut remonter des
   // offres de plusieurs sites (Indeed, Glassdoor…) → chacune garde sa vraie source.
   sourceSite: z.string().min(3).max(120).optional(),
   scrapedAt: z.coerce.date().optional(),
@@ -41,6 +43,7 @@ export type NormalizedOffer = {
   companyName: string;
   city: string;
   description: string;
+  descriptionIsExcerpt: boolean;
   contractType: ContractType;
   remotePolicy: RemotePolicy;
   educationLevel: EducationLevel;
@@ -178,6 +181,10 @@ export function normalizeOffer(raw: RawOffer, options: NormalizeOptions = {}): N
   if (!acceptedContracts.has(contractType)) {
     throw new NormalizationError(`Contrat hors périmètre : "${raw.contractType}"`, "contractType");
   }
+  if (contractType === "STAGE" || contractType === "ALTERNANCE") {
+    const contradiction = nonStudentContractEvidence(raw.title, raw.description);
+    if (contradiction) throw new NormalizationError(contradiction, "contractType");
+  }
 
   const remoteKey = cleanWhitespace(raw.remotePolicy ?? "onsite").toLowerCase();
   const remotePolicy = REMOTE_MAP[remoteKey];
@@ -206,6 +213,7 @@ export function normalizeOffer(raw: RawOffer, options: NormalizeOptions = {}): N
     companyName: cleanWhitespace(raw.companyName),
     city: normalizeCity(raw.city),
     description: raw.description.trim(),
+    descriptionIsExcerpt: raw.descriptionIsExcerpt ?? false,
     contractType,
     remotePolicy,
     educationLevel,

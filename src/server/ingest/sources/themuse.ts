@@ -14,7 +14,7 @@ import { TECH_SECTOR, type SourceConnector } from "./types";
  * offre pointe vers sa page d'annonce réelle (`refs.landing_page`).
  *
  * Volume volontairement modeste ; France Travail fournit la couverture complète.
- * Clé optionnelle THEMUSE_API_KEY pour augmenter le quota (non requise).
+ * Aucune clé n’est envoyée : quota public uniquement.
  */
 
 const API = "https://www.themuse.com/api/public/jobs";
@@ -111,7 +111,6 @@ export class TheMuseConnector implements SourceConnector {
   }
 
   async fetchOffers(): Promise<RawOffer[]> {
-    const apiKey = process.env.THEMUSE_API_KEY;
     const raw: RawOffer[] = [];
     const seen = new Set<number>();
 
@@ -120,7 +119,6 @@ export class TheMuseConnector implements SourceConnector {
         const url = new URL(API);
         url.searchParams.set("page", String(page));
         url.searchParams.set("location", `${city}, France`);
-        if (apiKey) url.searchParams.set("api_key", apiKey);
 
         // Retries, backoff et throttle mutualisés (voir `ingest/http.ts`).
         let json: { results?: MuseJob[]; page_count?: number } | null;

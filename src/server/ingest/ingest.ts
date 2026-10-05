@@ -10,6 +10,7 @@ import {
   type NormalizeOptions,
 } from "./normalize";
 import { syncOffersToSearch } from "@/server/search/sync";
+import { isTechOffer } from "./scope";
 
 export type IngestSummary = {
   received: number;
@@ -37,176 +38,218 @@ export async function processIngest(
     rejected: 0,
     errors: [],
   };
+  const searchBatch: Parameters<typeof syncOffersToSearch>[0] = [];
+  async function queueSearch(
+    offer: Parameters<typeof syncOffersToSearch>[0][number],
+  ): Promise<void> {
+    searchBatch.push(offer);
+    if (searchBatch.length >= 100) await safeSync(searchBatch.splice(0));
+  }
 
-  for (const [index, rawInput] of rawOffers.entries()) {
-    const parsed = rawOfferSchema.safeParse(rawInput);
-    if (!parsed.success) {
-      const reason = parsed.error.issues
-        .map((issue) => `${issue.path.join(".")}: ${issue.message}`)
-        .join(" ; ");
-      summary.rejected++;
-      summary.errors.push({ index, reason });
-      await prisma.ingestLog.create({
-        data: {
-          sourceSite,
-          result: "REJECTED",
-          rawTitle: extractTitle(rawInput),
-          message: reason.slice(0, 500),
-        },
-      });
-      continue;
-    }
-
-    let normalized;
-    try {
-      normalized = normalizeOffer(parsed.data, options);
-    } catch (err) {
-      const reason = err instanceof NormalizationError ? err.message : "Normalisation impossible";
-      summary.rejected++;
-      summary.errors.push({ index, reason });
-      await prisma.ingestLog.create({
-        data: { sourceSite, result: "REJECTED", rawTitle: parsed.data.title, message: reason },
-      });
-      continue;
-    }
-
-    const dedupHash = computeDedupHash(normalized.title, normalized.companyName, normalized.city);
-    // Spécialité déduite ici plutôt que dans chaque connecteur : toute source,
-    // présente ou future, est classée de la même façon.
-    const specialty = classifySpecialty(normalized.title, normalized.description);
-    // Attribution : la source portée par l'offre prime (agrégateur multi-sites).
-    const offerSourceSite = normalized.sourceSite ?? sourceSite;
-
-    // Offre déjà connue ? → rafraîchir last_seen_at (et réactiver si besoin)
-    const existing = await prisma.jobOffer.findUnique({ where: { dedupHash } });
-    if (existing) {
-      // Le logo de l'entreprise peut arriver après la création de la fiche.
-      if (normalized.companyLogoUrl) {
-        await prisma.company.update({
-          where: { id: existing.companyId },
-          data: { logoUrl: normalized.companyLogoUrl },
+  try {
+    for (const [index, rawInput] of rawOffers.entries()) {
+      const parsed = rawOfferSchema.safeParse(rawInput);
+      if (!parsed.success) {
+        const reason = parsed.error.issues
+          .map((issue) => `${issue.path.join(".")}: ${issue.message}`)
+          .join(" ; ");
+        summary.rejected++;
+        summary.errors.push({ index, reason });
+        await prisma.ingestLog.create({
+          data: {
+            sourceSite,
+            result: "REJECTED",
+            rawTitle: extractTitle(rawInput),
+            message: reason.slice(0, 500),
+          },
         });
+        continue;
       }
-      const updated = await prisma.jobOffer.update({
-        where: { id: existing.id },
-        data: {
-          lastSeenAt: new Date(),
-          scrapedAt: normalized.scrapedAt,
-          // Reclassement à chaque passage : profite des règles affinées depuis.
-          specialty,
-          // Idem pour le pays : une heuristique de détection affinée entre
-          // deux cycles corrige les offres déjà en base, pas seulement les
-          // nouvelles (observé : XX → DE après ajout de CITY_TO_ISO).
-          countryCode: normalized.countryCode,
-          // Idem pour le type de contrat : une correction de connecteur
-          // (ex. priorité texte > champ structuré pour stage/alternance)
-          // corrige aussi les offres déjà en base au prochain passage, pas
-          // seulement les nouvelles.
-          contractType: normalized.contractType,
-          // Une offre bloquée en modération reste hors ligne, même si la source
-          // continue de la publier : seule la console peut la débloquer.
-          ...(existing.blockedAt ? {} : { status: "ACTIVE" as const }),
-          sourceUrl: normalized.sourceUrl,
-          sourceSite: offerSourceSite,
-          // La date de publication réelle prime sur la date d'ingestion
-          // enregistrée par défaut lors de la création.
-          ...(normalized.publishedAt ? { publishedAt: normalized.publishedAt } : {}),
-          // Coordonnées : rétro-remplies quand le géocodage les a trouvées
-          // (indispensable au filtre « à moins de X km »).
-          ...(normalized.latitude != null && normalized.longitude != null
-            ? { latitude: normalized.latitude, longitude: normalized.longitude }
-            : {}),
-        },
-        include: { company: true },
-      });
-      summary.duplicates++;
-      await prisma.ingestLog.create({
-        data: {
-          sourceSite,
-          result: "DUPLICATE",
-          offerId: existing.id,
-          dedupHash,
-          rawTitle: normalized.title,
-          message: "Doublon : last_seen_at rafraîchi",
-        },
-      });
-      await safeSync([updated]);
-      continue;
-    }
 
-    // Entreprise : réutiliser si connue (slug), créer sinon
-    const companySlug = slugifyFr(normalized.companyName);
-    const company = await prisma.company.upsert({
-      where: { slug: companySlug },
-      update: normalized.companyLogoUrl ? { logoUrl: normalized.companyLogoUrl } : {},
-      create: {
-        name: normalized.companyName,
-        slug: companySlug,
-        logoUrl: normalized.companyLogoUrl,
-        description: `${normalized.companyName} recrute sur Jobly. Cette fiche a été créée automatiquement lors de l'ingestion et sera enrichie par nos équipes.`,
-        sector: normalized.sector,
-        size: "Non renseigné",
-      },
-    });
+      let normalized;
+      try {
+        normalized = normalizeOffer(parsed.data, options);
+        if (
+          normalized.countryCode !== "FR" ||
+          !["STAGE", "ALTERNANCE"].includes(normalized.contractType) ||
+          !isTechOffer(normalized.title, normalized.description)
+        )
+          throw new NormalizationError(
+            "Offre hors périmètre : tech, France, stage ou alternance",
+            "scope",
+          );
+      } catch (err) {
+        const reason = err instanceof NormalizationError ? err.message : "Normalisation impossible";
+        summary.rejected++;
+        summary.errors.push({ index, reason });
+        await prisma.ingestLog.create({
+          data: { sourceSite, result: "REJECTED", rawTitle: parsed.data.title, message: reason },
+        });
+        continue;
+      }
 
-    const slug = await uniqueOfferSlug(normalized.title, normalized.companyName, normalized.city);
+      const dedupHash = computeDedupHash(
+        normalized.title,
+        normalized.companyName,
+        normalized.city,
+        normalized.sourceUrl,
+      );
+      // Spécialité déduite ici plutôt que dans chaque connecteur : toute source,
+      // présente ou future, est classée de la même façon.
+      const specialty = classifySpecialty(normalized.title, normalized.description);
+      // Attribution : la source portée par l'offre prime (agrégateur multi-sites).
+      const offerSourceSite = normalized.sourceSite ?? sourceSite;
 
-    try {
-      const created = await prisma.jobOffer.create({
-        data: {
-          title: normalized.title,
-          slug,
-          description: normalized.description,
-          companyId: company.id,
-          contractType: normalized.contractType,
-          city: normalized.city,
-          countryCode: normalized.countryCode,
-          latitude: normalized.latitude,
-          longitude: normalized.longitude,
-          remotePolicy: normalized.remotePolicy,
-          salaryMin: normalized.salaryMin,
-          salaryMax: normalized.salaryMax,
-          educationLevel: normalized.educationLevel,
-          sector: normalized.sector,
-          specialty,
-          sourceUrl: normalized.sourceUrl,
-          sourceSite: offerSourceSite,
-          scrapedAt: normalized.scrapedAt,
-          lastSeenAt: new Date(),
-          dedupHash,
-          status: "ACTIVE",
-          ...(normalized.publishedAt ? { publishedAt: normalized.publishedAt } : {}),
-        },
-        include: { company: true },
-      });
-      summary.created++;
-      await prisma.ingestLog.create({
-        data: {
-          sourceSite,
-          result: "CREATED",
-          offerId: created.id,
-          dedupHash,
-          rawTitle: normalized.title,
-        },
-      });
-      await safeSync([created]);
-    } catch (err) {
-      // Course concurrente : le hash unique a été inséré entre-temps → doublon
-      if (err instanceof Prisma.PrismaClientKnownRequestError && err.code === "P2002") {
+      // Offre déjà connue ? → rafraîchir last_seen_at (et réactiver si besoin)
+      const existing =
+        (await prisma.jobOffer.findUnique({ where: { dedupHash } })) ??
+        (await prisma.jobOffer.findFirst({ where: { sourceUrl: normalized.sourceUrl } }));
+      if (existing) {
+        // Le logo de l'entreprise peut arriver après la création de la fiche.
+        if (normalized.companyLogoUrl) {
+          await prisma.company.update({
+            where: { id: existing.companyId },
+            data: { logoUrl: normalized.companyLogoUrl },
+          });
+        }
+        const updated = await prisma.jobOffer.update({
+          where: { id: existing.id },
+          data: {
+            dedupHash,
+            lastSeenAt: new Date(),
+            scrapedAt: normalized.scrapedAt,
+            // Reclassement à chaque passage : profite des règles affinées depuis.
+            ...(normalized.descriptionIsExcerpt ? {} : { specialty }),
+            // Idem pour le pays : une heuristique de détection affinée entre
+            // deux cycles corrige les offres déjà en base, pas seulement les
+            // nouvelles (observé : XX → DE après ajout de CITY_TO_ISO).
+            countryCode: normalized.countryCode,
+            // Idem pour le type de contrat : une correction de connecteur
+            // (ex. priorité texte > champ structuré pour stage/alternance)
+            // corrige aussi les offres déjà en base au prochain passage, pas
+            // seulement les nouvelles.
+            contractType: normalized.contractType,
+            ...(normalized.descriptionIsExcerpt
+              ? {}
+              : {
+                  description: normalized.description,
+                  title: normalized.title,
+                  city: normalized.city,
+                  remotePolicy: normalized.remotePolicy,
+                  educationLevel: normalized.educationLevel,
+                }),
+            // Une offre bloquée en modération reste hors ligne, même si la source
+            // continue de la publier : seule la console peut la débloquer.
+            ...(existing.blockedAt ? {} : { status: "ACTIVE" as const }),
+            ...(normalized.descriptionIsExcerpt
+              ? {}
+              : {
+                  sourceUrl: normalized.sourceUrl,
+                  sourceSite: offerSourceSite,
+                }),
+            // La date de publication réelle prime sur la date d'ingestion
+            // enregistrée par défaut lors de la création.
+            ...(normalized.publishedAt ? { publishedAt: normalized.publishedAt } : {}),
+            // Coordonnées : rétro-remplies quand le géocodage les a trouvées
+            // (indispensable au filtre « à moins de X km »).
+            ...(normalized.latitude != null && normalized.longitude != null
+              ? { latitude: normalized.latitude, longitude: normalized.longitude }
+              : {}),
+          },
+          include: { company: true },
+        });
         summary.duplicates++;
         await prisma.ingestLog.create({
           data: {
             sourceSite,
             result: "DUPLICATE",
+            offerId: existing.id,
             dedupHash,
             rawTitle: normalized.title,
-            message: "Doublon détecté par contrainte unique (insertion concurrente)",
+            message: "Doublon : last_seen_at rafraîchi",
           },
         });
-      } else {
-        throw err;
+        await queueSearch(updated);
+        continue;
+      }
+
+      // Entreprise : réutiliser si connue (slug), créer sinon
+      const companySlug = slugifyFr(normalized.companyName);
+      const company = await prisma.company.upsert({
+        where: { slug: companySlug },
+        update: normalized.companyLogoUrl ? { logoUrl: normalized.companyLogoUrl } : {},
+        create: {
+          name: normalized.companyName,
+          slug: companySlug,
+          logoUrl: normalized.companyLogoUrl,
+          description: `${normalized.companyName} recrute sur Jobly. Cette fiche a été créée automatiquement lors de l'ingestion et sera enrichie par nos équipes.`,
+          sector: normalized.sector,
+          size: "Non renseigné",
+        },
+      });
+
+      const slug = await uniqueOfferSlug(normalized.title, normalized.companyName, normalized.city);
+
+      try {
+        const created = await prisma.jobOffer.create({
+          data: {
+            title: normalized.title,
+            slug,
+            description: normalized.description,
+            companyId: company.id,
+            contractType: normalized.contractType,
+            city: normalized.city,
+            countryCode: normalized.countryCode,
+            latitude: normalized.latitude,
+            longitude: normalized.longitude,
+            remotePolicy: normalized.remotePolicy,
+            salaryMin: normalized.salaryMin,
+            salaryMax: normalized.salaryMax,
+            educationLevel: normalized.educationLevel,
+            sector: normalized.sector,
+            specialty,
+            sourceUrl: normalized.sourceUrl,
+            sourceSite: offerSourceSite,
+            scrapedAt: normalized.scrapedAt,
+            lastSeenAt: new Date(),
+            dedupHash,
+            status: "ACTIVE",
+            ...(normalized.publishedAt ? { publishedAt: normalized.publishedAt } : {}),
+          },
+          include: { company: true },
+        });
+        summary.created++;
+        await prisma.ingestLog.create({
+          data: {
+            sourceSite,
+            result: "CREATED",
+            offerId: created.id,
+            dedupHash,
+            rawTitle: normalized.title,
+          },
+        });
+        await queueSearch(created);
+      } catch (err) {
+        // Course concurrente : le hash unique a été inséré entre-temps → doublon
+        if (err instanceof Prisma.PrismaClientKnownRequestError && err.code === "P2002") {
+          summary.duplicates++;
+          await prisma.ingestLog.create({
+            data: {
+              sourceSite,
+              result: "DUPLICATE",
+              dedupHash,
+              rawTitle: normalized.title,
+              message: "Doublon détecté par contrainte unique (insertion concurrente)",
+            },
+          });
+        } else {
+          throw err;
+        }
       }
     }
+  } finally {
+    // Même si une écriture échoue, les offres déjà persistées sont indexées.
+    await safeSync(searchBatch);
   }
 
   return summary;
@@ -229,6 +272,7 @@ async function uniqueOfferSlug(title: string, company: string, city: string): Pr
 
 /** La sync Meilisearch ne doit jamais faire échouer l'ingestion (ré-indexable via search:sync). */
 async function safeSync(offers: Parameters<typeof syncOffersToSearch>[0]): Promise<void> {
+  if (!offers.length) return;
   try {
     await syncOffersToSearch(offers);
   } catch (err) {

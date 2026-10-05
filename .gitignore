@@ -37,3 +37,8 @@ next-env.d.ts
 
 # env (secrets)
 .env
+
+# Réponses publiques temporaires et exports de diagnostic
+/.cache/
+/reports/
+/data/job-alerts/

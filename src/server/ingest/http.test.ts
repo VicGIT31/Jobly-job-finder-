@@ -1,6 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import {
   RateLimitedError,
+  AccessDeniedError,
   fetchWithRetry,
   isHostCircuitOpen,
   mapPool,
@@ -20,6 +21,7 @@ describe("fetchWithRetry", () => {
 
   afterEach(() => {
     vi.unstubAllGlobals();
+    vi.useRealTimers();
   });
 
   it("renvoie la réponse dès le premier essai réussi", async () => {
@@ -66,6 +68,55 @@ describe("fetchWithRetry", () => {
 
     expect(res).toBeNull();
     expect(fetchMock).toHaveBeenCalledTimes(1);
+  });
+
+  it("coupe immédiatement un accès refusé, sans tentative de contournement", async () => {
+    const fetchMock = vi.fn().mockResolvedValue(response(403));
+    vi.stubGlobal("fetch", fetchMock);
+    await expect(fetchWithRetry("https://refus.test/jobs", FAST)).rejects.toBeInstanceOf(
+      AccessDeniedError,
+    );
+    await expect(fetchWithRetry("https://refus.test/other", FAST)).rejects.toBeInstanceOf(
+      RateLimitedError,
+    );
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+  });
+
+  it("ne réessaie pas avant un Retry-After long", async () => {
+    const fetchMock = vi
+      .fn()
+      .mockResolvedValue(new Response("", { status: 429, headers: { "Retry-After": "120" } }));
+    vi.stubGlobal("fetch", fetchMock);
+    await expect(fetchWithRetry("https://attendre.test/jobs", FAST)).rejects.toBeInstanceOf(
+      RateLimitedError,
+    );
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+    resetHttpState();
+    await expect(fetchWithRetry("https://attendre.test/jobs", FAST)).rejects.toBeInstanceOf(
+      RateLimitedError,
+    );
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+  });
+
+  it("espace réellement les démarrages de requêtes concurrentes vers le même hôte", async () => {
+    vi.useFakeTimers();
+    const starts: number[] = [];
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async () => {
+        starts.push(Date.now());
+        return response(200);
+      }),
+    );
+    const pending = Promise.all(
+      Array.from({ length: 4 }, () =>
+        fetchWithRetry("https://parallel.test/job", { minIntervalMs: 100 }),
+      ),
+    );
+    await vi.runAllTimersAsync();
+    await pending;
+    expect(starts).toHaveLength(4);
+    expect(starts.slice(1).map((at, i) => at - starts[i])).toEqual([100, 100, 100]);
   });
 
   it("réinitialise le compteur de rate-limit après une réponse réussie", async () => {

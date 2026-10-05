@@ -19,10 +19,11 @@ export const metadata: Metadata = {
  * puis la recherche devient instantanée côté client (TanStack Query + nuqs).
  */
 export default async function OffresPage({
-  searchParams,
+  searchParams: pendingSearchParams,
 }: {
-  searchParams: Record<string, string | string[] | undefined>;
+  searchParams: Promise<Record<string, string | string[] | undefined>>;
 }) {
+  const searchParams = await pendingSearchParams;
   const input = parseOfferSearchParams(searchParams);
   const [initialResult, session] = await Promise.all([searchOffers(input), auth()]);
 
@@ -51,8 +52,8 @@ export default async function OffresPage({
         Les offres<span className="text-cobalt">.</span>
       </h1>
       <p className="mt-1 text-ink/70">
-        Chaque offre vient d'un site source — postuler vous y amène directement. Stage et alternance
-        en France, plus des offres tech en Europe (filtre « Pays »).
+        Stages et alternances dans la tech. Recherchez un métier, une entreprise ou une ville, puis
+        postulez directement sur l&apos;annonce d&apos;origine.
       </p>
       <div className="mt-6">
         <SearchClient

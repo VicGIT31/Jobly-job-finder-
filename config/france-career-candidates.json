@@ -1,0 +1,1142 @@
+[
+  {
+    "id": "algolia-greenhouse",
+    "label": "Algolia",
+    "company": "Algolia",
+    "kind": "greenhouse",
+    "url": "https://job-boards.greenhouse.io/algolia",
+    "enabled": false,
+    "notes": "Candidat de découverte France/Paris : ne pas activer sans diagnostic et vérification de l’entreprise."
+  },
+  {
+    "id": "dashlane-greenhouse",
+    "label": "Dashlane",
+    "company": "Dashlane",
+    "kind": "greenhouse",
+    "url": "https://job-boards.greenhouse.io/dashlane",
+    "enabled": false,
+    "notes": "Candidat de découverte France/Paris : ne pas activer sans diagnostic et vérification de l’entreprise."
+  },
+  {
+    "id": "dataiku-greenhouse",
+    "label": "Dataiku",
+    "company": "Dataiku",
+    "kind": "greenhouse",
+    "url": "https://job-boards.greenhouse.io/dataiku",
+    "enabled": false,
+    "notes": "Candidat de découverte France/Paris : ne pas activer sans diagnostic et vérification de l’entreprise."
+  },
+  {
+    "id": "mirakl-greenhouse",
+    "label": "Mirakl",
+    "company": "Mirakl",
+    "kind": "greenhouse",
+    "url": "https://job-boards.greenhouse.io/mirakl",
+    "enabled": false,
+    "notes": "Candidat de découverte France/Paris : ne pas activer sans diagnostic et vérification de l’entreprise."
+  },
+  {
+    "id": "miraklfr-greenhouse",
+    "label": "Mirakl France",
+    "company": "Mirakl France",
+    "kind": "greenhouse",
+    "url": "https://job-boards.greenhouse.io/miraklfr",
+    "enabled": false,
+    "notes": "Candidat de découverte France/Paris : ne pas activer sans diagnostic et vérification de l’entreprise."
+  },
+  {
+    "id": "mirakllabs-greenhouse",
+    "label": "Mirakl Labs",
+    "company": "Mirakl Labs",
+    "kind": "greenhouse",
+    "url": "https://job-boards.greenhouse.io/mirakllabs",
+    "enabled": false,
+    "notes": "Candidat de découverte France/Paris : ne pas activer sans diagnostic et vérification de l’entreprise."
+  },
+  {
+    "id": "aircall-greenhouse",
+    "label": "Aircall",
+    "company": "Aircall",
+    "kind": "greenhouse",
+    "url": "https://job-boards.greenhouse.io/aircall",
+    "enabled": false,
+    "notes": "Candidat de découverte France/Paris : ne pas activer sans diagnostic et vérification de l’entreprise."
+  },
+  {
+    "id": "akeneo-greenhouse",
+    "label": "Akeneo",
+    "company": "Akeneo",
+    "kind": "greenhouse",
+    "url": "https://job-boards.greenhouse.io/akeneo",
+    "enabled": false,
+    "notes": "Candidat de découverte France/Paris : ne pas activer sans diagnostic et vérification de l’entreprise."
+  },
+  {
+    "id": "shifttechnology-greenhouse",
+    "label": "Shift Technology",
+    "company": "Shift Technology",
+    "kind": "greenhouse",
+    "url": "https://job-boards.greenhouse.io/shifttechnology",
+    "enabled": false,
+    "notes": "Candidat de découverte France/Paris : ne pas activer sans diagnostic et vérification de l’entreprise."
+  },
+  {
+    "id": "owkin-greenhouse",
+    "label": "Owkin",
+    "company": "Owkin",
+    "kind": "greenhouse",
+    "url": "https://job-boards.greenhouse.io/owkin",
+    "enabled": false,
+    "notes": "Candidat de découverte France/Paris : ne pas activer sans diagnostic et vérification de l’entreprise."
+  },
+  {
+    "id": "exotec-greenhouse",
+    "label": "Exotec",
+    "company": "Exotec",
+    "kind": "greenhouse",
+    "url": "https://job-boards.greenhouse.io/exotec",
+    "enabled": false,
+    "notes": "Candidat de découverte France/Paris : ne pas activer sans diagnostic et vérification de l’entreprise."
+  },
+  {
+    "id": "360learning-greenhouse",
+    "label": "360Learning",
+    "company": "360Learning",
+    "kind": "greenhouse",
+    "url": "https://job-boards.greenhouse.io/360learning",
+    "enabled": false,
+    "notes": "Candidat de découverte France/Paris : ne pas activer sans diagnostic et vérification de l’entreprise."
+  },
+  {
+    "id": "huggingface-greenhouse",
+    "label": "Hugging Face",
+    "company": "Hugging Face",
+    "kind": "greenhouse",
+    "url": "https://job-boards.greenhouse.io/huggingface",
+    "enabled": false,
+    "notes": "Candidat de découverte France/Paris : ne pas activer sans diagnostic et vérification de l’entreprise."
+  },
+  {
+    "id": "deepl-greenhouse",
+    "label": "DeepL",
+    "company": "DeepL",
+    "kind": "greenhouse",
+    "url": "https://job-boards.greenhouse.io/deepl",
+    "enabled": false,
+    "notes": "Candidat de découverte France/Paris : ne pas activer sans diagnostic et vérification de l’entreprise."
+  },
+  {
+    "id": "zendesk-greenhouse",
+    "label": "Zendesk",
+    "company": "Zendesk",
+    "kind": "greenhouse",
+    "url": "https://job-boards.greenhouse.io/zendesk",
+    "enabled": false,
+    "notes": "Candidat de découverte France/Paris : ne pas activer sans diagnostic et vérification de l’entreprise."
+  },
+  {
+    "id": "elastic-greenhouse",
+    "label": "Elastic",
+    "company": "Elastic",
+    "kind": "greenhouse",
+    "url": "https://job-boards.greenhouse.io/elastic",
+    "enabled": false,
+    "notes": "Candidat de découverte France/Paris : ne pas activer sans diagnostic et vérification de l’entreprise."
+  },
+  {
+    "id": "mongodb-greenhouse",
+    "label": "MongoDB",
+    "company": "MongoDB",
+    "kind": "greenhouse",
+    "url": "https://job-boards.greenhouse.io/mongodb",
+    "enabled": false,
+    "notes": "Candidat de découverte France/Paris : ne pas activer sans diagnostic et vérification de l’entreprise."
+  },
+  {
+    "id": "snowflake-greenhouse",
+    "label": "Snowflake",
+    "company": "Snowflake",
+    "kind": "greenhouse",
+    "url": "https://job-boards.greenhouse.io/snowflake",
+    "enabled": false,
+    "notes": "Candidat de découverte France/Paris : ne pas activer sans diagnostic et vérification de l’entreprise."
+  },
+  {
+    "id": "cloudflare-greenhouse",
+    "label": "Cloudflare",
+    "company": "Cloudflare",
+    "kind": "greenhouse",
+    "url": "https://job-boards.greenhouse.io/cloudflare",
+    "enabled": false,
+    "notes": "Candidat de découverte France/Paris : ne pas activer sans diagnostic et vérification de l’entreprise."
+  },
+  {
+    "id": "adyen-greenhouse",
+    "label": "Adyen",
+    "company": "Adyen",
+    "kind": "greenhouse",
+    "url": "https://job-boards.greenhouse.io/adyen",
+    "enabled": false,
+    "notes": "Candidat de découverte France/Paris : ne pas activer sans diagnostic et vérification de l’entreprise."
+  },
+  {
+    "id": "spotify-greenhouse",
+    "label": "Spotify",
+    "company": "Spotify",
+    "kind": "greenhouse",
+    "url": "https://job-boards.greenhouse.io/spotify",
+    "enabled": false,
+    "notes": "Candidat de découverte France/Paris : ne pas activer sans diagnostic et vérification de l’entreprise."
+  },
+  {
+    "id": "deliveroo-greenhouse",
+    "label": "Deliveroo",
+    "company": "Deliveroo",
+    "kind": "greenhouse",
+    "url": "https://job-boards.greenhouse.io/deliveroo",
+    "enabled": false,
+    "notes": "Candidat de découverte France/Paris : ne pas activer sans diagnostic et vérification de l’entreprise."
+  },
+  {
+    "id": "stripe-greenhouse",
+    "label": "Stripe",
+    "company": "Stripe",
+    "kind": "greenhouse",
+    "url": "https://job-boards.greenhouse.io/stripe",
+    "enabled": false,
+    "notes": "Candidat de découverte France/Paris : ne pas activer sans diagnostic et vérification de l’entreprise."
+  },
+  {
+    "id": "databricks-greenhouse",
+    "label": "Databricks",
+    "company": "Databricks",
+    "kind": "greenhouse",
+    "url": "https://job-boards.greenhouse.io/databricks",
+    "enabled": false,
+    "notes": "Candidat de découverte France/Paris : ne pas activer sans diagnostic et vérification de l’entreprise."
+  },
+  {
+    "id": "aircall-lever",
+    "label": "Aircall",
+    "company": "Aircall",
+    "kind": "lever",
+    "url": "https://jobs.lever.co/aircall",
+    "enabled": false,
+    "notes": "Candidat de découverte France/Paris : ne pas activer sans diagnostic et vérification de l’entreprise."
+  },
+  {
+    "id": "payfit-lever",
+    "label": "PayFit",
+    "company": "PayFit",
+    "kind": "lever",
+    "url": "https://jobs.lever.co/payfit",
+    "enabled": false,
+    "notes": "Candidat de découverte France/Paris : ne pas activer sans diagnostic et vérification de l’entreprise."
+  },
+  {
+    "id": "swile-lever",
+    "label": "Swile",
+    "company": "Swile",
+    "kind": "lever",
+    "url": "https://jobs.lever.co/swile",
+    "enabled": false,
+    "notes": "Candidat de découverte France/Paris : ne pas activer sans diagnostic et vérification de l’entreprise."
+  },
+  {
+    "id": "scaleway-lever",
+    "label": "Scaleway",
+    "company": "Scaleway",
+    "kind": "lever",
+    "url": "https://jobs.lever.co/scaleway",
+    "enabled": false,
+    "notes": "Candidat de découverte France/Paris : ne pas activer sans diagnostic et vérification de l’entreprise."
+  },
+  {
+    "id": "gojob-lever",
+    "label": "Gojob",
+    "company": "Gojob",
+    "kind": "lever",
+    "url": "https://jobs.lever.co/gojob",
+    "enabled": false,
+    "notes": "Candidat de découverte France/Paris : ne pas activer sans diagnostic et vérification de l’entreprise."
+  },
+  {
+    "id": "heetch-lever",
+    "label": "Heetch",
+    "company": "Heetch",
+    "kind": "lever",
+    "url": "https://jobs.lever.co/heetch",
+    "enabled": false,
+    "notes": "Candidat de découverte France/Paris : ne pas activer sans diagnostic et vérification de l’entreprise."
+  },
+  {
+    "id": "leboncoin-lever",
+    "label": "Leboncoin",
+    "company": "Leboncoin",
+    "kind": "lever",
+    "url": "https://jobs.lever.co/leboncoin",
+    "enabled": false,
+    "notes": "Candidat de découverte France/Paris : ne pas activer sans diagnostic et vérification de l’entreprise."
+  },
+  {
+    "id": "vestiairecollective-lever",
+    "label": "Vestiaire Collective",
+    "company": "Vestiaire Collective",
+    "kind": "lever",
+    "url": "https://jobs.lever.co/vestiairecollective",
+    "enabled": false,
+    "notes": "Candidat de découverte France/Paris : ne pas activer sans diagnostic et vérification de l’entreprise."
+  },
+  {
+    "id": "jobteaser-lever",
+    "label": "JobTeaser",
+    "company": "JobTeaser",
+    "kind": "lever",
+    "url": "https://jobs.lever.co/jobteaser",
+    "enabled": false,
+    "notes": "Candidat de découverte France/Paris : ne pas activer sans diagnostic et vérification de l’entreprise."
+  },
+  {
+    "id": "believe-lever",
+    "label": "Believe",
+    "company": "Believe",
+    "kind": "lever",
+    "url": "https://jobs.lever.co/believe",
+    "enabled": false,
+    "notes": "Candidat de découverte France/Paris : ne pas activer sans diagnostic et vérification de l’entreprise."
+  },
+  {
+    "id": "withings-lever",
+    "label": "Withings",
+    "company": "Withings",
+    "kind": "lever",
+    "url": "https://jobs.lever.co/withings",
+    "enabled": false,
+    "notes": "Candidat de découverte France/Paris : ne pas activer sans diagnostic et vérification de l’entreprise."
+  },
+  {
+    "id": "younited-lever",
+    "label": "Younited",
+    "company": "Younited",
+    "kind": "lever",
+    "url": "https://jobs.lever.co/younited",
+    "enabled": false,
+    "notes": "Candidat de découverte France/Paris : ne pas activer sans diagnostic et vérification de l’entreprise."
+  },
+  {
+    "id": "agicap-lever",
+    "label": "Agicap",
+    "company": "Agicap",
+    "kind": "lever",
+    "url": "https://jobs.lever.co/agicap",
+    "enabled": false,
+    "notes": "Candidat de découverte France/Paris : ne pas activer sans diagnostic et vérification de l’entreprise."
+  },
+  {
+    "id": "doctrine-lever",
+    "label": "Doctrine",
+    "company": "Doctrine",
+    "kind": "lever",
+    "url": "https://jobs.lever.co/doctrine",
+    "enabled": false,
+    "notes": "Candidat de découverte France/Paris : ne pas activer sans diagnostic et vérification de l’entreprise."
+  },
+  {
+    "id": "voodoo-lever",
+    "label": "Voodoo",
+    "company": "Voodoo",
+    "kind": "lever",
+    "url": "https://jobs.lever.co/voodoo",
+    "enabled": false,
+    "notes": "Candidat de découverte France/Paris : ne pas activer sans diagnostic et vérification de l’entreprise."
+  },
+  {
+    "id": "homa-lever",
+    "label": "Homa",
+    "company": "Homa",
+    "kind": "lever",
+    "url": "https://jobs.lever.co/homa",
+    "enabled": false,
+    "notes": "Candidat de découverte France/Paris : ne pas activer sans diagnostic et vérification de l’entreprise."
+  },
+  {
+    "id": "homagames-lever",
+    "label": "Homa Games",
+    "company": "Homa Games",
+    "kind": "lever",
+    "url": "https://jobs.lever.co/homagames",
+    "enabled": false,
+    "notes": "Candidat de découverte France/Paris : ne pas activer sans diagnostic et vérification de l’entreprise."
+  },
+  {
+    "id": "lempire-lever",
+    "label": "Lempire",
+    "company": "Lempire",
+    "kind": "lever",
+    "url": "https://jobs.lever.co/lempire",
+    "enabled": false,
+    "notes": "Candidat de découverte France/Paris : ne pas activer sans diagnostic et vérification de l’entreprise."
+  },
+  {
+    "id": "manomano-lever",
+    "label": "ManoMano",
+    "company": "ManoMano",
+    "kind": "lever",
+    "url": "https://jobs.lever.co/manomano",
+    "enabled": false,
+    "notes": "Candidat de découverte France/Paris : ne pas activer sans diagnostic et vérification de l’entreprise."
+  },
+  {
+    "id": "shippeo-lever",
+    "label": "Shippeo",
+    "company": "Shippeo",
+    "kind": "lever",
+    "url": "https://jobs.lever.co/shippeo",
+    "enabled": false,
+    "notes": "Candidat de découverte France/Paris : ne pas activer sans diagnostic et vérification de l’entreprise."
+  },
+  {
+    "id": "betclic-lever",
+    "label": "Betclic",
+    "company": "Betclic",
+    "kind": "lever",
+    "url": "https://jobs.lever.co/betclic",
+    "enabled": false,
+    "notes": "Candidat de découverte France/Paris : ne pas activer sans diagnostic et vérification de l’entreprise."
+  },
+  {
+    "id": "bedrock-lever",
+    "label": "Bedrock",
+    "company": "Bedrock",
+    "kind": "lever",
+    "url": "https://jobs.lever.co/bedrock",
+    "enabled": false,
+    "notes": "Candidat de découverte France/Paris : ne pas activer sans diagnostic et vérification de l’entreprise."
+  },
+  {
+    "id": "mistral-ashby",
+    "label": "Mistral AI",
+    "company": "Mistral AI",
+    "kind": "ashby",
+    "url": "https://jobs.ashbyhq.com/mistral",
+    "enabled": false,
+    "notes": "Candidat de découverte France/Paris : ne pas activer sans diagnostic et vérification de l’entreprise."
+  },
+  {
+    "id": "mistral-ai-ashby",
+    "label": "Mistral AI",
+    "company": "Mistral AI",
+    "kind": "ashby",
+    "url": "https://jobs.ashbyhq.com/mistral-ai",
+    "enabled": false,
+    "notes": "Candidat de découverte France/Paris : ne pas activer sans diagnostic et vérification de l’entreprise."
+  },
+  {
+    "id": "photoroom-ashby",
+    "label": "Photoroom",
+    "company": "Photoroom",
+    "kind": "ashby",
+    "url": "https://jobs.ashbyhq.com/photoroom",
+    "enabled": false,
+    "notes": "Candidat de découverte France/Paris : ne pas activer sans diagnostic et vérification de l’entreprise."
+  },
+  {
+    "id": "dust-ashby",
+    "label": "Dust",
+    "company": "Dust",
+    "kind": "ashby",
+    "url": "https://jobs.ashbyhq.com/dust",
+    "enabled": false,
+    "notes": "Candidat de découverte France/Paris : ne pas activer sans diagnostic et vérification de l’entreprise."
+  },
+  {
+    "id": "pigment-ashby",
+    "label": "Pigment",
+    "company": "Pigment",
+    "kind": "ashby",
+    "url": "https://jobs.ashbyhq.com/pigment",
+    "enabled": false,
+    "notes": "Candidat de découverte France/Paris : ne pas activer sans diagnostic et vérification de l’entreprise."
+  },
+  {
+    "id": "lifen-ashby",
+    "label": "Lifen",
+    "company": "Lifen",
+    "kind": "ashby",
+    "url": "https://jobs.ashbyhq.com/lifen",
+    "enabled": false,
+    "notes": "Candidat de découverte France/Paris : ne pas activer sans diagnostic et vérification de l’entreprise."
+  },
+  {
+    "id": "frontcareers-ashby",
+    "label": "Front",
+    "company": "Front",
+    "kind": "ashby",
+    "url": "https://jobs.ashbyhq.com/frontcareers",
+    "enabled": false,
+    "notes": "Candidat de découverte France/Paris : ne pas activer sans diagnostic et vérification de l’entreprise."
+  },
+  {
+    "id": "hcompany-ashby",
+    "label": "H Company",
+    "company": "H Company",
+    "kind": "ashby",
+    "url": "https://jobs.ashbyhq.com/hcompany",
+    "enabled": false,
+    "notes": "Candidat de découverte France/Paris : ne pas activer sans diagnostic et vérification de l’entreprise."
+  },
+  {
+    "id": "huggingface-ashby",
+    "label": "Hugging Face",
+    "company": "Hugging Face",
+    "kind": "ashby",
+    "url": "https://jobs.ashbyhq.com/huggingface",
+    "enabled": false,
+    "notes": "Candidat de découverte France/Paris : ne pas activer sans diagnostic et vérification de l’entreprise."
+  },
+  {
+    "id": "welcometothejungle-ashby",
+    "label": "Welcome to the Jungle",
+    "company": "Welcome to the Jungle",
+    "kind": "ashby",
+    "url": "https://jobs.ashbyhq.com/welcometothejungle",
+    "enabled": false,
+    "notes": "Candidat de découverte France/Paris : ne pas activer sans diagnostic et vérification de l’entreprise."
+  },
+  {
+    "id": "nabla-ashby",
+    "label": "Nabla",
+    "company": "Nabla",
+    "kind": "ashby",
+    "url": "https://jobs.ashbyhq.com/nabla",
+    "enabled": false,
+    "notes": "Candidat de découverte France/Paris : ne pas activer sans diagnostic et vérification de l’entreprise."
+  },
+  {
+    "id": "giskard-ashby",
+    "label": "Giskard",
+    "company": "Giskard",
+    "kind": "ashby",
+    "url": "https://jobs.ashbyhq.com/giskard",
+    "enabled": false,
+    "notes": "Candidat de découverte France/Paris : ne pas activer sans diagnostic et vérification de l’entreprise."
+  },
+  {
+    "id": "gladia-ashby",
+    "label": "Gladia",
+    "company": "Gladia",
+    "kind": "ashby",
+    "url": "https://jobs.ashbyhq.com/gladia",
+    "enabled": false,
+    "notes": "Candidat de découverte France/Paris : ne pas activer sans diagnostic et vérification de l’entreprise."
+  },
+  {
+    "id": "swan-ashby",
+    "label": "Swan",
+    "company": "Swan",
+    "kind": "ashby",
+    "url": "https://jobs.ashbyhq.com/swan",
+    "enabled": false,
+    "notes": "Candidat de découverte France/Paris : ne pas activer sans diagnostic et vérification de l’entreprise."
+  },
+  {
+    "id": "didomi-ashby",
+    "label": "Didomi",
+    "company": "Didomi",
+    "kind": "ashby",
+    "url": "https://jobs.ashbyhq.com/didomi",
+    "enabled": false,
+    "notes": "Candidat de découverte France/Paris : ne pas activer sans diagnostic et vérification de l’entreprise."
+  },
+  {
+    "id": "qonto-ashby",
+    "label": "Qonto",
+    "company": "Qonto",
+    "kind": "ashby",
+    "url": "https://jobs.ashbyhq.com/qonto",
+    "enabled": false,
+    "notes": "Candidat de découverte France/Paris : ne pas activer sans diagnostic et vérification de l’entreprise."
+  },
+  {
+    "id": "lempire-ashby",
+    "label": "Lempire",
+    "company": "Lempire",
+    "kind": "ashby",
+    "url": "https://jobs.ashbyhq.com/lempire",
+    "enabled": false,
+    "notes": "Candidat de découverte France/Paris : ne pas activer sans diagnostic et vérification de l’entreprise."
+  },
+  {
+    "id": "zenchef-ashby",
+    "label": "Zenchef",
+    "company": "Zenchef",
+    "kind": "ashby",
+    "url": "https://jobs.ashbyhq.com/zenchef",
+    "enabled": false,
+    "notes": "Candidat de découverte France/Paris : ne pas activer sans diagnostic et vérification de l’entreprise."
+  },
+  {
+    "id": "comand-ai-ashby",
+    "label": "Comand AI",
+    "company": "Comand AI",
+    "kind": "ashby",
+    "url": "https://jobs.ashbyhq.com/comand-ai",
+    "enabled": false,
+    "notes": "Candidat de découverte France/Paris : ne pas activer sans diagnostic et vérification de l’entreprise."
+  },
+  {
+    "id": "flexai-ashby",
+    "label": "FlexAI",
+    "company": "FlexAI",
+    "kind": "ashby",
+    "url": "https://jobs.ashbyhq.com/flexai",
+    "enabled": false,
+    "notes": "Candidat de découverte France/Paris : ne pas activer sans diagnostic et vérification de l’entreprise."
+  },
+  {
+    "id": "bioptimus-ashby",
+    "label": "Bioptimus",
+    "company": "Bioptimus",
+    "kind": "ashby",
+    "url": "https://jobs.ashbyhq.com/bioptimus",
+    "enabled": false,
+    "notes": "Candidat de découverte France/Paris : ne pas activer sans diagnostic et vérification de l’entreprise."
+  },
+  {
+    "id": "gradium-ashby",
+    "label": "Gradium",
+    "company": "Gradium",
+    "kind": "ashby",
+    "url": "https://jobs.ashbyhq.com/gradium",
+    "enabled": false,
+    "notes": "Candidat de découverte France/Paris : ne pas activer sans diagnostic et vérification de l’entreprise."
+  },
+  {
+    "id": "ami-ashby",
+    "label": "AMI",
+    "company": "AMI",
+    "kind": "ashby",
+    "url": "https://jobs.ashbyhq.com/ami",
+    "enabled": false,
+    "notes": "Candidat de découverte France/Paris : ne pas activer sans diagnostic et vérification de l’entreprise."
+  },
+  {
+    "id": "dott-ashby",
+    "label": "Dott",
+    "company": "Dott",
+    "kind": "ashby",
+    "url": "https://jobs.ashbyhq.com/dott",
+    "enabled": false,
+    "notes": "Candidat de découverte France/Paris : ne pas activer sans diagnostic et vérification de l’entreprise."
+  },
+  {
+    "id": "skello-ashby",
+    "label": "Skello",
+    "company": "Skello",
+    "kind": "ashby",
+    "url": "https://jobs.ashbyhq.com/skello",
+    "enabled": false,
+    "notes": "Candidat de découverte France/Paris : ne pas activer sans diagnostic et vérification de l’entreprise."
+  },
+  {
+    "id": "epsor-ashby",
+    "label": "Epsor",
+    "company": "Epsor",
+    "kind": "ashby",
+    "url": "https://jobs.ashbyhq.com/epsor",
+    "enabled": false,
+    "notes": "Candidat de découverte France/Paris : ne pas activer sans diagnostic et vérification de l’entreprise."
+  },
+  {
+    "id": "leocare-ashby",
+    "label": "Leocare",
+    "company": "Leocare",
+    "kind": "ashby",
+    "url": "https://jobs.ashbyhq.com/leocare",
+    "enabled": false,
+    "notes": "Candidat de découverte France/Paris : ne pas activer sans diagnostic et vérification de l’entreprise."
+  },
+  {
+    "id": "payfit-ashby",
+    "label": "PayFit",
+    "company": "PayFit",
+    "kind": "ashby",
+    "url": "https://jobs.ashbyhq.com/payfit",
+    "enabled": false,
+    "notes": "Candidat de découverte France/Paris : ne pas activer sans diagnostic et vérification de l’entreprise."
+  },
+  {
+    "id": "swile-ashby",
+    "label": "Swile",
+    "company": "Swile",
+    "kind": "ashby",
+    "url": "https://jobs.ashbyhq.com/swile",
+    "enabled": false,
+    "notes": "Candidat de découverte France/Paris : ne pas activer sans diagnostic et vérification de l’entreprise."
+  },
+  {
+    "id": "aircall-ashby",
+    "label": "Aircall",
+    "company": "Aircall",
+    "kind": "ashby",
+    "url": "https://jobs.ashbyhq.com/aircall",
+    "enabled": false,
+    "notes": "Candidat de découverte France/Paris : ne pas activer sans diagnostic et vérification de l’entreprise."
+  },
+  {
+    "id": "neoplants-ashby",
+    "label": "Neoplants",
+    "company": "Neoplants",
+    "kind": "ashby",
+    "url": "https://jobs.ashbyhq.com/neoplants",
+    "enabled": false,
+    "notes": "Candidat de découverte France/Paris : ne pas activer sans diagnostic et vérification de l’entreprise."
+  },
+  {
+    "id": "deepki-ashby",
+    "label": "Deepki",
+    "company": "Deepki",
+    "kind": "ashby",
+    "url": "https://jobs.ashbyhq.com/deepki",
+    "enabled": false,
+    "notes": "Candidat de découverte France/Paris : ne pas activer sans diagnostic et vérification de l’entreprise."
+  },
+  {
+    "id": "devoteam-smartrecruiters",
+    "label": "Devoteam",
+    "company": "Devoteam",
+    "kind": "smartrecruiters",
+    "url": "https://careers.smartrecruiters.com/Devoteam",
+    "enabled": false,
+    "notes": "Candidat de découverte France/Paris : ne pas activer sans diagnostic et vérification de l’entreprise."
+  },
+  {
+    "id": "siapartners-smartrecruiters",
+    "label": "Sia",
+    "company": "Sia",
+    "kind": "smartrecruiters",
+    "url": "https://careers.smartrecruiters.com/SiaPartners",
+    "enabled": false,
+    "notes": "Candidat de découverte France/Paris : ne pas activer sans diagnostic et vérification de l’entreprise."
+  },
+  {
+    "id": "wavestone-smartrecruiters",
+    "label": "Wavestone",
+    "company": "Wavestone",
+    "kind": "smartrecruiters",
+    "url": "https://careers.smartrecruiters.com/Wavestone",
+    "enabled": false,
+    "notes": "Candidat de découverte France/Paris : ne pas activer sans diagnostic et vérification de l’entreprise."
+  },
+  {
+    "id": "talan-smartrecruiters",
+    "label": "Talan",
+    "company": "Talan",
+    "kind": "smartrecruiters",
+    "url": "https://careers.smartrecruiters.com/Talan",
+    "enabled": false,
+    "notes": "Candidat de découverte France/Paris : ne pas activer sans diagnostic et vérification de l’entreprise."
+  },
+  {
+    "id": "sqli-smartrecruiters",
+    "label": "SQLI",
+    "company": "SQLI",
+    "kind": "smartrecruiters",
+    "url": "https://careers.smartrecruiters.com/SQLI",
+    "enabled": false,
+    "notes": "Candidat de découverte France/Paris : ne pas activer sans diagnostic et vérification de l’entreprise."
+  },
+  {
+    "id": "inetum-smartrecruiters",
+    "label": "Inetum",
+    "company": "Inetum",
+    "kind": "smartrecruiters",
+    "url": "https://careers.smartrecruiters.com/Inetum",
+    "enabled": false,
+    "notes": "Candidat de découverte France/Paris : ne pas activer sans diagnostic et vérification de l’entreprise."
+  },
+  {
+    "id": "alten-smartrecruiters",
+    "label": "ALTEN",
+    "company": "ALTEN",
+    "kind": "smartrecruiters",
+    "url": "https://careers.smartrecruiters.com/ALTEN",
+    "enabled": false,
+    "notes": "Candidat de découverte France/Paris : ne pas activer sans diagnostic et vérification de l’entreprise."
+  },
+  {
+    "id": "alten1-smartrecruiters",
+    "label": "ALTEN",
+    "company": "ALTEN",
+    "kind": "smartrecruiters",
+    "url": "https://careers.smartrecruiters.com/ALTEN1",
+    "enabled": false,
+    "notes": "Candidat de découverte France/Paris : ne pas activer sans diagnostic et vérification de l’entreprise."
+  },
+  {
+    "id": "accorhotel-smartrecruiters",
+    "label": "Accor",
+    "company": "Accor",
+    "kind": "smartrecruiters",
+    "url": "https://careers.smartrecruiters.com/AccorHotel",
+    "enabled": false,
+    "notes": "Candidat de découverte France/Paris : ne pas activer sans diagnostic et vérification de l’entreprise."
+  },
+  {
+    "id": "boschgroup-smartrecruiters",
+    "label": "Bosch",
+    "company": "Bosch",
+    "kind": "smartrecruiters",
+    "url": "https://careers.smartrecruiters.com/BoschGroup",
+    "enabled": false,
+    "notes": "Candidat de découverte France/Paris : ne pas activer sans diagnostic et vérification de l’entreprise."
+  },
+  {
+    "id": "veolia-smartrecruiters",
+    "label": "Veolia",
+    "company": "Veolia",
+    "kind": "smartrecruiters",
+    "url": "https://careers.smartrecruiters.com/Veolia",
+    "enabled": false,
+    "notes": "Candidat de découverte France/Paris : ne pas activer sans diagnostic et vérification de l’entreprise."
+  },
+  {
+    "id": "publicisgroupe-smartrecruiters",
+    "label": "Publicis Groupe",
+    "company": "Publicis Groupe",
+    "kind": "smartrecruiters",
+    "url": "https://careers.smartrecruiters.com/PublicisGroupe",
+    "enabled": false,
+    "notes": "Candidat de découverte France/Paris : ne pas activer sans diagnostic et vérification de l’entreprise."
+  },
+  {
+    "id": "amundi-smartrecruiters",
+    "label": "Amundi",
+    "company": "Amundi",
+    "kind": "smartrecruiters",
+    "url": "https://careers.smartrecruiters.com/Amundi",
+    "enabled": false,
+    "notes": "Candidat de découverte France/Paris : ne pas activer sans diagnostic et vérification de l’entreprise."
+  },
+  {
+    "id": "eurofins-smartrecruiters",
+    "label": "Eurofins",
+    "company": "Eurofins",
+    "kind": "smartrecruiters",
+    "url": "https://careers.smartrecruiters.com/Eurofins",
+    "enabled": false,
+    "notes": "Candidat de découverte France/Paris : ne pas activer sans diagnostic et vérification de l’entreprise."
+  },
+  {
+    "id": "assystem-smartrecruiters",
+    "label": "Assystem",
+    "company": "Assystem",
+    "kind": "smartrecruiters",
+    "url": "https://careers.smartrecruiters.com/Assystem",
+    "enabled": false,
+    "notes": "Candidat de découverte France/Paris : ne pas activer sans diagnostic et vérification de l’entreprise."
+  },
+  {
+    "id": "artelia-smartrecruiters",
+    "label": "Artelia",
+    "company": "Artelia",
+    "kind": "smartrecruiters",
+    "url": "https://careers.smartrecruiters.com/Artelia",
+    "enabled": false,
+    "notes": "Candidat de découverte France/Paris : ne pas activer sans diagnostic et vérification de l’entreprise."
+  },
+  {
+    "id": "egisgroup-smartrecruiters",
+    "label": "Egis",
+    "company": "Egis",
+    "kind": "smartrecruiters",
+    "url": "https://careers.smartrecruiters.com/EgisGroup",
+    "enabled": false,
+    "notes": "Candidat de découverte France/Paris : ne pas activer sans diagnostic et vérification de l’entreprise."
+  },
+  {
+    "id": "segulatechnologies-smartrecruiters",
+    "label": "Segula Technologies",
+    "company": "Segula Technologies",
+    "kind": "smartrecruiters",
+    "url": "https://careers.smartrecruiters.com/SegulaTechnologies",
+    "enabled": false,
+    "notes": "Candidat de découverte France/Paris : ne pas activer sans diagnostic et vérification de l’entreprise."
+  },
+  {
+    "id": "believe-smartrecruiters",
+    "label": "Believe",
+    "company": "Believe",
+    "kind": "smartrecruiters",
+    "url": "https://careers.smartrecruiters.com/Believe",
+    "enabled": false,
+    "notes": "Candidat de découverte France/Paris : ne pas activer sans diagnostic et vérification de l’entreprise."
+  },
+  {
+    "id": "natixis-smartrecruiters",
+    "label": "Natixis",
+    "company": "Natixis",
+    "kind": "smartrecruiters",
+    "url": "https://careers.smartrecruiters.com/Natixis",
+    "enabled": false,
+    "notes": "Candidat de découverte France/Paris : ne pas activer sans diagnostic et vérification de l’entreprise."
+  },
+  {
+    "id": "capco-smartrecruiters",
+    "label": "Capco",
+    "company": "Capco",
+    "kind": "smartrecruiters",
+    "url": "https://careers.smartrecruiters.com/Capco",
+    "enabled": false,
+    "notes": "Candidat de découverte France/Paris : ne pas activer sans diagnostic et vérification de l’entreprise."
+  },
+  {
+    "id": "qair-smartrecruiters",
+    "label": "Qair",
+    "company": "Qair",
+    "kind": "smartrecruiters",
+    "url": "https://careers.smartrecruiters.com/Qair",
+    "enabled": false,
+    "notes": "Candidat de découverte France/Paris : ne pas activer sans diagnostic et vérification de l’entreprise."
+  },
+  {
+    "id": "ramboll-smartrecruiters",
+    "label": "Ramboll",
+    "company": "Ramboll",
+    "kind": "smartrecruiters",
+    "url": "https://careers.smartrecruiters.com/Ramboll",
+    "enabled": false,
+    "notes": "Candidat de découverte France/Paris : ne pas activer sans diagnostic et vérification de l’entreprise."
+  },
+  {
+    "id": "saintgobain-smartrecruiters",
+    "label": "Saint-Gobain",
+    "company": "Saint-Gobain",
+    "kind": "smartrecruiters",
+    "url": "https://careers.smartrecruiters.com/SaintGobain",
+    "enabled": false,
+    "notes": "Candidat de découverte France/Paris : ne pas activer sans diagnostic et vérification de l’entreprise."
+  },
+  {
+    "id": "atos-smartrecruiters",
+    "label": "Atos",
+    "company": "Atos",
+    "kind": "smartrecruiters",
+    "url": "https://careers.smartrecruiters.com/Atos",
+    "enabled": false,
+    "notes": "Candidat de découverte France/Paris : ne pas activer sans diagnostic et vérification de l’entreprise."
+  },
+  {
+    "id": "accenture-smartrecruiters",
+    "label": "Accenture",
+    "company": "Accenture",
+    "kind": "smartrecruiters",
+    "url": "https://careers.smartrecruiters.com/Accenture",
+    "enabled": false,
+    "notes": "Candidat de découverte France/Paris : ne pas activer sans diagnostic et vérification de l’entreprise."
+  },
+  {
+    "id": "mistral-lever",
+    "label": "Mistral AI",
+    "company": "Mistral AI",
+    "kind": "lever",
+    "url": "https://jobs.lever.co/mistral",
+    "enabled": false
+  },
+  {
+    "id": "pigment-lever",
+    "label": "Pigment",
+    "company": "Pigment",
+    "kind": "lever",
+    "url": "https://jobs.lever.co/pigment",
+    "enabled": false
+  },
+  {
+    "id": "owkin-lever",
+    "label": "Owkin",
+    "company": "Owkin",
+    "kind": "lever",
+    "url": "https://jobs.lever.co/owkin",
+    "enabled": false
+  },
+  {
+    "id": "360learning-lever",
+    "label": "360Learning",
+    "company": "360Learning",
+    "kind": "lever",
+    "url": "https://jobs.lever.co/360learning",
+    "enabled": false
+  },
+  {
+    "id": "akeneo-lever",
+    "label": "Akeneo",
+    "company": "Akeneo",
+    "kind": "lever",
+    "url": "https://jobs.lever.co/akeneo",
+    "enabled": false
+  },
+  {
+    "id": "manomano-greenhouse",
+    "label": "ManoMano",
+    "company": "ManoMano",
+    "kind": "greenhouse",
+    "url": "https://job-boards.greenhouse.io/manomano",
+    "enabled": false
+  },
+  {
+    "id": "jobteaser-smartrecruiters",
+    "label": "JobTeaser",
+    "company": "JobTeaser",
+    "kind": "smartrecruiters",
+    "url": "https://careers.smartrecruiters.com/JobTeaser",
+    "enabled": false
+  },
+  {
+    "id": "withings-smartrecruiters",
+    "label": "Withings",
+    "company": "Withings",
+    "kind": "smartrecruiters",
+    "url": "https://careers.smartrecruiters.com/Withings",
+    "enabled": false
+  },
+  {
+    "id": "sia-smartrecruiters",
+    "label": "Sia",
+    "company": "Sia",
+    "kind": "smartrecruiters",
+    "url": "https://careers.smartrecruiters.com/Sia",
+    "enabled": false
+  },
+  {
+    "id": "wavestone1-smartrecruiters",
+    "label": "Wavestone",
+    "company": "Wavestone",
+    "kind": "smartrecruiters",
+    "url": "https://careers.smartrecruiters.com/Wavestone1",
+    "enabled": false
+  },
+  {
+    "id": "veoliaenvironnementsa-smartrecruiters",
+    "label": "Veolia",
+    "company": "Veolia",
+    "kind": "smartrecruiters",
+    "url": "https://careers.smartrecruiters.com/VeoliaEnvironnementSA",
+    "enabled": false
+  },
+  {
+    "id": "publicisgroupe2-smartrecruiters",
+    "label": "Publicis Groupe",
+    "company": "Publicis Groupe",
+    "kind": "smartrecruiters",
+    "url": "https://careers.smartrecruiters.com/PublicisGroupe2",
+    "enabled": false
+  },
+  {
+    "id": "sqli1-smartrecruiters",
+    "label": "SQLI",
+    "company": "SQLI",
+    "kind": "smartrecruiters",
+    "url": "https://careers.smartrecruiters.com/SQLI1",
+    "enabled": false
+  },
+  {
+    "id": "inetum1-smartrecruiters",
+    "label": "Inetum",
+    "company": "Inetum",
+    "kind": "smartrecruiters",
+    "url": "https://careers.smartrecruiters.com/Inetum1",
+    "enabled": false
+  },
+  {
+    "id": "natixis1-smartrecruiters",
+    "label": "Natixis",
+    "company": "Natixis",
+    "kind": "smartrecruiters",
+    "url": "https://careers.smartrecruiters.com/Natixis1",
+    "enabled": false
+  },
+  {
+    "id": "deepl-ashby",
+    "label": "Deepl",
+    "company": "Deepl",
+    "kind": "ashby",
+    "url": "https://jobs.ashbyhq.com/deepl",
+    "enabled": false
+  },
+  {
+    "id": "huggingface2-greenhouse",
+    "label": "Hugging Face",
+    "company": "Hugging Face",
+    "kind": "greenhouse",
+    "url": "https://job-boards.greenhouse.io/huggingface2",
+    "enabled": false
+  },
+  {
+    "id": "huggingface-lever",
+    "label": "Hugging Face",
+    "company": "Hugging Face",
+    "kind": "lever",
+    "url": "https://jobs.lever.co/huggingface",
+    "enabled": false
+  },
+  {
+    "id": "renault-group",
+    "label": "Renault Group",
+    "company": "Renault Group",
+    "kind": "workday",
+    "url": "https://alliancewd.wd3.myworkdayjobs.com/fr-FR/renault-group-careers",
+    "enabled": false,
+    "queries": ["stage", "stagiaire", "alternance", "intern", "apprenti"],
+    "maxPages": 15
+  },
+  {
+    "id": "sanofi",
+    "label": "Sanofi",
+    "company": "Sanofi",
+    "kind": "workday",
+    "url": "https://sanofi.wd3.myworkdayjobs.com/fr-FR/SanofiCareers",
+    "enabled": false,
+    "queries": ["stage", "stagiaire", "alternance", "intern", "apprenti"],
+    "maxPages": 15
+  },
+  {
+    "id": "valeo",
+    "label": "Valeo",
+    "company": "Valeo",
+    "kind": "workday",
+    "url": "https://valeo.wd3.myworkdayjobs.com/fr-FR/valeo_jobs",
+    "enabled": false,
+    "queries": ["stage", "stagiaire", "alternance", "intern", "apprenti"],
+    "maxPages": 15
+  },
+  {
+    "id": "accenture",
+    "label": "Accenture",
+    "company": "Accenture",
+    "kind": "workday",
+    "url": "https://accenture.wd103.myworkdayjobs.com/fr-FR/AccentureCareers",
+    "enabled": false,
+    "queries": ["stage", "stagiaire", "alternance", "intern", "apprenti"],
+    "maxPages": 15
+  },
+  {
+    "id": "michelin",
+    "label": "Michelin",
+    "company": "Michelin",
+    "kind": "workday",
+    "url": "https://michelinhr.wd3.myworkdayjobs.com/fr-FR/Michelin",
+    "enabled": false,
+    "queries": ["stage", "stagiaire", "alternance", "intern", "apprenti"],
+    "maxPages": 15
+  },
+  {
+    "id": "daher",
+    "label": "Daher",
+    "company": "Daher",
+    "kind": "workday",
+    "url": "https://daher.wd3.myworkdayjobs.com/fr-FR/Daher",
+    "enabled": false,
+    "queries": ["stage", "stagiaire", "alternance", "intern", "apprenti"],
+    "maxPages": 15
+  }
+]

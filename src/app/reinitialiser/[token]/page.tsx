@@ -4,13 +4,15 @@ import { ResetForm } from "./reset-form";
 
 export const metadata: Metadata = { title: "Nouveau mot de passe" };
 
-export default function ReinitialiserPage({
-  params,
-  searchParams,
+export default async function ReinitialiserPage({
+  params: pendingParams,
+  searchParams: pendingSearchParams,
 }: {
-  params: { token: string };
-  searchParams: { email?: string };
+  params: Promise<{ token: string }>;
+  searchParams: Promise<{ email?: string }>;
 }) {
+  const params = await pendingParams;
+  const searchParams = await pendingSearchParams;
   return (
     <AuthCard title="Nouveau mot de passe">
       <ResetForm token={params.token} email={searchParams.email ?? ""} />

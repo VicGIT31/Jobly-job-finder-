@@ -1,3 +1,4 @@
+import { STUDENT_OFFER_WHERE } from "@/server/offers/public-scope";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
@@ -14,9 +15,14 @@ export const metadata: Metadata = {
 };
 
 /** Page « Offre expirée » avec 6 offres similaires (cible du /go/ sur offre expirée). */
-export default async function OffreExpireePage({ params }: { params: { slug: string } }) {
-  const offer = await prisma.jobOffer.findUnique({
-    where: { slug: params.slug },
+export default async function OffreExpireePage({
+  params: pendingParams,
+}: {
+  params: Promise<{ slug: string }>;
+}) {
+  const params = await pendingParams;
+  const offer = await prisma.jobOffer.findFirst({
+    where: { slug: params.slug, ...STUDENT_OFFER_WHERE },
     include: { company: true },
   });
   if (!offer) notFound();

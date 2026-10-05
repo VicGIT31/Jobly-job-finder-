@@ -3,11 +3,14 @@
  * Lancé par `npm run worker` (ou via start-all dans Docker).
  */
 import { Queue, Worker } from "bullmq";
+import { loadEnvConfig } from "@next/env";
 import Redis from "ioredis";
 import { getSettings } from "@/lib/settings";
 import { expireStaleOffers, purgeOldOffers } from "@/server/ingest/freshness";
-import { runIngestion } from "@/server/ingest/run-ingestion";
+import { IngestionAlreadyRunningError, runIngestion } from "@/server/ingest/run-ingestion";
 import { sendDailyAlerts } from "@/server/alerts/send";
+
+loadEnvConfig(process.cwd());
 
 const connection = new Redis(process.env.REDIS_URL ?? "redis://localhost:6379", {
   maxRetriesPerRequest: null,
@@ -15,15 +18,41 @@ const connection = new Redis(process.env.REDIS_URL ?? "redis://localhost:6379", 
 
 const QUEUE_NAME = "jobly-crons";
 
+async function collectIfAvailable(): Promise<boolean> {
+  try {
+    await runIngestion();
+    return true;
+  } catch (error) {
+    if (!(error instanceof IngestionAlreadyRunningError)) throw error;
+    console.log("[worker] Collecte déjà en cours : ce déclenchement est ignoré.");
+    return false;
+  }
+}
+
+async function initialCollection(): Promise<void> {
+  try {
+    const { ingestionEnabled } = await getSettings("ingestion");
+    if (ingestionEnabled && !(await collectIfAvailable())) {
+      // Après un redémarrage, le verrou de l'ancien processus peut encore vivre
+      // 3 minutes. Reprendre dès sa libération plutôt qu'attendre le prochain cron.
+      setTimeout(() => void initialCollection(), 15_000).unref();
+    }
+  } catch (error) {
+    console.error("[worker] Ingestion initiale échouée :", error);
+  }
+}
+
 async function main(): Promise<void> {
   const queue = new Queue(QUEUE_NAME, { connection });
 
-  // Ingestion temps réel : toutes les 30 min. Fraîcheur : toutes les heures.
+  // Ingestion : intervalle configurable (2 h par défaut). Fraîcheur : horaire.
   // Alertes : tous les jours à 8 h.
-  const ingestionMinutes = Number(process.env.INGESTION_INTERVAL_MINUTES ?? "30");
+  const configuredMinutes = Number(process.env.INGESTION_INTERVAL_MINUTES ?? "120");
+  const ingestionMinutes =
+    Number.isFinite(configuredMinutes) && configuredMinutes >= 5 ? configuredMinutes : 120;
   await queue.upsertJobScheduler(
     "ingest-offers",
-    { pattern: `*/${ingestionMinutes} * * * *` },
+    { every: ingestionMinutes * 60_000 },
     { name: "ingest-offers" },
   );
   await queue.upsertJobScheduler(
@@ -54,7 +83,7 @@ async function main(): Promise<void> {
           console.log("[cron] ingest-offers : ingestion désactivée dans les paramètres, ignorée.");
           return;
         }
-        await runIngestion();
+        await collectIfAvailable();
       } else if (job.name === "offer-freshness") {
         const expired = await expireStaleOffers();
         console.log(`[cron] offer-freshness : ${expired} offre(s) expirée(s)`);
@@ -79,9 +108,7 @@ async function main(): Promise<void> {
   );
 
   // Ingestion immédiate au démarrage pour peupler le site sans attendre le cron.
-  getSettings("ingestion")
-    .then(({ ingestionEnabled }) => (ingestionEnabled ? runIngestion() : undefined))
-    .catch((err) => console.error("[worker] Ingestion initiale échouée :", err));
+  void initialCollection();
 }
 
 main().catch((err) => {

@@ -1,3 +1,5 @@
+> **Mise à jour 2026-10-05 :** ce document est un historique. Les connecteurs JSearch et France Travail OAuth ont été supprimés. Le cycle courant collecte gratuitement en France, sans clé fournisseur ; voir [SOURCES.md](SOURCES.md) et [ANALYSE_COLLECTE.md](ANALYSE_COLLECTE.md).
+
 # SOURCES_EUROPE_ASIA.md — sources d'offres pour l'extension Europe + Asie
 
 > Complète `SOURCES.md` (France uniquement, sources **testées en conditions

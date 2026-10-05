@@ -1,3 +1,4 @@
+import { PUBLIC_OFFER_WHERE } from "@/server/offers/public-scope";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
@@ -13,7 +14,7 @@ async function getCompany(slug: string) {
     where: { slug },
     include: {
       offers: {
-        where: { status: "ACTIVE" },
+        where: PUBLIC_OFFER_WHERE,
         include: { company: true },
         orderBy: { publishedAt: "desc" },
       },
@@ -22,10 +23,11 @@ async function getCompany(slug: string) {
 }
 
 export async function generateMetadata({
-  params,
+  params: pendingParams,
 }: {
-  params: { slug: string };
+  params: Promise<{ slug: string }>;
 }): Promise<Metadata> {
+  const params = await pendingParams;
   const company = await getCompany(params.slug);
   if (!company) return { title: "Entreprise introuvable" };
   return {
@@ -34,7 +36,12 @@ export async function generateMetadata({
   };
 }
 
-export default async function EntreprisePage({ params }: { params: { slug: string } }) {
+export default async function EntreprisePage({
+  params: pendingParams,
+}: {
+  params: Promise<{ slug: string }>;
+}) {
+  const params = await pendingParams;
   const company = await getCompany(params.slug);
   if (!company) notFound();
 

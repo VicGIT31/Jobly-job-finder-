@@ -1,3 +1,4 @@
+import { STUDENT_OFFER_WHERE } from "@/server/offers/public-scope";
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
@@ -13,8 +14,9 @@ export const dynamic = "force-dynamic";
  */
 export async function GET(
   request: NextRequest,
-  { params }: { params: { offerId: string } },
+  { params: pendingParams }: { params: Promise<{ offerId: string }> },
 ): Promise<NextResponse> {
+  const params = await pendingParams;
   const ip = request.headers.get("x-forwarded-for")?.split(",")[0] ?? "local";
   const { allowed } = await rateLimit(`go:${ip}`, 30, 60);
   if (!allowed) {
@@ -23,8 +25,8 @@ export async function GET(
 
   const session = await auth();
 
-  const offer = await prisma.jobOffer.findUnique({
-    where: { id: params.offerId },
+  const offer = await prisma.jobOffer.findFirst({
+    where: { id: params.offerId, ...STUDENT_OFFER_WHERE },
     select: {
       id: true,
       slug: true,

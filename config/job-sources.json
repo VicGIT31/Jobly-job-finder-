@@ -1,0 +1,1428 @@
+[
+  {
+    "id": "airbus",
+    "label": "Airbus",
+    "company": "Airbus",
+    "kind": "workday",
+    "url": "https://ag.wd3.myworkdayjobs.com/fr-FR/Airbus",
+    "maxPages": 100,
+    "maxOffers": 5000
+  },
+  {
+    "id": "thales",
+    "label": "Thales",
+    "company": "Thales",
+    "kind": "workday",
+    "url": "https://thales.wd3.myworkdayjobs.com/fr-FR/Careers",
+    "maxPages": 100,
+    "maxOffers": 5000
+  },
+  {
+    "id": "decathlon",
+    "label": "Decathlon",
+    "company": "Decathlon",
+    "kind": "html",
+    "url": "https://joinus.decathlon.fr/fr/annonces",
+    "sitemapUrls": [
+      "https://joinus.decathlon.fr/sitemap.xml"
+    ],
+    "jobUrlPattern": "/fr/annonce/",
+    "defaultCountry": "FR",
+    "maxOffers": 5000
+  },
+  {
+    "id": "decathlon-digital",
+    "label": "Decathlon Digital",
+    "company": "Decathlon",
+    "kind": "greenhouse",
+    "url": "https://job-boards.greenhouse.io/decathlontechnology",
+    "maxOffers": 5000
+  },
+  {
+    "id": "capgemini",
+    "label": "Capgemini",
+    "company": "Capgemini",
+    "kind": "html",
+    "url": "https://careers.capgemini.com/search/?q=stage&locale=fr_FR",
+    "listingUrls": [
+      "https://careers.capgemini.com/search/?q=stage&locale=fr_FR",
+      "https://careers.capgemini.com/search/?q=alternance&locale=fr_FR"
+    ],
+    "jobUrlPattern": "^https://careers\\.capgemini\\.com/job/",
+    "pagination": {
+      "param": "startrow",
+      "start": 0,
+      "step": 25
+    },
+    "maxPages": 100,
+    "maxOffers": 5000
+  },
+  {
+    "id": "france-travail-public",
+    "label": "France Travail (pages publiques)",
+    "kind": "html",
+    "url": "https://candidat.francetravail.fr/offres/recherche?motsCles=stage%20informatique&lieux=99100",
+    "listingUrls": [
+      "https://candidat.francetravail.fr/offres/recherche?motsCles=stage%20informatique&lieux=99100",
+      "https://candidat.francetravail.fr/offres/recherche?motsCles=alternance%20informatique&lieux=99100",
+      "https://candidat.francetravail.fr/offres/recherche?motsCles=stage%20data&lieux=99100",
+      "https://candidat.francetravail.fr/offres/recherche?motsCles=alternance%20cybersecurite&lieux=99100"
+    ],
+    "jobUrlPattern": "/offres/recherche/detail/",
+    "defaultCountry": "FR",
+    "pagination": {
+      "param": "range",
+      "start": 0,
+      "step": 20
+    },
+    "maxPages": 10,
+    "maxOffers": 5000
+  },
+  {
+    "id": "wttj",
+    "label": "Welcome to the Jungle",
+    "kind": "html",
+    "url": "https://www.welcometothejungle.com/fr",
+    "sitemapUrls": [
+      "https://www.welcometothejungle.com/sitemaps/index.xml.gz"
+    ],
+    "jobUrlPattern": "/fr/companies/[^/]+/jobs/",
+    "maxSitemaps": 40,
+    "maxOffers": 5000,
+    "notes": "Sitemaps publics, sans clé Algolia ni endpoint privé. Pas de garantie d'exhaustivité."
+  },
+  {
+    "id": "indeed",
+    "label": "Indeed",
+    "kind": "html",
+    "url": "https://fr.indeed.com/jobs?q=stage%20informatique&l=France",
+    "listingUrls": [
+      "https://fr.indeed.com/jobs?q=stage%20informatique&l=France",
+      "https://fr.indeed.com/jobs?q=alternance%20informatique&l=France"
+    ],
+    "jobUrlPattern": "/(?:viewjob|rc/clk)\\?jk=",
+    "enabled": false,
+    "notes": "HTTP 403 observé le 2026-10-05. Collecte désactivée, aucun contournement.",
+    "maxOffers": 5000
+  },
+  {
+    "id": "ubisoft",
+    "label": "Ubisoft",
+    "company": "Ubisoft",
+    "kind": "smartrecruiters",
+    "url": "https://careers.smartrecruiters.com/Ubisoft2",
+    "maxPages": 100,
+    "maxOffers": 5000
+  },
+  {
+    "id": "sopra-steria",
+    "label": "Sopra Steria",
+    "company": "Sopra Steria",
+    "kind": "smartrecruiters",
+    "url": "https://careers.smartrecruiters.com/SopraSteria1",
+    "maxPages": 100,
+    "maxOffers": 5000
+  },
+  {
+    "id": "datadog",
+    "label": "Datadog",
+    "company": "Datadog",
+    "kind": "greenhouse",
+    "url": "https://job-boards.greenhouse.io/datadog",
+    "maxOffers": 5000
+  },
+  {
+    "id": "doctolib",
+    "label": "Doctolib",
+    "company": "Doctolib",
+    "kind": "greenhouse",
+    "url": "https://job-boards.greenhouse.io/doctolib",
+    "maxOffers": 5000
+  },
+  {
+    "id": "contentsquare",
+    "label": "Contentsquare",
+    "company": "Contentsquare",
+    "kind": "lever",
+    "url": "https://jobs.lever.co/contentsquare",
+    "maxOffers": 5000
+  },
+  {
+    "id": "qonto",
+    "label": "Qonto",
+    "company": "Qonto",
+    "kind": "ashby",
+    "url": "https://jobs.ashbyhq.com/qonto",
+    "enabled": true,
+    "listingUrls": [],
+    "sitemapUrls": [],
+    "queries": [
+      "stage",
+      "alternance",
+      "intern",
+      "apprentice"
+    ],
+    "maxPages": 30,
+    "maxOffers": 5000,
+    "maxSitemaps": 24,
+    "notes": "Endpoint public vérifié le 2026-10-05 ; filtrage stages/alternances tech France."
+  },
+  {
+    "id": "ledger",
+    "label": "Ledger",
+    "company": "Ledger",
+    "kind": "ashby",
+    "url": "https://jobs.ashbyhq.com/ledger",
+    "enabled": true,
+    "notes": "Board Ashby public vérifié le 2026-10-05.",
+    "maxOffers": 5000
+  },
+  {
+    "id": "deezer",
+    "label": "Deezer",
+    "company": "Deezer",
+    "kind": "html",
+    "url": "https://deezer.teamtailor.com/jobs",
+    "enabled": true,
+    "notes": "Pages Teamtailor publiques liées par le site officiel Deezer ; JobPosting.",
+    "listingUrls": [
+      "https://deezer.teamtailor.com/jobs"
+    ],
+    "jobUrlPattern": "/jobs/[0-9]+-",
+    "maxOffers": 5000
+  },
+  {
+    "id": "blablacar",
+    "label": "BlaBlaCar",
+    "company": "BlaBlaCar",
+    "kind": "lever",
+    "url": "https://jobs.lever.co/blablacar",
+    "maxOffers": 5000
+  },
+  {
+    "id": "alan",
+    "label": "Alan",
+    "company": "Alan",
+    "kind": "ashby",
+    "url": "https://jobs.ashbyhq.com/alan",
+    "maxOffers": 5000
+  },
+  {
+    "id": "malt",
+    "label": "Malt",
+    "company": "Malt",
+    "kind": "lever",
+    "url": "https://jobs.lever.co/malt",
+    "maxOffers": 5000
+  },
+  {
+    "id": "back-market",
+    "label": "Back Market",
+    "company": "Back Market",
+    "kind": "ashby",
+    "url": "https://jobs.ashbyhq.com/backmarket",
+    "maxOffers": 5000
+  },
+  {
+    "id": "pennylane",
+    "label": "Pennylane",
+    "company": "Pennylane",
+    "kind": "ashby",
+    "url": "https://jobs.ashbyhq.com/pennylane",
+    "maxOffers": 5000
+  },
+  {
+    "id": "gitlab",
+    "label": "GitLab",
+    "company": "GitLab",
+    "kind": "greenhouse",
+    "url": "https://job-boards.greenhouse.io/gitlab",
+    "maxOffers": 5000
+  },
+  {
+    "id": "n26",
+    "label": "N26",
+    "company": "N26",
+    "kind": "greenhouse",
+    "url": "https://job-boards.greenhouse.io/n26",
+    "maxOffers": 5000
+  },
+  {
+    "id": "notion",
+    "label": "Notion",
+    "company": "Notion",
+    "kind": "ashby",
+    "url": "https://jobs.ashbyhq.com/notion",
+    "maxOffers": 5000
+  },
+  {
+    "id": "openai",
+    "label": "OpenAI",
+    "company": "OpenAI",
+    "kind": "ashby",
+    "url": "https://jobs.ashbyhq.com/openai",
+    "maxOffers": 5000
+  },
+  {
+    "id": "algolia-greenhouse",
+    "label": "Algolia",
+    "kind": "greenhouse",
+    "url": "https://job-boards.greenhouse.io/algolia",
+    "company": "Algolia",
+    "enabled": true,
+    "listingUrls": [],
+    "sitemapUrls": [],
+    "queries": [
+      "stage",
+      "alternance",
+      "intern",
+      "apprentice"
+    ],
+    "maxPages": 30,
+    "maxOffers": 5000,
+    "maxSitemaps": 24,
+    "notes": "Endpoint public vérifié le 2026-10-05 ; filtrage stages/alternances tech France."
+  },
+  {
+    "id": "dashlane-greenhouse",
+    "label": "Dashlane",
+    "kind": "greenhouse",
+    "url": "https://job-boards.greenhouse.io/dashlane",
+    "company": "Dashlane",
+    "enabled": true,
+    "listingUrls": [],
+    "sitemapUrls": [],
+    "queries": [
+      "stage",
+      "alternance",
+      "intern",
+      "apprentice"
+    ],
+    "maxPages": 30,
+    "maxOffers": 5000,
+    "maxSitemaps": 24,
+    "notes": "Endpoint public vérifié le 2026-10-05 ; filtrage stages/alternances tech France."
+  },
+  {
+    "id": "dataiku-greenhouse",
+    "label": "Dataiku",
+    "kind": "greenhouse",
+    "url": "https://job-boards.greenhouse.io/dataiku",
+    "company": "Dataiku",
+    "enabled": true,
+    "listingUrls": [],
+    "sitemapUrls": [],
+    "queries": [
+      "stage",
+      "alternance",
+      "intern",
+      "apprentice"
+    ],
+    "maxPages": 30,
+    "maxOffers": 5000,
+    "maxSitemaps": 24,
+    "notes": "Endpoint public vérifié le 2026-10-05 ; filtrage stages/alternances tech France."
+  },
+  {
+    "id": "mirakl-greenhouse",
+    "label": "Mirakl",
+    "kind": "greenhouse",
+    "url": "https://job-boards.greenhouse.io/mirakl",
+    "company": "Mirakl",
+    "enabled": true,
+    "listingUrls": [],
+    "sitemapUrls": [],
+    "queries": [
+      "stage",
+      "alternance",
+      "intern",
+      "apprentice"
+    ],
+    "maxPages": 30,
+    "maxOffers": 5000,
+    "maxSitemaps": 24,
+    "notes": "Endpoint public vérifié le 2026-10-05 ; filtrage stages/alternances tech France."
+  },
+  {
+    "id": "miraklfr-greenhouse",
+    "label": "Mirakl France",
+    "kind": "greenhouse",
+    "url": "https://job-boards.greenhouse.io/miraklfr",
+    "company": "Mirakl France",
+    "enabled": true,
+    "listingUrls": [],
+    "sitemapUrls": [],
+    "queries": [
+      "stage",
+      "alternance",
+      "intern",
+      "apprentice"
+    ],
+    "maxPages": 30,
+    "maxOffers": 5000,
+    "maxSitemaps": 24,
+    "notes": "Endpoint public vérifié le 2026-10-05 ; filtrage stages/alternances tech France."
+  },
+  {
+    "id": "mirakllabs-greenhouse",
+    "label": "Mirakl Labs",
+    "kind": "greenhouse",
+    "url": "https://job-boards.greenhouse.io/mirakllabs",
+    "company": "Mirakl Labs",
+    "enabled": true,
+    "listingUrls": [],
+    "sitemapUrls": [],
+    "queries": [
+      "stage",
+      "alternance",
+      "intern",
+      "apprentice"
+    ],
+    "maxPages": 30,
+    "maxOffers": 5000,
+    "maxSitemaps": 24,
+    "notes": "Endpoint public vérifié le 2026-10-05 ; filtrage stages/alternances tech France."
+  },
+  {
+    "id": "shifttechnology-greenhouse",
+    "label": "Shift Technology",
+    "kind": "greenhouse",
+    "url": "https://job-boards.greenhouse.io/shifttechnology",
+    "company": "Shift Technology",
+    "enabled": true,
+    "listingUrls": [],
+    "sitemapUrls": [],
+    "queries": [
+      "stage",
+      "alternance",
+      "intern",
+      "apprentice"
+    ],
+    "maxPages": 30,
+    "maxOffers": 5000,
+    "maxSitemaps": 24,
+    "notes": "Endpoint public vérifié le 2026-10-05 ; filtrage stages/alternances tech France."
+  },
+  {
+    "id": "elastic-greenhouse",
+    "label": "Elastic",
+    "kind": "greenhouse",
+    "url": "https://job-boards.greenhouse.io/elastic",
+    "company": "Elastic",
+    "enabled": true,
+    "listingUrls": [],
+    "sitemapUrls": [],
+    "queries": [
+      "stage",
+      "alternance",
+      "intern",
+      "apprentice"
+    ],
+    "maxPages": 30,
+    "maxOffers": 5000,
+    "maxSitemaps": 24,
+    "notes": "Endpoint public vérifié le 2026-10-05 ; filtrage stages/alternances tech France."
+  },
+  {
+    "id": "mongodb-greenhouse",
+    "label": "MongoDB",
+    "kind": "greenhouse",
+    "url": "https://job-boards.greenhouse.io/mongodb",
+    "company": "MongoDB",
+    "enabled": true,
+    "listingUrls": [],
+    "sitemapUrls": [],
+    "queries": [
+      "stage",
+      "alternance",
+      "intern",
+      "apprentice"
+    ],
+    "maxPages": 30,
+    "maxOffers": 5000,
+    "maxSitemaps": 24,
+    "notes": "Endpoint public vérifié le 2026-10-05 ; filtrage stages/alternances tech France."
+  },
+  {
+    "id": "cloudflare-greenhouse",
+    "label": "Cloudflare",
+    "kind": "greenhouse",
+    "url": "https://job-boards.greenhouse.io/cloudflare",
+    "company": "Cloudflare",
+    "enabled": true,
+    "listingUrls": [],
+    "sitemapUrls": [],
+    "queries": [
+      "stage",
+      "alternance",
+      "intern",
+      "apprentice"
+    ],
+    "maxPages": 30,
+    "maxOffers": 5000,
+    "maxSitemaps": 24,
+    "notes": "Endpoint public vérifié le 2026-10-05 ; filtrage stages/alternances tech France."
+  },
+  {
+    "id": "adyen-greenhouse",
+    "label": "Adyen",
+    "kind": "greenhouse",
+    "url": "https://job-boards.greenhouse.io/adyen",
+    "company": "Adyen",
+    "enabled": true,
+    "listingUrls": [],
+    "sitemapUrls": [],
+    "queries": [
+      "stage",
+      "alternance",
+      "intern",
+      "apprentice"
+    ],
+    "maxPages": 30,
+    "maxOffers": 5000,
+    "maxSitemaps": 24,
+    "notes": "Endpoint public vérifié le 2026-10-05 ; filtrage stages/alternances tech France."
+  },
+  {
+    "id": "deliveroo-greenhouse",
+    "label": "Deliveroo",
+    "kind": "greenhouse",
+    "url": "https://job-boards.greenhouse.io/deliveroo",
+    "company": "Deliveroo",
+    "enabled": true,
+    "listingUrls": [],
+    "sitemapUrls": [],
+    "queries": [
+      "stage",
+      "alternance",
+      "intern",
+      "apprentice"
+    ],
+    "maxPages": 30,
+    "maxOffers": 5000,
+    "maxSitemaps": 24,
+    "notes": "Endpoint public vérifié le 2026-10-05 ; filtrage stages/alternances tech France."
+  },
+  {
+    "id": "stripe-greenhouse",
+    "label": "Stripe",
+    "kind": "greenhouse",
+    "url": "https://job-boards.greenhouse.io/stripe",
+    "company": "Stripe",
+    "enabled": true,
+    "listingUrls": [],
+    "sitemapUrls": [],
+    "queries": [
+      "stage",
+      "alternance",
+      "intern",
+      "apprentice"
+    ],
+    "maxPages": 30,
+    "maxOffers": 5000,
+    "maxSitemaps": 24,
+    "notes": "Endpoint public vérifié le 2026-10-05 ; filtrage stages/alternances tech France."
+  },
+  {
+    "id": "databricks-greenhouse",
+    "label": "Databricks",
+    "kind": "greenhouse",
+    "url": "https://job-boards.greenhouse.io/databricks",
+    "company": "Databricks",
+    "enabled": true,
+    "listingUrls": [],
+    "sitemapUrls": [],
+    "queries": [
+      "stage",
+      "alternance",
+      "intern",
+      "apprentice"
+    ],
+    "maxPages": 30,
+    "maxOffers": 5000,
+    "maxSitemaps": 24,
+    "notes": "Endpoint public vérifié le 2026-10-05 ; filtrage stages/alternances tech France."
+  },
+  {
+    "id": "aircall-lever",
+    "label": "Aircall",
+    "kind": "lever",
+    "url": "https://jobs.lever.co/aircall",
+    "company": "Aircall",
+    "enabled": true,
+    "listingUrls": [],
+    "sitemapUrls": [],
+    "queries": [
+      "stage",
+      "alternance",
+      "intern",
+      "apprentice"
+    ],
+    "maxPages": 30,
+    "maxOffers": 5000,
+    "maxSitemaps": 24,
+    "notes": "Endpoint public vérifié le 2026-10-05 ; filtrage stages/alternances tech France."
+  },
+  {
+    "id": "swile-lever",
+    "label": "Swile",
+    "kind": "lever",
+    "url": "https://jobs.lever.co/swile",
+    "company": "Swile",
+    "enabled": true,
+    "listingUrls": [],
+    "sitemapUrls": [],
+    "queries": [
+      "stage",
+      "alternance",
+      "intern",
+      "apprentice"
+    ],
+    "maxPages": 30,
+    "maxOffers": 5000,
+    "maxSitemaps": 24,
+    "notes": "Endpoint public vérifié le 2026-10-05 ; filtrage stages/alternances tech France."
+  },
+  {
+    "id": "scaleway-lever",
+    "label": "Scaleway",
+    "kind": "lever",
+    "url": "https://jobs.lever.co/scaleway",
+    "company": "Scaleway",
+    "enabled": true,
+    "listingUrls": [],
+    "sitemapUrls": [],
+    "queries": [
+      "stage",
+      "alternance",
+      "intern",
+      "apprentice"
+    ],
+    "maxPages": 30,
+    "maxOffers": 5000,
+    "maxSitemaps": 24,
+    "notes": "Endpoint public vérifié le 2026-10-05 ; filtrage stages/alternances tech France."
+  },
+  {
+    "id": "gojob-lever",
+    "label": "Gojob",
+    "kind": "lever",
+    "url": "https://jobs.lever.co/gojob",
+    "company": "Gojob",
+    "enabled": true,
+    "listingUrls": [],
+    "sitemapUrls": [],
+    "queries": [
+      "stage",
+      "alternance",
+      "intern",
+      "apprentice"
+    ],
+    "maxPages": 30,
+    "maxOffers": 5000,
+    "maxSitemaps": 24,
+    "notes": "Endpoint public vérifié le 2026-10-05 ; filtrage stages/alternances tech France."
+  },
+  {
+    "id": "heetch-lever",
+    "label": "Heetch",
+    "kind": "lever",
+    "url": "https://jobs.lever.co/heetch",
+    "company": "Heetch",
+    "enabled": true,
+    "listingUrls": [],
+    "sitemapUrls": [],
+    "queries": [
+      "stage",
+      "alternance",
+      "intern",
+      "apprentice"
+    ],
+    "maxPages": 30,
+    "maxOffers": 5000,
+    "maxSitemaps": 24,
+    "notes": "Endpoint public vérifié le 2026-10-05 ; filtrage stages/alternances tech France."
+  },
+  {
+    "id": "vestiairecollective-lever",
+    "label": "Vestiaire Collective",
+    "kind": "lever",
+    "url": "https://jobs.lever.co/vestiairecollective",
+    "company": "Vestiaire Collective",
+    "enabled": true,
+    "listingUrls": [],
+    "sitemapUrls": [],
+    "queries": [
+      "stage",
+      "alternance",
+      "intern",
+      "apprentice"
+    ],
+    "maxPages": 30,
+    "maxOffers": 5000,
+    "maxSitemaps": 24,
+    "notes": "Endpoint public vérifié le 2026-10-05 ; filtrage stages/alternances tech France."
+  },
+  {
+    "id": "younited-lever",
+    "label": "Younited",
+    "kind": "lever",
+    "url": "https://jobs.lever.co/younited",
+    "company": "Younited",
+    "enabled": true,
+    "listingUrls": [],
+    "sitemapUrls": [],
+    "queries": [
+      "stage",
+      "alternance",
+      "intern",
+      "apprentice"
+    ],
+    "maxPages": 30,
+    "maxOffers": 5000,
+    "maxSitemaps": 24,
+    "notes": "Endpoint public vérifié le 2026-10-05 ; filtrage stages/alternances tech France."
+  },
+  {
+    "id": "agicap-lever",
+    "label": "Agicap",
+    "kind": "lever",
+    "url": "https://jobs.lever.co/agicap",
+    "company": "Agicap",
+    "enabled": true,
+    "listingUrls": [],
+    "sitemapUrls": [],
+    "queries": [
+      "stage",
+      "alternance",
+      "intern",
+      "apprentice"
+    ],
+    "maxPages": 30,
+    "maxOffers": 5000,
+    "maxSitemaps": 24,
+    "notes": "Endpoint public vérifié le 2026-10-05 ; filtrage stages/alternances tech France."
+  },
+  {
+    "id": "doctrine-lever",
+    "label": "Doctrine",
+    "kind": "lever",
+    "url": "https://jobs.lever.co/doctrine",
+    "company": "Doctrine",
+    "enabled": true,
+    "listingUrls": [],
+    "sitemapUrls": [],
+    "queries": [
+      "stage",
+      "alternance",
+      "intern",
+      "apprentice"
+    ],
+    "maxPages": 30,
+    "maxOffers": 5000,
+    "maxSitemaps": 24,
+    "notes": "Endpoint public vérifié le 2026-10-05 ; filtrage stages/alternances tech France."
+  },
+  {
+    "id": "photoroom-ashby",
+    "label": "Photoroom",
+    "kind": "ashby",
+    "url": "https://jobs.ashbyhq.com/photoroom",
+    "company": "Photoroom",
+    "enabled": true,
+    "listingUrls": [],
+    "sitemapUrls": [],
+    "queries": [
+      "stage",
+      "alternance",
+      "intern",
+      "apprentice"
+    ],
+    "maxPages": 30,
+    "maxOffers": 5000,
+    "maxSitemaps": 24,
+    "notes": "Endpoint public vérifié le 2026-10-05 ; filtrage stages/alternances tech France."
+  },
+  {
+    "id": "dust-ashby",
+    "label": "Dust",
+    "kind": "ashby",
+    "url": "https://jobs.ashbyhq.com/dust",
+    "company": "Dust",
+    "enabled": true,
+    "listingUrls": [],
+    "sitemapUrls": [],
+    "queries": [
+      "stage",
+      "alternance",
+      "intern",
+      "apprentice"
+    ],
+    "maxPages": 30,
+    "maxOffers": 5000,
+    "maxSitemaps": 24,
+    "notes": "Endpoint public vérifié le 2026-10-05 ; filtrage stages/alternances tech France."
+  },
+  {
+    "id": "lifen-ashby",
+    "label": "Lifen",
+    "kind": "ashby",
+    "url": "https://jobs.ashbyhq.com/lifen",
+    "company": "Lifen",
+    "enabled": true,
+    "listingUrls": [],
+    "sitemapUrls": [],
+    "queries": [
+      "stage",
+      "alternance",
+      "intern",
+      "apprentice"
+    ],
+    "maxPages": 30,
+    "maxOffers": 5000,
+    "maxSitemaps": 24,
+    "notes": "Endpoint public vérifié le 2026-10-05 ; filtrage stages/alternances tech France."
+  },
+  {
+    "id": "frontcareers-ashby",
+    "label": "Front",
+    "kind": "ashby",
+    "url": "https://jobs.ashbyhq.com/frontcareers",
+    "company": "Front",
+    "enabled": true,
+    "listingUrls": [],
+    "sitemapUrls": [],
+    "queries": [
+      "stage",
+      "alternance",
+      "intern",
+      "apprentice"
+    ],
+    "maxPages": 30,
+    "maxOffers": 5000,
+    "maxSitemaps": 24,
+    "notes": "Endpoint public vérifié le 2026-10-05 ; filtrage stages/alternances tech France."
+  },
+  {
+    "id": "hcompany-ashby",
+    "label": "H Company",
+    "kind": "ashby",
+    "url": "https://jobs.ashbyhq.com/hcompany",
+    "company": "H Company",
+    "enabled": true,
+    "listingUrls": [],
+    "sitemapUrls": [],
+    "queries": [
+      "stage",
+      "alternance",
+      "intern",
+      "apprentice"
+    ],
+    "maxPages": 30,
+    "maxOffers": 5000,
+    "maxSitemaps": 24,
+    "notes": "Endpoint public vérifié le 2026-10-05 ; filtrage stages/alternances tech France."
+  },
+  {
+    "id": "nabla-ashby",
+    "label": "Nabla",
+    "kind": "ashby",
+    "url": "https://jobs.ashbyhq.com/nabla",
+    "company": "Nabla",
+    "enabled": true,
+    "listingUrls": [],
+    "sitemapUrls": [],
+    "queries": [
+      "stage",
+      "alternance",
+      "intern",
+      "apprentice"
+    ],
+    "maxPages": 30,
+    "maxOffers": 5000,
+    "maxSitemaps": 24,
+    "notes": "Endpoint public vérifié le 2026-10-05 ; filtrage stages/alternances tech France."
+  },
+  {
+    "id": "gladia-ashby",
+    "label": "Gladia",
+    "kind": "ashby",
+    "url": "https://jobs.ashbyhq.com/gladia",
+    "company": "Gladia",
+    "enabled": true,
+    "listingUrls": [],
+    "sitemapUrls": [],
+    "queries": [
+      "stage",
+      "alternance",
+      "intern",
+      "apprentice"
+    ],
+    "maxPages": 30,
+    "maxOffers": 5000,
+    "maxSitemaps": 24,
+    "notes": "Endpoint public vérifié le 2026-10-05 ; filtrage stages/alternances tech France."
+  },
+  {
+    "id": "swan-ashby",
+    "label": "Swan",
+    "kind": "ashby",
+    "url": "https://jobs.ashbyhq.com/swan",
+    "company": "Swan",
+    "enabled": true,
+    "listingUrls": [],
+    "sitemapUrls": [],
+    "queries": [
+      "stage",
+      "alternance",
+      "intern",
+      "apprentice"
+    ],
+    "maxPages": 30,
+    "maxOffers": 5000,
+    "maxSitemaps": 24,
+    "notes": "Endpoint public vérifié le 2026-10-05 ; filtrage stages/alternances tech France."
+  },
+  {
+    "id": "comand-ai-ashby",
+    "label": "Comand AI",
+    "kind": "ashby",
+    "url": "https://jobs.ashbyhq.com/comand-ai",
+    "company": "Comand AI",
+    "enabled": true,
+    "listingUrls": [],
+    "sitemapUrls": [],
+    "queries": [
+      "stage",
+      "alternance",
+      "intern",
+      "apprentice"
+    ],
+    "maxPages": 30,
+    "maxOffers": 5000,
+    "maxSitemaps": 24,
+    "notes": "Endpoint public vérifié le 2026-10-05 ; filtrage stages/alternances tech France."
+  },
+  {
+    "id": "ami-ashby",
+    "label": "AMI",
+    "kind": "ashby",
+    "url": "https://jobs.ashbyhq.com/ami",
+    "company": "AMI",
+    "enabled": true,
+    "listingUrls": [],
+    "sitemapUrls": [],
+    "queries": [
+      "stage",
+      "alternance",
+      "intern",
+      "apprentice"
+    ],
+    "maxPages": 30,
+    "maxOffers": 5000,
+    "maxSitemaps": 24,
+    "notes": "Endpoint public vérifié le 2026-10-05 ; filtrage stages/alternances tech France."
+  },
+  {
+    "id": "devoteam-smartrecruiters",
+    "label": "Devoteam",
+    "kind": "smartrecruiters",
+    "url": "https://careers.smartrecruiters.com/Devoteam",
+    "company": "Devoteam",
+    "enabled": true,
+    "listingUrls": [],
+    "sitemapUrls": [],
+    "queries": [
+      "stage",
+      "alternance",
+      "intern",
+      "apprentice"
+    ],
+    "maxPages": 100,
+    "maxOffers": 5000,
+    "maxSitemaps": 24,
+    "notes": "Endpoint public vérifié le 2026-10-05 ; filtrage stages/alternances tech France."
+  },
+  {
+    "id": "talan-smartrecruiters",
+    "label": "Talan",
+    "kind": "smartrecruiters",
+    "url": "https://careers.smartrecruiters.com/Talan",
+    "company": "Talan",
+    "enabled": true,
+    "listingUrls": [],
+    "sitemapUrls": [],
+    "queries": [
+      "stage",
+      "alternance",
+      "intern",
+      "apprentice"
+    ],
+    "maxPages": 100,
+    "maxOffers": 5000,
+    "maxSitemaps": 24,
+    "notes": "Endpoint public vérifié le 2026-10-05 ; filtrage stages/alternances tech France."
+  },
+  {
+    "id": "alten-smartrecruiters",
+    "label": "ALTEN",
+    "kind": "smartrecruiters",
+    "url": "https://careers.smartrecruiters.com/ALTEN",
+    "company": "ALTEN",
+    "enabled": true,
+    "listingUrls": [],
+    "sitemapUrls": [],
+    "queries": [
+      "stage",
+      "alternance",
+      "intern",
+      "apprentice"
+    ],
+    "maxPages": 100,
+    "maxOffers": 5000,
+    "maxSitemaps": 24,
+    "notes": "Endpoint public vérifié le 2026-10-05 ; filtrage stages/alternances tech France."
+  },
+  {
+    "id": "accorhotel-smartrecruiters",
+    "label": "Accor",
+    "kind": "smartrecruiters",
+    "url": "https://careers.smartrecruiters.com/AccorHotel",
+    "company": "Accor",
+    "enabled": true,
+    "listingUrls": [],
+    "sitemapUrls": [],
+    "queries": [
+      "stage",
+      "alternance",
+      "intern",
+      "apprentice"
+    ],
+    "maxPages": 100,
+    "maxOffers": 5000,
+    "maxSitemaps": 24,
+    "notes": "Endpoint public vérifié le 2026-10-05 ; filtrage stages/alternances tech France."
+  },
+  {
+    "id": "boschgroup-smartrecruiters",
+    "label": "Bosch",
+    "kind": "smartrecruiters",
+    "url": "https://careers.smartrecruiters.com/BoschGroup",
+    "company": "Bosch",
+    "enabled": true,
+    "listingUrls": [],
+    "sitemapUrls": [],
+    "queries": [
+      "stage",
+      "alternance",
+      "intern",
+      "apprentice"
+    ],
+    "maxPages": 100,
+    "maxOffers": 5000,
+    "maxSitemaps": 24,
+    "notes": "Endpoint public vérifié le 2026-10-05 ; filtrage stages/alternances tech France."
+  },
+  {
+    "id": "eurofins-smartrecruiters",
+    "label": "Eurofins",
+    "kind": "smartrecruiters",
+    "url": "https://careers.smartrecruiters.com/Eurofins",
+    "company": "Eurofins",
+    "enabled": true,
+    "listingUrls": [],
+    "sitemapUrls": [],
+    "queries": [
+      "stage",
+      "alternance",
+      "intern",
+      "apprentice"
+    ],
+    "maxPages": 100,
+    "maxOffers": 5000,
+    "maxSitemaps": 24,
+    "notes": "Endpoint public vérifié le 2026-10-05 ; filtrage stages/alternances tech France."
+  },
+  {
+    "id": "assystem-smartrecruiters",
+    "label": "Assystem",
+    "kind": "smartrecruiters",
+    "url": "https://careers.smartrecruiters.com/Assystem",
+    "company": "Assystem",
+    "enabled": true,
+    "listingUrls": [],
+    "sitemapUrls": [],
+    "queries": [
+      "stage",
+      "alternance",
+      "intern",
+      "apprentice"
+    ],
+    "maxPages": 100,
+    "maxOffers": 5000,
+    "maxSitemaps": 24,
+    "notes": "Endpoint public vérifié le 2026-10-05 ; filtrage stages/alternances tech France."
+  },
+  {
+    "id": "artelia-smartrecruiters",
+    "label": "Artelia",
+    "kind": "smartrecruiters",
+    "url": "https://careers.smartrecruiters.com/Artelia",
+    "company": "Artelia",
+    "enabled": true,
+    "listingUrls": [],
+    "sitemapUrls": [],
+    "queries": [
+      "stage",
+      "alternance",
+      "intern",
+      "apprentice"
+    ],
+    "maxPages": 100,
+    "maxOffers": 5000,
+    "maxSitemaps": 24,
+    "notes": "Endpoint public vérifié le 2026-10-05 ; filtrage stages/alternances tech France."
+  },
+  {
+    "id": "egisgroup-smartrecruiters",
+    "label": "Egis",
+    "kind": "smartrecruiters",
+    "url": "https://careers.smartrecruiters.com/EgisGroup",
+    "company": "Egis",
+    "enabled": true,
+    "listingUrls": [],
+    "sitemapUrls": [],
+    "queries": [
+      "stage",
+      "alternance",
+      "intern",
+      "apprentice"
+    ],
+    "maxPages": 100,
+    "maxOffers": 5000,
+    "maxSitemaps": 24,
+    "notes": "Endpoint public vérifié le 2026-10-05 ; filtrage stages/alternances tech France."
+  },
+  {
+    "id": "segulatechnologies-smartrecruiters",
+    "label": "Segula Technologies",
+    "kind": "smartrecruiters",
+    "url": "https://careers.smartrecruiters.com/SegulaTechnologies",
+    "company": "Segula Technologies",
+    "enabled": true,
+    "listingUrls": [],
+    "sitemapUrls": [],
+    "queries": [
+      "stage",
+      "alternance",
+      "intern",
+      "apprentice"
+    ],
+    "maxPages": 100,
+    "maxOffers": 5000,
+    "maxSitemaps": 24,
+    "notes": "Endpoint public vérifié le 2026-10-05 ; filtrage stages/alternances tech France."
+  },
+  {
+    "id": "believe-smartrecruiters",
+    "label": "Believe",
+    "kind": "smartrecruiters",
+    "url": "https://careers.smartrecruiters.com/Believe",
+    "company": "Believe",
+    "enabled": true,
+    "listingUrls": [],
+    "sitemapUrls": [],
+    "queries": [
+      "stage",
+      "alternance",
+      "intern",
+      "apprentice"
+    ],
+    "maxPages": 100,
+    "maxOffers": 5000,
+    "maxSitemaps": 24,
+    "notes": "Endpoint public vérifié le 2026-10-05 ; filtrage stages/alternances tech France."
+  },
+  {
+    "id": "saintgobain-smartrecruiters",
+    "label": "Saint-Gobain",
+    "kind": "smartrecruiters",
+    "url": "https://careers.smartrecruiters.com/SaintGobain",
+    "company": "Saint-Gobain",
+    "enabled": true,
+    "listingUrls": [],
+    "sitemapUrls": [],
+    "queries": [
+      "stage",
+      "alternance",
+      "intern",
+      "apprentice"
+    ],
+    "maxPages": 100,
+    "maxOffers": 5000,
+    "maxSitemaps": 24,
+    "notes": "Endpoint public vérifié le 2026-10-05 ; filtrage stages/alternances tech France."
+  },
+  {
+    "id": "pigment-lever",
+    "label": "Pigment",
+    "kind": "lever",
+    "url": "https://jobs.lever.co/pigment",
+    "company": "Pigment",
+    "enabled": true,
+    "listingUrls": [],
+    "sitemapUrls": [],
+    "queries": [
+      "stage",
+      "alternance",
+      "intern",
+      "apprentice"
+    ],
+    "maxPages": 30,
+    "maxOffers": 5000,
+    "maxSitemaps": 24,
+    "notes": "Endpoint public vérifié le 2026-10-05 ; filtrage stages/alternances tech France."
+  },
+  {
+    "id": "360learning-lever",
+    "label": "360Learning",
+    "kind": "lever",
+    "url": "https://jobs.lever.co/360learning",
+    "company": "360Learning",
+    "enabled": true,
+    "listingUrls": [],
+    "sitemapUrls": [],
+    "queries": [
+      "stage",
+      "alternance",
+      "intern",
+      "apprentice"
+    ],
+    "maxPages": 30,
+    "maxOffers": 5000,
+    "maxSitemaps": 24,
+    "notes": "Endpoint public vérifié le 2026-10-05 ; filtrage stages/alternances tech France."
+  },
+  {
+    "id": "jobteaser-smartrecruiters",
+    "label": "JobTeaser",
+    "kind": "smartrecruiters",
+    "url": "https://careers.smartrecruiters.com/JobTeaser",
+    "company": "JobTeaser",
+    "enabled": true,
+    "listingUrls": [],
+    "sitemapUrls": [],
+    "queries": [
+      "stage",
+      "alternance",
+      "intern",
+      "apprentice"
+    ],
+    "maxPages": 100,
+    "maxOffers": 5000,
+    "maxSitemaps": 24,
+    "notes": "Endpoint public vérifié le 2026-10-05 ; filtrage stages/alternances tech France."
+  },
+  {
+    "id": "sia-smartrecruiters",
+    "label": "Sia",
+    "kind": "smartrecruiters",
+    "url": "https://careers.smartrecruiters.com/Sia",
+    "company": "Sia",
+    "enabled": true,
+    "listingUrls": [],
+    "sitemapUrls": [],
+    "queries": [
+      "stage",
+      "alternance",
+      "intern",
+      "apprentice"
+    ],
+    "maxPages": 100,
+    "maxOffers": 5000,
+    "maxSitemaps": 24,
+    "notes": "Endpoint public vérifié le 2026-10-05 ; filtrage stages/alternances tech France."
+  },
+  {
+    "id": "wavestone1-smartrecruiters",
+    "label": "Wavestone",
+    "kind": "smartrecruiters",
+    "url": "https://careers.smartrecruiters.com/Wavestone1",
+    "company": "Wavestone",
+    "enabled": true,
+    "listingUrls": [],
+    "sitemapUrls": [],
+    "queries": [
+      "stage",
+      "alternance",
+      "intern",
+      "apprentice"
+    ],
+    "maxPages": 100,
+    "maxOffers": 5000,
+    "maxSitemaps": 24,
+    "notes": "Endpoint public vérifié le 2026-10-05 ; filtrage stages/alternances tech France."
+  },
+  {
+    "id": "veoliaenvironnementsa-smartrecruiters",
+    "label": "Veolia",
+    "kind": "smartrecruiters",
+    "url": "https://careers.smartrecruiters.com/VeoliaEnvironnementSA",
+    "company": "Veolia",
+    "enabled": true,
+    "listingUrls": [],
+    "sitemapUrls": [],
+    "queries": [
+      "stage",
+      "alternance",
+      "intern",
+      "apprentice"
+    ],
+    "maxPages": 100,
+    "maxOffers": 5000,
+    "maxSitemaps": 24,
+    "notes": "Endpoint public vérifié le 2026-10-05 ; filtrage stages/alternances tech France."
+  },
+  {
+    "id": "sqli1-smartrecruiters",
+    "label": "SQLI",
+    "kind": "smartrecruiters",
+    "url": "https://careers.smartrecruiters.com/SQLI1",
+    "company": "SQLI",
+    "enabled": true,
+    "listingUrls": [],
+    "sitemapUrls": [],
+    "queries": [
+      "stage",
+      "alternance",
+      "intern",
+      "apprentice"
+    ],
+    "maxPages": 100,
+    "maxOffers": 5000,
+    "maxSitemaps": 24,
+    "notes": "Endpoint public vérifié le 2026-10-05 ; filtrage stages/alternances tech France."
+  },
+  {
+    "id": "deepl-ashby",
+    "label": "Deepl",
+    "kind": "ashby",
+    "url": "https://jobs.ashbyhq.com/deepl",
+    "company": "Deepl",
+    "enabled": true,
+    "listingUrls": [],
+    "sitemapUrls": [],
+    "queries": [
+      "stage",
+      "alternance",
+      "intern",
+      "apprentice"
+    ],
+    "maxPages": 30,
+    "maxOffers": 5000,
+    "maxSitemaps": 24,
+    "notes": "Endpoint public vérifié le 2026-10-05 ; filtrage stages/alternances tech France."
+  },
+  {
+    "id": "renault-group",
+    "label": "Renault Group",
+    "company": "Renault Group",
+    "kind": "workday",
+    "url": "https://alliancewd.wd3.myworkdayjobs.com/fr-FR/renault-group-careers",
+    "enabled": true,
+    "queries": [
+      "stage",
+      "stagiaire",
+      "alternance",
+      "intern",
+      "apprenti"
+    ],
+    "maxPages": 100,
+    "maxOffers": 5000
+  },
+  {
+    "id": "sanofi",
+    "label": "Sanofi",
+    "company": "Sanofi",
+    "kind": "workday",
+    "url": "https://sanofi.wd3.myworkdayjobs.com/fr-FR/SanofiCareers",
+    "enabled": true,
+    "queries": [
+      "stage",
+      "stagiaire",
+      "alternance",
+      "intern",
+      "apprenti"
+    ],
+    "maxPages": 100,
+    "maxOffers": 5000
+  },
+  {
+    "id": "valeo",
+    "label": "Valeo",
+    "company": "Valeo",
+    "kind": "workday",
+    "url": "https://valeo.wd3.myworkdayjobs.com/fr-FR/valeo_jobs",
+    "enabled": true,
+    "queries": [
+      "stage",
+      "stagiaire",
+      "alternance",
+      "intern",
+      "apprenti"
+    ],
+    "maxPages": 100,
+    "maxOffers": 5000
+  },
+  {
+    "id": "accenture",
+    "label": "Accenture",
+    "company": "Accenture",
+    "kind": "workday",
+    "url": "https://accenture.wd103.myworkdayjobs.com/fr-FR/AccentureCareers",
+    "enabled": true,
+    "queries": [
+      "stage",
+      "stagiaire",
+      "alternance",
+      "intern",
+      "apprenti"
+    ],
+    "maxPages": 100,
+    "maxOffers": 5000
+  },
+  {
+    "id": "michelin",
+    "label": "Michelin",
+    "company": "Michelin",
+    "kind": "workday",
+    "url": "https://michelinhr.wd3.myworkdayjobs.com/fr-FR/Michelin",
+    "enabled": true,
+    "queries": [
+      "stage",
+      "stagiaire",
+      "alternance",
+      "intern",
+      "apprenti"
+    ],
+    "maxPages": 100,
+    "maxOffers": 5000
+  },
+  {
+    "id": "daher",
+    "label": "Daher",
+    "company": "Daher",
+    "kind": "workday",
+    "url": "https://daher.wd3.myworkdayjobs.com/fr-FR/Daher",
+    "enabled": true,
+    "queries": [
+      "stage",
+      "stagiaire",
+      "alternance",
+      "intern",
+      "apprenti"
+    ],
+    "maxPages": 100,
+    "maxOffers": 5000
+  }
+]

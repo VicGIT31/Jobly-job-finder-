@@ -33,7 +33,7 @@ export async function SiteFooter() {
           </nav>
         </div>
         <div className="rule mt-6 pt-4 text-xs text-ink/50">
-          © {new Date().getFullYear()} Jobly — Les offres proviennent de sites partenaires ; les
+          © {new Date().getFullYear()} Jobly — Les offres proviennent de sites de recrutement ; les
           candidatures se font toujours à la source.
         </div>
       </div>

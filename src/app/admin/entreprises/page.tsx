@@ -11,10 +11,11 @@ const PAGE_SIZE = 25;
 
 /** Gestion des entreprises : mise en avant sur l'accueil et suppression. */
 export default async function AdminCompaniesPage({
-  searchParams,
+  searchParams: pendingSearchParams,
 }: {
-  searchParams: { page?: string; q?: string; filtre?: string };
+  searchParams: Promise<{ page?: string; q?: string; filtre?: string }>;
 }) {
+  const searchParams = await pendingSearchParams;
   const page = Math.max(1, Number(searchParams.page) || 1);
   const q = searchParams.q?.trim() ?? "";
   const filtre = searchParams.filtre === "avant" ? "avant" : undefined;

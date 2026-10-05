@@ -71,7 +71,7 @@ export default async function RootLayout({
   // En maintenance, seuls les administrateurs (et les routes d'accès) passent.
   let maintenance = false;
   if (general.maintenanceMode) {
-    const pathname = headers().get("x-pathname") ?? "";
+    const pathname = (await headers()).get("x-pathname") ?? "";
     const allowlisted = MAINTENANCE_ALLOWLIST.some((prefix) => pathname.startsWith(prefix));
     if (!allowlisted) {
       const session = await auth();

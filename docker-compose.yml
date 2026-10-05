@@ -4,7 +4,7 @@ services:
       context: .
       dockerfile: Dockerfile
     ports:
-      - "3000:3000"
+      - "127.0.0.1:3000:3000"
     environment:
       DATABASE_URL: postgresql://nextstep:nextstep@postgres:5432/nextstep?schema=public
       REDIS_URL: redis://redis:6379
@@ -13,14 +13,13 @@ services:
       INGEST_API_KEY: change-me-ingest-key
       OFFER_FRESHNESS_DAYS: "7"
       OFFER_MAX_AGE_DAYS: "60"
-      INGESTION_INTERVAL_MINUTES: "30"
-      # Sources d'offres réelles. APEC, HelloWork, LinkedIn, Free-Work et The Muse
-      # marchent sans clé ; France Travail et JSearch s'activent via .env.
-      FRANCE_TRAVAIL_CLIENT_ID: ${FRANCE_TRAVAIL_CLIENT_ID:-}
-      FRANCE_TRAVAIL_CLIENT_SECRET: ${FRANCE_TRAVAIL_CLIENT_SECRET:-}
-      THEMUSE_API_KEY: ${THEMUSE_API_KEY:-}
-      JSEARCH_API_KEY: ${JSEARCH_API_KEY:-}
-      AUTH_SECRET: docker-dev-secret-change-in-prod
+      INGESTION_INTERVAL_MINUTES: ${INGESTION_INTERVAL_MINUTES:-120}
+      # Collecte publique directe : aucune clé et aucun fournisseur payant.
+      INGEST_SOURCES: ${INGEST_SOURCES:-}
+      JOB_SOURCES_FILE: ${JOB_SOURCES_FILE:-}
+      INGEST_CACHE_DIR: /app/.cache/jobly
+      JOB_ALERTS_DIR: /app/data/job-alerts
+      AUTH_SECRET: ${AUTH_SECRET:-docker-dev-secret-change-in-prod}
       AUTH_URL: http://localhost:3000
       NEXT_PUBLIC_APP_URL: http://localhost:3000
       S3_ENDPOINT: http://minio:9000
@@ -45,6 +44,9 @@ services:
         condition: service_healthy
       minio:
         condition: service_healthy
+    volumes:
+      - ingestcache:/app/.cache/jobly
+      - ./data/job-alerts:/app/data/job-alerts:ro
     command: sh -c "npx prisma migrate deploy && npm run db:seed && npm run admin:ensure && npm run search:sync && npm run start:all"
 
   postgres:
@@ -54,7 +56,7 @@ services:
       POSTGRES_PASSWORD: nextstep
       POSTGRES_DB: nextstep
     ports:
-      - "5432:5432"
+      - "127.0.0.1:5432:5432"
     volumes:
       - pgdata:/var/lib/postgresql/data
     healthcheck:
@@ -66,7 +68,7 @@ services:
   redis:
     image: redis:7-alpine
     ports:
-      - "6379:6379"
+      - "127.0.0.1:6379:6379"
     volumes:
       - redisdata:/data
     healthcheck:
@@ -81,7 +83,7 @@ services:
       MEILI_MASTER_KEY: nextstep_meili_master_key
       MEILI_ENV: development
     ports:
-      - "7700:7700"
+      - "127.0.0.1:7700:7700"
     volumes:
       - meilidata:/meili_data
     healthcheck:
@@ -97,8 +99,8 @@ services:
       MINIO_ROOT_USER: nextstep
       MINIO_ROOT_PASSWORD: nextstep-secret
     ports:
-      - "9000:9000"
-      - "9001:9001"
+      - "127.0.0.1:9000:9000"
+      - "127.0.0.1:9001:9001"
     volumes:
       - miniodata:/data
     healthcheck:
@@ -122,3 +124,4 @@ volumes:
   redisdata:
   meilidata:
   miniodata:
+  ingestcache:

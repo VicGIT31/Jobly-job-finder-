@@ -2,7 +2,7 @@ import { ImageResponse } from "next/og";
 
 /**
  * Image Open Graph par défaut de Jobly (partages LinkedIn, X, Slack…).
- * Reprend le monogramme « J »-flèche et le dégradé indigo de la marque.
+ * Reprend le nouveau monogramme J.
  */
 export const runtime = "edge";
 export const alt = "Jobly — stages et alternances tech en France";
@@ -19,32 +19,23 @@ export default function OpenGraphImage() {
         flexDirection: "column",
         justifyContent: "center",
         padding: "80px",
-        background: "linear-gradient(135deg, #FFFFFF 0%, #EEF2FF 100%)",
+        background: "#FAFAFA",
       }}
     >
       <div style={{ display: "flex", alignItems: "center", gap: 28 }}>
-        <svg width="112" height="112" viewBox="0 0 32 32">
-          <defs>
-            <linearGradient id="badge" x1="0" y1="0" x2="1" y2="1">
-              <stop offset="0%" stopColor="#6366F1" />
-              <stop offset="55%" stopColor="#4F46E5" />
-              <stop offset="100%" stopColor="#7C3AED" />
-            </linearGradient>
-          </defs>
-          <rect width="32" height="32" rx="9" fill="url(#badge)" />
-          <g
+        <svg width="112" height="112" viewBox="0 0 40 40">
+          <rect width="40" height="40" rx="12" fill="#4F46E5" />
+          <path
+            d="M24 12v13a7 7 0 0 1-14 0M18 12h12"
             fill="none"
-            stroke="#FFFFFF"
-            strokeWidth="2.6"
+            stroke="white"
+            strokeWidth="4"
             strokeLinecap="round"
-            strokeLinejoin="round"
-          >
-            <path d="M18 10 V18.4 A4.6 4.6 0 1 1 8.8 18.4" />
-            <path d="M13.4 13 L18 8.4 L22.6 13" />
-          </g>
+          />
+          <circle cx="31" cy="27" r="3" fill="#C7D2FE" />
         </svg>
         <div style={{ display: "flex", fontSize: 96, fontWeight: 800, color: "#171717" }}>
-          Jobly<span style={{ color: "#4F46E5" }}>.</span>
+          Jobly
         </div>
       </div>
 
@@ -60,7 +51,7 @@ export default function OpenGraphImage() {
           maxWidth: 900,
         }}
       >
-        Les meilleures offres du web, agrégées — et toujours un lien direct vers la source.
+        Trouvez votre première expérience tech. Postulez sur l’annonce d’origine.
       </div>
     </div>,
     size,

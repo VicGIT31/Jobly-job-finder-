@@ -19,10 +19,11 @@ const PAGE_SIZE = 25;
 
 /** Gestion des comptes : rôle, suspension, vérification, mot de passe, suppression. */
 export default async function AdminUsersPage({
-  searchParams,
+  searchParams: pendingSearchParams,
 }: {
-  searchParams: { page?: string; q?: string; role?: string; etat?: string };
+  searchParams: Promise<{ page?: string; q?: string; role?: string; etat?: string }>;
 }) {
+  const searchParams = await pendingSearchParams;
   const admin = await currentAdmin();
   const page = Math.max(1, Number(searchParams.page) || 1);
   const q = searchParams.q?.trim() ?? "";

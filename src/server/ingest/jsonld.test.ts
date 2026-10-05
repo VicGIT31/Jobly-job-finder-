@@ -97,8 +97,16 @@ describe("employmentContractType", () => {
 });
 
 describe("jsonLdText", () => {
+  it("retire les balises échappées Greenhouse et garde les vrais caractères de texte", () => {
+    expect(
+      jsonLdText(
+        "&lt;p&gt;Missions R&amp;D&lt;/p&gt;&lt;ul&gt;&lt;li&gt;Python&lt;/li&gt;&lt;/ul&gt;",
+      ),
+    ).toBe("Missions R&D\n\n- Python");
+    expect(jsonLdText("<p>Exemple : &lt;T&gt; et a &lt; b.</p>")).toBe("Exemple : <T> et a < b.");
+  });
   it("convertit le HTML de description en texte lisible", () => {
-    expect(jsonLdText("<p>Missions</p><ul><li>Coder</li></ul>")).toBe("Missions\n- Coder");
+    expect(jsonLdText("<p>Missions</p><ul><li>Coder</li></ul>")).toBe("Missions\n\n- Coder");
     expect(jsonLdText("R&amp;D chez L&#39;Or&eacute;al")).toContain("R&D");
   });
 });

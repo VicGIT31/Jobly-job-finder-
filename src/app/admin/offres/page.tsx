@@ -10,10 +10,11 @@ export const metadata: Metadata = { title: "Admin — Modération des offres" };
 const PAGE_SIZE = 25;
 
 export default async function AdminOffresPage({
-  searchParams,
+  searchParams: pendingSearchParams,
 }: {
-  searchParams: { page?: string; statut?: string; q?: string };
+  searchParams: Promise<{ page?: string; statut?: string; q?: string }>;
 }) {
+  const searchParams = await pendingSearchParams;
   const page = Math.max(1, Number(searchParams.page) || 1);
   const statut =
     searchParams.statut === "EXPIRED"

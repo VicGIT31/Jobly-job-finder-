@@ -1,3 +1,4 @@
+import { PUBLIC_OFFER_WHERE } from "@/server/offers/public-scope";
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 
@@ -10,7 +11,7 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
   const cities = await prisma.jobOffer.groupBy({
     by: ["city"],
     where: {
-      status: "ACTIVE",
+      ...PUBLIC_OFFER_WHERE,
       ...(q ? { city: { startsWith: q, mode: "insensitive" } } : {}),
     },
     _count: true,

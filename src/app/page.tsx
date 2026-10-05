@@ -1,3 +1,4 @@
+import { PUBLIC_OFFER_WHERE } from "@/server/offers/public-scope";
 import Link from "next/link";
 import { Briefcase, Building2, MapPinned } from "lucide-react";
 import { prisma } from "@/lib/prisma";
@@ -27,7 +28,7 @@ export default async function HomePage() {
     countryCounts,
   ] = await Promise.all([
     prisma.jobOffer.findMany({
-      where: { status: "ACTIVE" },
+      where: PUBLIC_OFFER_WHERE,
       include: { company: true },
       orderBy: { publishedAt: "desc" },
       take: 6,
@@ -35,21 +36,19 @@ export default async function HomePage() {
     resolveCollections(),
     prisma.jobOffer.groupBy({
       by: ["specialty"],
-      where: { status: "ACTIVE" },
+      where: PUBLIC_OFFER_WHERE,
       _count: true,
     }),
-    prisma.jobOffer.count({ where: { status: "ACTIVE" } }),
-    prisma.company.count(),
-    prisma.jobOffer.groupBy({ by: ["city"], where: { status: "ACTIVE" } }).then((g) => g.length),
+    prisma.jobOffer.count({ where: PUBLIC_OFFER_WHERE }),
+    prisma.company.count({ where: { offers: { some: PUBLIC_OFFER_WHERE } } }),
+    prisma.jobOffer.groupBy({ by: ["city"], where: PUBLIC_OFFER_WHERE }).then((g) => g.length),
     // Répartition par pays — voir SOURCES_EUROPE_ASIA.md. Sert la section
     // "Explorez l'Europe" ci-dessous (focus Europe + France).
-    prisma.jobOffer.groupBy({ by: ["countryCode"], where: { status: "ACTIVE" }, _count: true }),
+    prisma.jobOffer.groupBy({ by: ["countryCode"], where: PUBLIC_OFFER_WHERE, _count: true }),
   ]);
 
   const countBySpecialty = new Map(specialtyCounts.map((row) => [row.specialty, row._count]));
   const countByCountry = new Map(countryCounts.map((row) => [row.countryCode, row._count]));
-  const franceCount = countByCountry.get("FR") ?? 0;
-  const internationalCount = offerCount - franceCount;
   const europeCards = EUROPEAN_COUNTRIES.map((code) => ({
     code,
     label: COUNTRY_LABELS[code],
@@ -61,63 +60,68 @@ export default async function HomePage() {
 
   return (
     <div>
-      {/* Hero */}
-      <section className="relative overflow-hidden border-b border-ink/10 bg-surface">
-        {/* Halo discret, pas un dégradé plein écran — cohérent avec la consigne
-            "éviter les dégradés violets excessifs" du design system. */}
-        <div
-          aria-hidden="true"
-          className="pointer-events-none absolute left-1/2 top-0 h-[480px] w-[820px] -translate-x-1/2 -translate-y-1/3 rounded-full bg-cobalt/10 blur-3xl dark:bg-cobalt/15"
-        />
-        <div className="relative mx-auto max-w-6xl px-4 py-16 text-center sm:py-24">
-          <p className="stamp">Étudiants &amp; jeunes diplômés · France &amp; Europe</p>
-          <h1 className="mx-auto mt-5 max-w-2xl text-4xl font-bold leading-tight tracking-tight sm:text-5xl">
-            Trouvez votre <span className="text-cobalt">stage</span> ou votre{" "}
-            <span className="text-cobalt">alternance</span>
-          </h1>
-          <p className="mx-auto mt-4 max-w-xl text-lg text-ink/60">
-            Jobly agrège les meilleures offres du web et vous redirige toujours vers la source. Pas
-            de formulaire maison, pas de perte de temps.
-          </p>
-          <div className="mx-auto mt-8 max-w-2xl">
-            <HomeSearch />
-          </div>
-          <dl className="mt-12 flex flex-wrap justify-center gap-x-10 gap-y-5 sm:gap-x-14">
-            <div className="flex items-center gap-2.5">
-              <Briefcase aria-hidden="true" size={20} className="text-cobalt" />
-              <span>
-                <dd className="text-2xl font-bold leading-none sm:text-3xl">{offerCount}</dd>
-                <dt className="mt-0.5 text-sm text-ink/50">offres actives</dt>
-              </span>
-            </div>
-            <div className="flex items-center gap-2.5">
-              <Building2 aria-hidden="true" size={20} className="text-cobalt" />
-              <span>
-                <dd className="text-2xl font-bold leading-none sm:text-3xl">{companyCount}</dd>
-                <dt className="mt-0.5 text-sm text-ink/50">entreprises</dt>
-              </span>
-            </div>
-            <div className="flex items-center gap-2.5">
-              <MapPinned aria-hidden="true" size={20} className="text-cobalt" />
-              <span>
-                <dd className="text-2xl font-bold leading-none sm:text-3xl">{cityCount}</dd>
-                <dt className="mt-0.5 text-sm text-ink/50">villes</dt>
-              </span>
-            </div>
-          </dl>
-
-          {internationalCount > 0 && (
-            <p className="mt-6 text-sm text-ink/55">
-              Basé en France ? Regardez aussi{" "}
-              <a
-                href="#europe"
-                className="font-semibold text-cobalt underline-offset-4 hover:underline"
-              >
-                {internationalCount} offre{internationalCount > 1 ? "s" : ""} ailleurs en Europe
-              </a>
-              .
+      <section className="border-b border-ink/10 bg-surface">
+        <div className="mx-auto grid max-w-6xl gap-10 px-4 py-12 sm:py-16 lg:grid-cols-[1fr_280px] lg:items-center">
+          <div>
+            <p className="text-sm font-semibold tracking-wide text-cobalt">
+              VOTRE PREMIÈRE EXPÉRIENCE TECH
             </p>
-          )}
+            <h1 className="mt-4 max-w-3xl text-4xl font-bold leading-[1.1] tracking-tight sm:text-5xl lg:text-6xl">
+              Un stage. Une alternance.
+              <br />
+              <span className="text-cobalt">Votre prochain départ.</span>
+            </h1>
+            <p className="mt-5 max-w-xl text-lg leading-relaxed text-ink/70">
+              Explorez les offres tech des entreprises et des sites de recrutement en France.
+              Repérez votre mission, puis postulez sur l’annonce d’origine.
+            </p>
+            <div className="mt-7 rounded-xl border border-ink/15 bg-paper p-3 shadow-card">
+              <HomeSearch />
+            </div>
+            <div className="mt-4 flex flex-wrap gap-x-5 gap-y-2 text-sm">
+              <Link
+                href="/offres?ville=Paris"
+                className="font-medium text-cobalt underline-offset-4 hover:underline"
+              >
+                À Paris →
+              </Link>
+              <Link
+                href="/offres?specialite=IA"
+                className="font-medium text-cobalt underline-offset-4 hover:underline"
+              >
+                Data &amp; IA →
+              </Link>
+              <Link
+                href="/offres?contrat=ALTERNANCE"
+                className="font-medium text-cobalt underline-offset-4 hover:underline"
+              >
+                En alternance →
+              </Link>
+            </div>
+          </div>
+          <aside
+            className="border-t border-ink/15 pt-6 lg:border-l lg:border-t-0 lg:pl-7 lg:pt-0"
+            aria-label="Le catalogue Jobly"
+          >
+            <p className="text-sm font-semibold text-ink/70">À explorer aujourd’hui</p>
+            <dl className="mt-5 grid grid-cols-3 gap-4 lg:grid-cols-1 lg:gap-6">
+              {[
+                { count: offerCount, label: "offres actives", icon: Briefcase },
+                { count: companyCount, label: "entreprises qui recrutent", icon: Building2 },
+                { count: cityCount, label: "villes", icon: MapPinned },
+              ].map(({ count, label, icon: Icon }) => (
+                <div key={label}>
+                  <dt className="flex items-center gap-2 text-xs text-ink/65 sm:text-sm">
+                    <Icon aria-hidden="true" size={16} className="hidden text-cobalt sm:block" />
+                    {label}
+                  </dt>
+                  <dd className="mt-1 text-3xl font-bold tabular-nums tracking-tight sm:text-4xl">
+                    {count.toLocaleString("fr-FR")}
+                  </dd>
+                </div>
+              ))}
+            </dl>
+          </aside>
         </div>
       </section>
 
@@ -198,7 +202,7 @@ export default async function HomePage() {
 
       {/* Offres récentes */}
       <section className="mx-auto max-w-6xl px-4 py-14" aria-labelledby="recentes">
-        <div className="flex items-baseline justify-between">
+        <div className="flex flex-wrap items-baseline justify-between gap-3">
           <h2 id="recentes" className="text-2xl font-bold tracking-tight">
             Fraîchement publiées
           </h2>

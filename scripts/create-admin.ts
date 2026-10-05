@@ -16,6 +16,7 @@
  * Le script est idempotent : relancé, il remet le rôle à ADMIN, réactive le
  * compte s'il avait été suspendu et met le mot de passe à jour.
  */
+import "./load-env";
 import { PrismaClient, Role } from "@prisma/client";
 import bcrypt from "bcryptjs";
 

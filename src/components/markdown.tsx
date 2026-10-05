@@ -75,5 +75,5 @@ export function Markdown({ content }: { content: string }) {
   flushList(lines.length);
   flushParagraph(lines.length);
 
-  return <div>{blocks}</div>;
+  return <div className="break-words [overflow-wrap:anywhere]">{blocks}</div>;
 }

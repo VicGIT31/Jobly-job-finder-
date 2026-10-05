@@ -32,10 +32,11 @@ const ACTION_LABELS: Record<string, string> = {
 
 /** Historique complet des actions d'administration. */
 export default async function AdminJournalPage({
-  searchParams,
+  searchParams: pendingSearchParams,
 }: {
-  searchParams: { page?: string; action?: string };
+  searchParams: Promise<{ page?: string; action?: string }>;
 }) {
+  const searchParams = await pendingSearchParams;
   const page = Math.max(1, Number(searchParams.page) || 1);
   const action = searchParams.action?.trim() || undefined;
 

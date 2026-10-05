@@ -1,3 +1,4 @@
+import { PUBLIC_OFFER_WHERE } from "@/server/offers/public-scope";
 import { prisma } from "@/lib/prisma";
 import {
   COLLECTIONS,
@@ -14,12 +15,12 @@ import {
  */
 export async function resolveCollections(): Promise<ResolvedCollection[]> {
   const companies = await prisma.company.findMany({
-    where: { offers: { some: { status: "ACTIVE" } } },
+    where: { offers: { some: PUBLIC_OFFER_WHERE } },
     select: {
       slug: true,
       name: true,
       logoUrl: true,
-      _count: { select: { offers: { where: { status: "ACTIVE" } } } },
+      _count: { select: { offers: { where: PUBLIC_OFFER_WHERE } } },
     },
   });
 

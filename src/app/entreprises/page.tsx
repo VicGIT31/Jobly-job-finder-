@@ -1,3 +1,4 @@
+import { PUBLIC_OFFER_WHERE } from "@/server/offers/public-scope";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { prisma } from "@/lib/prisma";
@@ -14,7 +15,7 @@ export default async function EntreprisesPage() {
   const companies = await prisma.company.findMany({
     orderBy: [{ featured: "desc" }, { name: "asc" }],
     include: {
-      _count: { select: { offers: { where: { status: "ACTIVE" } } } },
+      _count: { select: { offers: { where: PUBLIC_OFFER_WHERE } } },
     },
   });
 

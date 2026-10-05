@@ -69,7 +69,16 @@ export function inferEducationLevel(...parts: Array<string | null | undefined>):
  */
 export function inferContractType(...parts: Array<string | null | undefined>): string | null {
   const text = fold(parts.filter(Boolean).join(" "));
-  if (/(alternance|alternant|apprentissage|apprenti|contrat\s*pro)/.test(text)) return "alternance";
-  if (/(\bstage\b|stagiaire|\binternship\b|\bintern\b|\bpfe\b)/.test(text)) return "stage";
+  if (
+    /\b(alternance|alternant\w*|apprentice(?:ship)?|apprenti(?:e|s|es)?|contrat\s*pro)\b|^apprentissage\b|\ben apprentissage\b|contrat\s*d.apprentissage/.test(
+      text,
+    )
+  )
+    return "alternance";
+  if (
+    /(\bstage\b|stagiaire|\binternship\b|\bintern\b|\bpfe\b)/.test(text) &&
+    !/\b(?:early|late|seed)[ -]stage\b/.test(text)
+  )
+    return "stage";
   return null;
 }

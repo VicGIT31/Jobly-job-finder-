@@ -1,3 +1,4 @@
+import { PUBLIC_OFFER_WHERE } from "@/server/offers/public-scope";
 import { prisma } from "@/lib/prisma";
 import type { OfferWithCompany } from "@/server/search/sync";
 
@@ -12,7 +13,7 @@ export async function findSimilarOffers(
   const similar = await prisma.jobOffer.findMany({
     where: {
       id: { not: offer.id },
-      status: "ACTIVE",
+      ...PUBLIC_OFFER_WHERE,
       OR: [{ sector: offer.sector }, { contractType: offer.contractType as never }],
     },
     include: { company: true },

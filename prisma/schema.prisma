@@ -255,6 +255,7 @@ model JobOffer {
   @@index([blockedAt])
   @@index([specialty, status])
   @@index([countryCode, status])
+  @@index([sourceUrl])
   @@map("job_offers")
 }
 
@@ -413,6 +414,7 @@ model IngestRun {
   rejected   Int      @default(0)
   durationMs Int      @default(0)
   error      String?
+  coverageJson Json?
   startedAt  DateTime @default(now())
 
   @@index([startedAt])

@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { signIn } from "next-auth/react";
+import { signIn, getSession } from "next-auth/react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useState } from "react";
 import { OAuthButtons } from "@/components/auth/oauth-buttons";
@@ -9,7 +9,10 @@ import { OAuthButtons } from "@/components/auth/oauth-buttons";
 export function LoginForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const callbackUrl = searchParams.get("callbackUrl") ?? "/mon-espace";
+  const requestedUrl = searchParams.get("callbackUrl");
+  const safeRequestedUrl =
+    requestedUrl?.startsWith("/") && !requestedUrl.startsWith("//") ? requestedUrl : null;
+  const callbackUrl = safeRequestedUrl ?? "/connexion/retour";
   const verification = searchParams.get("verification");
   const [error, setError] = useState<string | null>(null);
   const [pending, setPending] = useState(false);
@@ -19,17 +22,25 @@ export function LoginForm() {
     setPending(true);
     setError(null);
     const form = new FormData(e.currentTarget);
-    const result = await signIn("credentials", {
-      email: form.get("email"),
-      password: form.get("password"),
-      redirect: false,
-    });
-    setPending(false);
-    if (result?.error) {
-      setError("Identifiant ou mot de passe incorrect.");
-    } else {
-      router.push(callbackUrl);
-      router.refresh();
+    try {
+      const result = await signIn("credentials", {
+        email: form.get("email"),
+        password: form.get("password"),
+        redirect: false,
+      });
+      if (result?.error) {
+        setError("Identifiant ou mot de passe incorrect.");
+      } else {
+        const session = await getSession();
+        router.push(
+          safeRequestedUrl ?? (session?.user?.role === "ADMIN" ? "/admin" : "/mon-espace"),
+        );
+        router.refresh();
+      }
+    } catch {
+      setError("Connexion impossible pour le moment. Réessayez en conservant vos identifiants.");
+    } finally {
+      setPending(false);
     }
   }
 
@@ -63,6 +74,8 @@ export function LoginForm() {
             name="email"
             type="text"
             autoComplete="username"
+            aria-invalid={!!error}
+            aria-describedby={error ? "login-error" : undefined}
             required
             className="input-ink"
           />
@@ -76,13 +89,15 @@ export function LoginForm() {
             name="password"
             type="password"
             autoComplete="current-password"
+            aria-invalid={!!error}
+            aria-describedby={error ? "login-error" : undefined}
             required
             className="input-ink"
           />
         </div>
 
         {error && (
-          <p className="rounded-lg border border-ink/15 p-2 text-sm" role="alert">
+          <p id="login-error" className="rounded-lg border border-ink/15 p-2 text-sm" role="alert">
             {error}
           </p>
         )}

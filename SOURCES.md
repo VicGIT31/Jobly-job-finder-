@@ -1,112 +1,132 @@
-# Sources d'offres — cartographie du marché et état dans Jobly
+# Sources publiques gratuites — Jobly
 
-> Panorama des sites de recrutement pertinents pour un développeur en France,
-> et état de leur intégration dans Jobly. Chaque « ✅ testé » a été vérifié en
-> conditions réelles (appel effectif, volume mesuré), pas supposé.
+État vérifié le **5 octobre 2026**. Périmètre : stages et alternances tech en
+France, collectés directement en local. **Aucune clé de fournisseur d’offres,
+aucun abonnement de scraping.** JSearch et France Travail OAuth sont retirés.
+Les anciens secrets de collecte éventuellement présents dans `.env` ne sont
+plus lus. Un endpoint JSON reste une API au sens technique : ici il s’agit des
+flux publics gratuits des sites, pas d’un fournisseur facturé.
 
----
+## Catalogue
 
-## 1. Le top 10 pour un développeur en France
+[`config/job-sources.json`](config/job-sources.json) contient **84 entrées,
+dont 83 activées et 80 entreprises**. Le catalogue initial (Airbus, Thales,
+Decathlon, Capgemini, Ubisoft, Sopra Steria, etc.) est complété par Renault,
+Sanofi, Valeo, Michelin, Daher, Accenture, ALTEN, Wavestone, Devoteam, Talan,
+Assystem, Eurofins, Veolia, Scaleway, Doctrine, Aircall, Pigment et d'autres.
 
-Classement par utilité réelle pour un profil dev cherchant un stage ou une
-alternance : volume d'offres tech, qualité du ciblage, et fraîcheur.
+Les endpoints ajoutés ont été vérifiés avec des réponses publiques non vides.
+Cela ne garantit ni la présence actuelle d'un stage tech en France, ni la
+réussite de chaque page de détail. Indeed reste désactivé après un HTTP 403
+observé. WTTJ publie des sitemaps accessibles, mais a aussi renvoyé un HTTP 403
+sur des annonces pendant la collecte d'essai.
 
-| #   | Site                                | Pourquoi il compte                                                                              | État dans Jobly                |
-| --- | ----------------------------------- | ----------------------------------------------------------------------------------------------- | ------------------------------ |
-| 1   | **France Travail** (ex-Pôle Emploi) | Source officielle, la plus exhaustive de France. Codes ROME tech, toutes tailles d'entreprises. | 🔑 Code prêt — **clé requise** |
-| 2   | **LinkedIn**                        | Le réflexe n°1 des recruteurs tech. Offres récentes, entreprises tech et start-up.              | ✅ **Actif, sans clé**         |
-| 3   | **Indeed**                          | Premier agrégateur mondial en trafic ; couvre les PME et ESN absentes d'ailleurs.               | ✅ **Actif via JSearch**       |
-| 4   | **HelloWork** (ex-RegionsJob)       | Premier job board généraliste **français** en volume, très bien maillé en région.               | ✅ **Actif, sans clé**         |
-| 5   | **APEC**                            | Référence du marché cadre. ~1 400 alternances, descriptions complètes.                          | ✅ **Actif, sans clé**         |
-| 6   | **Welcome to the Jungle**           | La vitrine des start-up et scale-up françaises, très prisée des jeunes devs.                    | ✅ **Actif via JSearch**       |
-| 7   | **Glassdoor**                       | Offres + salaires et avis, utile pour arbitrer entre deux postes.                               | ✅ **Actif via JSearch**       |
-| 8   | **JobTeaser**                       | Le réseau des écoles : stages et alternances ciblés étudiants.                                  | ✅ **Actif via JSearch**       |
-| 9   | **Free-Work** (ex-Freelance-Info)   | 100 % tech, métadonnées riches (télétravail, compétences, salaire).                             | ✅ **Actif, sans clé**         |
-| 10  | **Talent.com**                      | Gros agrégateur, forte présence sur les postes juniors.                                         | ✅ **Actif via JSearch**       |
+Les 5 connecteurs historiques gratuits complètent la liste : APEC, HelloWork,
+Free-Work, LinkedIn invité et The Muse. Le dossier optionnel `.eml` permet
+l'import d'alertes reçues ; aucune boîte mail privée n'est connectée.
+La source suédoise et l'ancien catalogue ATS international restent dans le
+dépôt, hors du cycle France actuel. Tous les résultats publics sont limités
+aux contrats stage/alternance. Les CDI et temps pleins historiques sont exclus.
+Voir [INTEGRATIONS_GRATUITES.md](INTEGRATIONS_GRATUITES.md) pour les vérifications,
+les alertes Indeed et l'inventaire français reproductible.
 
----
+## Endpoints utilisés
 
-## 2. Sources intégrées et vérifiées
+| Source / format | Recherche publique                                                                    | Détails                                                                                                      |
+| --------------- | ------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------ |
+| Airbus          | `POST https://ag.wd3.myworkdayjobs.com/wday/cxs/ag/Airbus/jobs`                       | `GET …/wday/cxs/ag/Airbus/job/{chemin}`                                                                      |
+| Thales          | `POST https://thales.wd3.myworkdayjobs.com/wday/cxs/thales/Careers/jobs`              | `GET …/wday/cxs/thales/Careers/job/{chemin}`                                                                 |
+| Decathlon       | `GET https://joinus.decathlon.fr/sitemap.xml`                                         | `/fr/annonce/{id-slug}` : JSON-LD                                                                            |
+| Capgemini       | `/search/?q=stage&locale=fr_FR&startrow=0` et `q=alternance`                          | `/job/{slug}/{id}/` : microdonnées schema.org                                                                |
+| France Travail  | `https://candidat.francetravail.fr/offres/recherche`                                  | Configuration `/ihm-descriptifoffre/configuration.json`, puis flux anonyme `/api-descriptifoffre/offre/{id}` |
+| WTTJ            | `https://www.welcometothejungle.com/sitemaps/index.xml.gz` et sitemaps `job-listings` | `/fr/companies/{entreprise}/jobs/{slug}` : vérifier l’accès réel                                             |
+| Greenhouse      | `https://boards-api.greenhouse.io/v1/boards/{slug}/jobs?content=true`                 | Description incluse                                                                                          |
+| Lever           | `https://api.lever.co/v0/postings/{slug}?mode=json`                                   | Description incluse                                                                                          |
+| Ashby           | `https://api.ashbyhq.com/posting-api/job-board/{slug}`                                | Description incluse                                                                                          |
+| SmartRecruiters | `https://api.smartrecruiters.com/v1/companies/{slug}/postings`                        | `…/postings/{id}`                                                                                            |
+| Deezer          | `https://deezer.teamtailor.com/jobs`                                                  | `/jobs/{id-slug}` : JSON-LD                                                                                  |
+| APEC            | `POST https://www.apec.fr/cms/webservices/rechercheOffre`                             | Description dans la recherche                                                                                |
+| HelloWork       | `/fr-fr/emploi/recherche.html`                                                        | `/fr-fr/emplois/{id}.html` : JSON-LD                                                                         |
+| Free-Work       | `https://www.free-work.com/api/job_postings`                                          | Description dans les résultats                                                                               |
+| LinkedIn invité | `/jobs-guest/jobs/api/seeMoreJobPostings/search`                                      | `/jobs-guest/jobs/api/jobPosting/{id}`                                                                       |
+| The Muse        | `https://www.themuse.com/api/public/jobs`                                             | Description dans les résultats                                                                               |
 
-| Connecteur                    | Fichier                     | Clé     | Volume mesuré / cycle       | Méthode                                                                                                                                                           |
-| ----------------------------- | --------------------------- | ------- | --------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **APEC**                      | `sources/apec.ts`           | Non     | **218 offres en 6 s**       | API JSON du moteur de recherche (POST). Descriptions incluses dans les résultats — aucune requête de détail.                                                      |
-| **HelloWork**                 | `sources/hellowork.ts`      | Non     | **456 offres en 55 s**      | Pages publiques + **JSON-LD `JobPosting`** (le format que lit Google for Jobs).                                                                                   |
-| **LinkedIn**                  | `sources/linkedin.ts`       | Non     | ~20-60 (rate-limité)        | Endpoint invité `jobs-guest`, recherche et descriptions alternées par lots.                                                                                       |
-| **Free-Work**                 | `sources/free-work.ts`      | Non     | **20 offres**               | API publique API Platform, filtrée sur la France.                                                                                                                 |
-| **The Muse**                  | `sources/themuse.ts`        | Non     | ~0-5                        | API publique, faible volume France. Repli historique.                                                                                                             |
-| **France Travail**            | `sources/france-travail.ts` | **Oui** | —                           | API officielle « Offres d'emploi v2 », codes ROME tech.                                                                                                           |
-| **JSearch** (Google for Jobs) | `sources/jsearch.ts`        | **Oui** | **146 offres, 41 éditeurs** | API OpenWeb Ninja. Un seul appel couvre Indeed, Glassdoor, WTTJ, JobTeaser, Meteojob, L'Étudiant, France Travail… Attribution par domaine du lien de candidature. |
+Workday reçoit `{limit:20,offset:0,searchText:"stage",appliedFacets:{}}`. Le filtre
+France est découvert dans les facettes retournées, puis la pagination repart à
+zéro. Le pays est confirmé dans le détail. Les URL réellement publiées sont
+conservées. Aucun identifiant de filtre n’est deviné ou figé.
 
-**~700 offres par cycle sans aucune clé**, contre ~50 auparavant. Avec la clé
-JSearch, ~150 offres supplémentaires issues de **41 éditeurs différents**.
+Les slugs de boards diffèrent parfois du nom commercial : `Ubisoft2` et
+`SopraSteria1`, par exemple. Alan, Back Market, Pennylane et Ledger utilisent
+désormais Ashby ; Deezer utilise Teamtailor. Leurs anciens boards Lever ne sont
+plus utilisés. Ces migrations ont été vérifiées pendant le travail.
 
-> **Pourquoi le JSON-LD** : HelloWork et beaucoup d'autres publient leurs offres
-> au format schema.org pour être indexés par Google for Jobs. C'est un format
-> **standardisé et stable**, là où le HTML change à chaque refonte. L'extracteur
-> partagé (`ingest/jsonld.ts`) rend ces connecteurs résistants aux redesigns et
-> permet d'en ajouter un nouveau en quelques dizaines de lignes.
+## Commandes
 
----
+```bash
+npm run sources:list
+npm run sources:check -- --output reports/all-source-health.json
+npm run sources:check -- --collect --sources airbus,thales --limit 10 --pages 2
+npm run collect:offers -- --sources airbus,thales,capgemini --limit 20 --pages 2
+npm run ingest:file -- reports/collected-offers.json
+npm run ingest:now
+```
 
-## 3. Sources écartées, et pourquoi
+Sans `--collect`, le diagnostic vérifie seulement l’endpoint de départ.
+`collect:offers` exporte les offres réelles normalisées et dédupliquées, sans
+PostgreSQL, Redis ni Meilisearch. `ingest:file` importe cet export sans rappeler
+les sites. Les résultats partiels incluent leurs avertissements ; un échec de
+source donne un code de sortie 1.
 
-Ces sites ont été **testés** ; ils ne sont pas intégrés pour des raisons
-techniques ou juridiques, pas par oubli.
+Les premiers exports ont fourni **69 offres distinctes importées** : Airbus 6,
+Thales 10, Capgemini 8, Ubisoft/Sopra Steria 15, Alan/Back Market 16, France
+Travail 13, Deezer 1. Ce sont des petits lots de validation, pas une estimation
+du marché. Decathlon n’a fourni aucune offre correspondant au filtre dans
+l’essai ; cela ne prouve pas l’absence de stages tech dans cette entreprise.
 
-| Site                      | Constat                                                                              | Décision                                               |
-| ------------------------- | ------------------------------------------------------------------------------------ | ------------------------------------------------------ |
-| **Welcome to the Jungle** | Scraping direct impossible : Algolia avec clé chiffrée côté serveur.                 | **Résolu par JSearch**, qui republie ses annonces.     |
-| **JobTeaser**             | Contenu derrière authentification école/étudiant.                                    | **Résolu par JSearch**, sans contourner l'auth.        |
-| **Indeed (direct)**       | 403 systématique sur les requêtes serveur.                                           | Passe par **JSearch**, la voie légale.                 |
-| **Glassdoor (direct)**    | 403 + captcha.                                                                       | Passe par **JSearch**.                                 |
-| **Iquesta**               | Testé : les filtres de recherche sont ignorés, ~6 offres quelle que soit la requête. | Écarté — volume trop faible pour la fragilité induite. |
-| **Monster / Cadremploi**  | Redirigent vers des plateformes partenaires, faible volume tech junior propre.       | Non prioritaire.                                       |
-| **Stack Overflow Jobs**   | Service fermé.                                                                       | Sans objet.                                            |
+## Étendre la couverture
 
----
+```bash
+npm run sources:discover -- https://entreprise.fr/carrieres
+```
 
-## 4. Clés API à fournir pour aller plus loin
+Le script repère les liens ATS et les sitemaps publiés, puis propose des entrées
+désactivées dans `reports/discovered-sources.json`. Compléter les informations,
+vérifier avec `--include-disabled --collect`, puis activer dans le catalogue.
+Il ne scanne pas tous les domaines d’Internet. `JOB_SOURCES_FILE` remplace le
+catalogue par un fichier local. `INGEST_SOURCES` sélectionne des IDs du catalogue
+ou domaines historiques (`apec.fr`, `hellowork.com`, `free-work.com`,
+`linkedin.com`, `themuse.com`).
 
-Voici exactement ce qu'il me faut pour activer les sources restantes. **À
-déposer dans `.env`** (non versionné) — aucune clé ne doit être collée ici ni
-dans un fichier suivi par Git.
+Les budgets `maxPages`, `maxOffers`, `maxSitemaps`, les requêtes et la pagination
+sont réglables par source. Le cache conserve les détails 4 h et les sitemaps
+1 h ; les recherches sont relues à chaque cycle. Au plus 4 sources tournent
+simultanément, avec de petits pools de détails et un espacement par hôte. Une
+source terminée laisse immédiatement sa place à la suivante.
 
-### 4.1 Déjà codé, en attente de clé
+## Automatisation et limites
 
-| Source             | Variables                                                    | Où l'obtenir                                                                                        | Coût    | Gain attendu                                                                                  |
-| ------------------ | ------------------------------------------------------------ | --------------------------------------------------------------------------------------------------- | ------- | --------------------------------------------------------------------------------------------- |
-| **France Travail** | `FRANCE_TRAVAIL_CLIENT_ID`<br>`FRANCE_TRAVAIL_CLIENT_SECRET` | [francetravail.io](https://francetravail.io) → créer une appli → souscrire à « Offres d'emploi v2 » | Gratuit | **Le plus gros gain possible** : couverture nationale exhaustive, plusieurs milliers d'offres |
+`npm run dev`, `npm start` et Docker lancent le site avec son worker. Celui-ci
+collecte au démarrage et toutes les **120 minutes** par défaut. Redis empêche
+les doubles cycles ; Meilisearch reçoit les écritures par lots de 100.
 
-### 4.2 Configuré et actif
+La couverture n’est pas exhaustive : le catalogue et la pagination sont bornés,
+les slugs ambigus peuvent manquer, des sites peuvent bloquer l’automatisation
+ou changer de format. Les descriptions absentes, pays étrangers/inconnus et
+contrats hors périmètre sont écartés. Les nouveaux collecteurs ne fabriquent
+pas de date de publication.
 
-| Source      | Variable          | Où l'obtenir                                                           | Couverture mesurée                                                                                      |
-| ----------- | ----------------- | ---------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------- |
-| **JSearch** | `JSEARCH_API_KEY` | [openwebninja.com](https://www.openwebninja.com) (en-tête `X-API-Key`) | **146 offres / 41 éditeurs** : Indeed, Glassdoor, WTTJ, JobTeaser, Meteojob, L'Étudiant, France Travail |
+Une offre disparue peut rester en cache 4 h, puis être expirée après 7 jours
+sans observation. La purge existante à 60 jours demeure. Un 401/403 coupe
+l’hôte pour le cycle ; un `Retry-After` long conserve la pause entre cycles
+dans le processus. Aucun captcha, proxy ou session privée n’est utilisé pour
+contourner un refus. Les blocages et budgets atteints sont signalés dans les
+rapports et dans la console admin.
 
-### 4.3 À coder si tu fournis la clé
-
-| Source         | Variables                           | Où l'obtenir                                         | Coût                        | Gain attendu                                                |
-| -------------- | ----------------------------------- | ---------------------------------------------------- | --------------------------- | ----------------------------------------------------------- |
-| **Adzuna**     | `ADZUNA_APP_ID`<br>`ADZUNA_APP_KEY` | [developer.adzuna.com](https://developer.adzuna.com) | Gratuit (1 000 appels/mois) | Agrégateur multi-sources avec API propre et bien documentée |
-| **Jooble**     | `JOOBLE_API_KEY`                    | [jooble.org/api/about](https://jooble.org/api/about) | Gratuit sur demande         | Agrégateur international, bonne couverture FR               |
-| **Talent.com** | `TALENT_PUBLISHER_ID`               | Programme partenaire (formulaire commercial)         | Gratuit après validation    | Flux XML complet, volume junior important                   |
-
-> Donne-moi la ou les clés et j'implémente le connecteur correspondant dans la
-> foulée — le squelette (`SourceConnector` + couche HTTP durcie + extracteur
-> JSON-LD) rend chaque ajout rapide.
-
----
-
-## 5. Comment ajouter une source
-
-1. Créer `src/server/ingest/sources/<nom>.ts` implémentant `SourceConnector`
-   (`isEnabled()` + `fetchOffers()`).
-2. Utiliser la couche HTTP commune (`ingest/http.ts`) : retries, backoff,
-   throttle par hôte et disjoncteur sont gérés pour vous.
-3. Si le site publie du schema.org, utiliser `ingest/jsonld.ts` plutôt que des
-   expressions régulières sur le HTML.
-4. Enregistrer le connecteur dans `run-ingestion.ts`.
-5. Le reste est automatique : normalisation, rejet hors périmètre
-   (stage/alternance uniquement), déduplication, **classement par spécialité**,
-   géocodage et indexation.
+Sources officielles consultées : [Airbus](https://www.airbus.com/en/careers),
+[Thales](https://careers.thalesgroup.com/global/en/),
+[Decathlon](https://joinus.decathlon.fr/fr/annonces),
+[Capgemini](https://careers.capgemini.com/search/?q=stage&locale=fr_FR),
+[Alan](https://alan.com/en/careers),
+[Back Market](https://www.backmarket.com/en-us/careers/home),
+[Ledger](https://careers.ledger.com/), [Deezer](https://www.deezerjobs.com/en/).

@@ -7,6 +7,7 @@ import { companySlugsForCollection } from "@/server/companies/collections";
 import type { CollectionKey } from "@/lib/company-collections";
 import type { OfferDocument } from "./sync";
 import { offerToDocument } from "./sync";
+import { PUBLIC_OFFER_FILTER, PUBLIC_OFFER_WHERE } from "@/server/offers/public-scope";
 
 export type FacetCounts = Record<string, Record<string, number>>;
 
@@ -78,7 +79,7 @@ async function searchWithMeilisearch(
   input: OfferSearchInput,
   categorySlugs: string[] | null,
 ): Promise<OfferSearchResult> {
-  const filters: string[] = ['status = "ACTIVE"'];
+  const filters: string[] = [PUBLIC_OFFER_FILTER];
 
   if (input.contrat.length) {
     filters.push(`contractType IN [${input.contrat.map((c) => `"${c}"`).join(", ")}]`);
@@ -163,7 +164,7 @@ function buildWhere(
   categorySlugs: string[] | null,
   withGeo?: { lat: number; lng: number; km: number },
 ) {
-  const where: Prisma.JobOfferWhereInput = { status: "ACTIVE" };
+  const where: Prisma.JobOfferWhereInput = { ...PUBLIC_OFFER_WHERE };
 
   if (input.q) {
     const terms = input.q.split(/\s+/).filter(Boolean);
@@ -177,7 +178,8 @@ function buildWhere(
       ],
     }));
   }
-  if (input.contrat.length) where.contractType = { in: input.contrat };
+  if (input.contrat.length)
+    where.contractType = { in: input.contrat.filter((c) => c === "STAGE" || c === "ALTERNANCE") };
   if (input.remote.length) where.remotePolicy = { in: input.remote };
   if (input.niveau.length) where.educationLevel = { in: input.niveau };
   if (input.specialite.length) where.specialty = { in: input.specialite };

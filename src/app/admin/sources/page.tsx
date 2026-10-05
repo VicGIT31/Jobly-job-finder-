@@ -2,39 +2,64 @@ import type { Metadata } from "next";
 import { prisma } from "@/lib/prisma";
 import { Badge, SectionTitle, Th } from "@/components/admin/ui";
 import { reindexSearch, triggerIngestion } from "@/server/admin/actions";
+import { loadSourceCatalog } from "@/server/ingest/sources/catalog";
+import type { Prisma } from "@prisma/client";
+import { STUDENT_OFFER_WHERE } from "@/server/offers/public-scope";
 
 export const metadata: Metadata = { title: "Admin — Sources & ingestion" };
 
 /** Gestion des sources : volume d'offres, état, stats de clics « Postuler » par source. */
 export default async function AdminSourcesPage() {
   const since24h = new Date(Date.now() - 86_400_000);
-  const [runs, logs] = await Promise.all([
-    prisma.ingestRun.findMany({ orderBy: { startedAt: "desc" }, take: 40 }),
+  const [runs, logs, catalog] = await Promise.all([
+    prisma.ingestRun.findMany({
+      where: { startedAt: { gte: since24h } },
+      orderBy: { startedAt: "desc" },
+    }),
     prisma.ingestLog.findMany({ orderBy: { createdAt: "desc" }, take: 25 }),
+    loadSourceCatalog(),
   ]);
 
   // Santé par source sur 24 h : un connecteur qui échoue en boucle doit se voir.
   const health = new Map<
     string,
-    { label: string; runs: number; failures: number; created: number }
+    {
+      label: string;
+      runs: number;
+      failures: number;
+      created: number;
+      fetched: number;
+      error: string | null;
+      coverage: Prisma.JsonValue | null;
+      latestOk: boolean;
+      latestFetched: number;
+    }
   >();
   for (const run of runs) {
     if (run.startedAt < since24h) continue;
-    const entry = health.get(run.sourceSite) ?? {
+    const key = `${run.sourceSite}|${run.label}`;
+    const entry = health.get(key) ?? {
       label: run.label,
       runs: 0,
       failures: 0,
       created: 0,
+      fetched: 0,
+      error: run.error,
+      coverage: run.coverageJson,
+      latestOk: run.ok,
+      latestFetched: run.fetched,
     };
     entry.runs++;
     if (!run.ok) entry.failures++;
     entry.created += run.created;
-    health.set(run.sourceSite, entry);
+    entry.fetched += run.fetched;
+    health.set(key, entry);
   }
 
   const [bySource, clicksBySource, last30d] = await Promise.all([
     prisma.jobOffer.groupBy({
       by: ["sourceSite", "status"],
+      where: STUDENT_OFFER_WHERE,
       _count: true,
     }),
     prisma.applyClick.groupBy({
@@ -164,6 +189,49 @@ export default async function AdminSourcesPage() {
       </section>
 
       <section className="mt-10" aria-labelledby="sante">
+        <details className="card mb-6 p-4">
+          <summary className="cursor-pointer font-semibold">
+            Catalogue : {catalog.filter((s) => s.enabled).length} sources activées ·{" "}
+            {new Set(catalog.filter((s) => s.company).map((s) => s.company)).size} entreprises
+          </summary>
+          <p className="mt-2 text-sm text-ink/70">
+            Une source activée est interrogée automatiquement. Elle peut ne publier aucun stage tech
+            en France ou refuser la collecte. L&apos;état réel du dernier passage apparaît
+            ci-dessous.
+          </p>
+          <div className="mt-4 overflow-x-auto">
+            <table className="w-full min-w-[480px] text-left text-sm">
+              <thead>
+                <tr>
+                  <Th>Source</Th>
+                  <Th>Format</Th>
+                  <Th>Collecte</Th>
+                  <Th>Site carrière</Th>
+                </tr>
+              </thead>
+              <tbody>
+                {catalog.map((source) => (
+                  <tr key={source.id} className="border-t border-ink/15">
+                    <td className="py-2 pr-4 font-semibold">{source.label}</td>
+                    <td className="py-2 pr-4">{source.kind}</td>
+                    <td className="py-2 pr-4">{source.enabled ? "Activée" : "Désactivée"}</td>
+                    <td className="py-2">
+                      <a
+                        href={source.url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-cobalt underline underline-offset-4"
+                      >
+                        Voir {source.label}
+                        <span className="sr-only"> (nouvel onglet)</span>
+                      </a>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </details>
         <SectionTitle
           id="sante"
           title="Santé des connecteurs (24 h)"
@@ -190,21 +258,28 @@ export default async function AdminSourcesPage() {
                 <Th>Cycles</Th>
                 <Th>Échecs</Th>
                 <Th>Offres créées</Th>
+                <Th>Dernier catalogue parcouru</Th>
                 <Th>État</Th>
               </tr>
             </thead>
             <tbody>
               {[...health.entries()].map(([source, stats]) => (
                 <tr key={source} className="border-b border-ink/15">
-                  <td className="py-2.5 pr-4 font-semibold">{stats.label}</td>
+                  <td className="py-2.5 pr-4 font-semibold">
+                    {stats.label}
+                    {stats.error && (
+                      <p className="mt-1 max-w-md text-xs font-normal text-ink/60">{stats.error}</p>
+                    )}
+                  </td>
                   <td className="py-2.5 pr-4 tabular-nums">{stats.runs}</td>
                   <td className="py-2.5 pr-4 tabular-nums">{stats.failures}</td>
                   <td className="py-2.5 pr-4 tabular-nums">{stats.created}</td>
+                  <td className="py-2.5 pr-4 text-xs">{coverageLabel(stats.coverage)}</td>
                   <td className="py-2.5">
-                    {stats.failures === 0 ? (
-                      <Badge tone="accent">Sain</Badge>
-                    ) : stats.failures < stats.runs ? (
-                      <Badge>Instable</Badge>
+                    {stats.latestOk ? (
+                      <Badge tone="accent">Collecte réussie</Badge>
+                    ) : stats.latestFetched > 0 ? (
+                      <Badge>Collecte partielle</Badge>
                     ) : (
                       <Badge tone="danger">En panne</Badge>
                     )}
@@ -213,7 +288,7 @@ export default async function AdminSourcesPage() {
               ))}
               {health.size === 0 && (
                 <tr>
-                  <td colSpan={5} className="py-8 text-center text-ink/50">
+                  <td colSpan={6} className="py-8 text-center text-ink/50">
                     Aucun cycle sur les dernières 24 heures.
                   </td>
                 </tr>
@@ -282,3 +357,15 @@ const RESULT_LABELS: Record<string, string> = {
   DUPLICATE: "Doublon",
   REJECTED: "Rejetée",
 };
+
+function coverageLabel(value: Prisma.JsonValue | null): string {
+  if (!value || typeof value !== "object" || Array.isArray(value)) return "Non mesuré";
+  const { listingsSeen, catalogTotal, accepted, complete } = value;
+  if (
+    typeof listingsSeen !== "number" ||
+    typeof catalogTotal !== "number" ||
+    typeof accepted !== "number"
+  )
+    return "Non mesuré";
+  return `${listingsSeen}/${catalogTotal} annonces parcourues · ${accepted} tech étudiant · ${complete === true ? "parcours complet" : "parcours partiel"}`;
+}

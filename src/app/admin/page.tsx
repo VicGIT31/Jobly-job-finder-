@@ -4,6 +4,7 @@ import { prisma } from "@/lib/prisma";
 import { getSettings } from "@/lib/settings";
 import { Badge, SectionTitle, StatCard, Th } from "@/components/admin/ui";
 import { reindexSearch, triggerIngestion } from "@/server/admin/actions";
+import { PUBLIC_OFFER_WHERE } from "@/server/offers/public-scope";
 
 export const metadata: Metadata = { title: "Admin — Tableau de bord" };
 
@@ -26,7 +27,7 @@ export default async function AdminDashboardPage() {
     general,
     ingestion,
   ] = await Promise.all([
-    prisma.jobOffer.count({ where: { status: "ACTIVE" } }),
+    prisma.jobOffer.count({ where: PUBLIC_OFFER_WHERE }),
     prisma.jobOffer.count({ where: { status: "EXPIRED" } }),
     prisma.jobOffer.count({ where: { createdAt: { gte: since24h } } }),
     prisma.company.count(),

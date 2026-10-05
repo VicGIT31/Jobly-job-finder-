@@ -54,10 +54,10 @@ export function OfferCard({
     : null;
 
   return (
-    <article className="card group relative p-5 transition-all duration-150 hover:-translate-y-0.5 hover:shadow-lift">
-      <div className="flex items-start justify-between gap-3">
+    <article className="card group relative p-4 transition-colors duration-150 hover:border-cobalt/35 sm:p-5">
+      <div className="flex flex-wrap items-start gap-3">
         <CompanyLogo name={offer.companyName} logoUrl={offer.companyLogo} />
-        <div className="min-w-0 flex-1">
+        <div className="min-w-0 flex-1 basis-[160px]">
           <p className="flex items-center gap-2 text-sm font-medium text-ink/60">
             <span className="truncate">{offer.companyName}</span>
             {isNew && (
@@ -69,7 +69,7 @@ export function OfferCard({
           <h3 className="mt-1 text-lg font-semibold leading-snug tracking-tight">
             <Link
               href={`/offres/${offer.slug}`}
-              className="after:absolute after:inset-0 group-hover:text-cobalt"
+              className="break-words after:absolute after:inset-0 group-hover:text-cobalt"
             >
               {offer.title}
             </Link>
@@ -122,7 +122,7 @@ export function OfferCard({
         <div className="flex items-center gap-1.5">
           <dt className="sr-only">Publiée le</dt>
           <Clock aria-hidden="true" size={14} className="shrink-0 text-ink/40" />
-          <dd className="text-ink/50">
+          <dd className="text-ink/60">
             <time dateTime={new Date(offer.publishedAtTs).toISOString()}>
               {formatDateFr(offer.publishedAtTs)}
             </time>{" "}
@@ -132,7 +132,7 @@ export function OfferCard({
       </dl>
 
       <div className="rule mt-3.5 flex items-center justify-between gap-2 pt-3">
-        <span className="min-w-0 truncate text-xs text-ink/45">
+        <span className="min-w-0 truncate text-xs text-ink/65">
           {offer.sector} · Source : {offer.sourceSite}
         </span>
         {/* z-10 pour passer au-dessus de l'overlay de la carte ; nouvel onglet vers la source. */}
@@ -140,7 +140,7 @@ export function OfferCard({
           href={`/go/${offer.id}`}
           target="_blank"
           rel="nofollow noopener"
-          className="relative z-10 inline-flex shrink-0 items-center gap-1 rounded-lg bg-cobalt-soft px-3 py-1.5 text-xs font-semibold text-cobalt transition-colors duration-150 group-hover:bg-cobalt group-hover:text-white"
+          className="relative z-10 inline-flex min-h-[44px] shrink-0 items-center gap-1 rounded-lg bg-cobalt-soft px-3 py-2 text-sm font-semibold text-cobalt transition-colors duration-150 group-hover:bg-cobalt group-hover:text-white"
         >
           Postuler <span aria-hidden="true">↗</span>
           <span className="sr-only">

@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { PUBLIC_OFFER_WHERE } from "@/server/offers/public-scope";
 import Link from "next/link";
 import { prisma } from "@/lib/prisma";
 import { getSettings, publicBaseUrl } from "@/lib/settings";
@@ -14,7 +15,7 @@ export const metadata: Metadata = { title: "Admin — SEO" };
 export default async function AdminSeoPage() {
   const [seo, activeOffers, companies] = await Promise.all([
     getSettings("seo"),
-    prisma.jobOffer.count({ where: { status: "ACTIVE" } }),
+    prisma.jobOffer.count({ where: PUBLIC_OFFER_WHERE }),
     prisma.company.count(),
   ]);
 

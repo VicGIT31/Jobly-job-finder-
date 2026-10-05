@@ -1,8 +1,8 @@
 # Jobly — Job board étudiants & jeunes diplômés
 
-> Agrégateur d'offres de **stage et d'alternance dans la tech en France**, construit avec Next.js 14, PostgreSQL, Meilisearch et Redis. Design sobre et épuré.
+> Agrégateur d'offres de **stage et d'alternance dans la tech en France**, construit avec Next.js 15.5.24, PostgreSQL, Meilisearch et Redis. Design sobre et épuré.
 >
-> **Particularité du modèle** : le site n'héberge aucune candidature. Les offres sont **ingérées en temps réel depuis des sources réelles** (France Travail, The Muse) ; le bouton « Postuler » redirige (302) vers le lien réel de l'annonce via `/go/:offerId`, en enregistrant le clic au passage.
+> **Particularité du modèle** : le site n'héberge aucune candidature. Les offres sont **collectées directement depuis les pages et flux publics**, sans fournisseur d’offres payant ni clé développeur ; le bouton « Postuler » redirige (302) vers le lien réel de l'annonce via `/go/:offerId`, en enregistrant le clic au passage.
 
 ## Démarrage rapide
 
@@ -11,7 +11,7 @@ cp .env.example .env
 docker compose up
 ```
 
-Le site est disponible sur [http://localhost:3000](http://localhost:3000). Au démarrage, le worker ingère automatiquement de vraies offres (The Muse fonctionne sans clé ; ajoutez vos identifiants France Travail pour la couverture complète — voir ci-dessous). Deux comptes candidats de démonstration sont créés par le seed.
+Le site est disponible sur [http://localhost:3000](http://localhost:3000). Au démarrage, le worker collecte de vraies offres depuis le catalogue public gratuit. Aucune clé de fournisseur d’offres n’est nécessaire. Deux comptes candidats de démonstration sont créés par le seed.
 
 ### Comptes de démonstration
 
@@ -51,70 +51,80 @@ npx prisma migrate dev
 npm run db:seed
 npm run ingest:now # ingère de vraies offres tout de suite (ou attendre le worker)
 npm run search:sync
-npm run dev        # app Next.js
-npm run worker     # crons BullMQ (ingestion 30 min + fraîcheur + alertes)
+npm run dev        # app Next.js + worker automatique (2 h + démarrage)
 ```
 
-## Ingestion des offres réelles
+## Collecte gratuite des offres
 
-Les offres proviennent de connecteurs branchés sur le pipeline commun
-(`processIngest` : normalisation, déduplication SHA-256, **rejet de tout ce qui
-n'est pas stage/alternance**, indexation Meilisearch). Chaque connecteur balaie
-une large liste de métiers tech (`TECH_KEYWORDS`) croisée avec « stage » et
-« alternance » pour maximiser le volume. Chaque offre pointe vers **le lien réel
-de l'annonce** sur sa source.
+La collecte vise **les stages et alternances tech en France**. Elle utilise les
+pages HTML, microdonnées schema.org, JSON-LD, sitemaps et flux JSON publics des
+sites carrières. Les endpoints JSON restent des API au sens technique, mais
+**aucun abonnement, clé de développeur ou intermédiaire payant n’est utilisé**.
+JSearch et l’ancien connecteur OAuth France Travail ont été supprimés.
 
-**Automatisation temps réel** : un cron BullMQ relance l'ingestion toutes les
-30 min (`INGESTION_INTERVAL_MINUTES`) plus une passe au démarrage du worker ; un
-cron quotidien **supprime définitivement** (base + index) les offres publiées il
-y a plus de 2 mois (`OFFER_MAX_AGE_DAYS`), et un cron horaire marque `EXPIRED`
-les offres qui ont disparu de leur source. Lancement manuel : `npm run ingest:now`.
+Le catalogue [`config/job-sources.json`](config/job-sources.json) référence les
+**84 entrées, dont 83 activées et 80 entreprises**, dont Airbus, Thales, Decathlon,
+Capgemini, Ubisoft, Sopra Steria, Renault, Sanofi, ALTEN et Wavestone.
+APEC, HelloWork, Free-Work, LinkedIn invité et The Muse complètent
+la collecte. France Travail utilise le flux anonyme de son site candidat.
 
-| Source                         | Clé requise | Couverture                                                    |
-| ------------------------------ | ----------- | ------------------------------------------------------------- |
-| **APEC**                       | Non         | ~1 400 alternances cadres, descriptions incluses (~218/cycle) |
-| **HelloWork**                  | Non         | 1er job board généraliste FR, via JSON-LD (~456/cycle)        |
-| **LinkedIn**                   | Non         | Endpoint invité public — stages + alternance tech FR          |
-| **Free-Work**                  | Non         | 100 % tech FR, télétravail et compétences structurés          |
-| **The Muse**                   | Non         | Repli — stages tech localisés en France                       |
-| **France Travail** (Offres v2) | Oui (OAuth) | Exhaustive France — codes ROME tech                           |
-| **JSearch** (Google for Jobs)  | Oui         | 41 éditeurs : Indeed, Glassdoor, WTTJ, JobTeaser, Meteojob…   |
+**La couverture n’est pas exhaustive.** Une source peut refuser l’automatisation,
+changer de format, avoir zéro stage tech actuellement, ou dépasser le budget de
+pagination. Indeed est désactivé après un HTTP 403 observé ; WTTJ publie des
+sitemaps mais certaines pages d’annonces peuvent aussi refuser l’accès.
+Les blocages et résultats partiels sont signalés dans les rapports et le journal
+admin. Aucun captcha, authentification ou refus HTTP n’est contourné.
 
-**~700 offres par cycle sans aucune clé.** Panorama complet du marché, sources
-écartées et clés à fournir : **[`SOURCES.md`](SOURCES.md)**.
+```bash
+npm run sources:list                          # catalogue + endpoints dérivés
+npm run sources:check                         # accessibilité des endpoints
+npm run sources:check -- --collect --sources airbus --limit 10
+npm run collect:offers -- --sources airbus,thales,capgemini --limit 20 --pages 2
+npm run sources:discover -- https://entreprise.fr/carrieres
+npm run sources:expand -- --collect            # inventaire français, sans activation implicite
+npm run alerts:import -- data/job-alerts        # véritables alertes email reçues (.eml)
+npm run ingest:now                            # collecte + base + index
+npm run ingest:file -- reports/collected-offers.json  # import sans recontacter les sources
+```
 
-- **France Travail** : application gratuite sur [francetravail.io](https://francetravail.io),
-  souscrire à « Offres d'emploi v2 » → `FRANCE_TRAVAIL_CLIENT_ID` / `_SECRET`.
-- **JSearch** : clé sur [openwebninja.com](https://www.openwebninja.com) → `JSEARCH_API_KEY`. Une seule clé ouvre des dizaines d'éditeurs, dont Welcome to the Jungle et JobTeaser, inaccessibles en direct.
+`collect:offers` exporte des **offres réelles normalisées et dédupliquées** dans
+`reports/collected-offers.json`, sans PostgreSQL, Redis ni Meilisearch. Il sert à
+vérifier les connecteurs avant de remplir le site. `sources:check` sans
+`--collect` vérifie seulement un endpoint, pas toute la chaîne de collecte.
+`sources:discover` propose des entrées désactivées à vérifier, sans modifier
+automatiquement le catalogue. Les rapports et caches ne sont pas versionnés.
 
-LinkedIn et HelloWork s'appuient sur des endpoints publics non contractuels : le
-parsing est défensif et une source en échec (throttling, changement de HTML)
-n'interrompt pas les autres. Quand un site publie ses offres au format
-**schema.org `JobPosting`** (cas de HelloWork), le connecteur lit ce bloc plutôt
-que le HTML : c'est un format standardisé, insensible aux refontes de maquette.
+Pour ajouter une entreprise, copier une entrée du même ATS, renseigner son URL
+carrière réelle puis exécuter `sources:check --include-disabled --collect`.
+`JOB_SOURCES_FILE` permet de remplacer le catalogue par un fichier personnel ;
+`INGEST_SOURCES` limite le cycle à une sélection d’IDs ou de domaines historiques.
+Voir [`SOURCES.md`](SOURCES.md) pour les endpoints et limites, et
+[`ANALYSE_COLLECTE.md`](ANALYSE_COLLECTE.md) pour l’audit de l’architecture.
+Les résultats publics sont limités aux **stages et alternances** ; les autres
+contrats historiques sont conservés en base mais exclus. Voir
+[`INTEGRATIONS_GRATUITES.md`](INTEGRATIONS_GRATUITES.md) pour l'extension française
+et l'import gratuit d'alertes Indeed et des plateformes bloquées.
 
-Ajouter une source = implémenter `SourceConnector` dans
-`src/server/ingest/sources/` et l'enregistrer dans `run-ingestion.ts`.
+### Optimisation et suivi
 
-### Robustesse du scraping
+- Espacement des départs de requêtes **réservé par hôte**, même dans un pool
+  concurrent ; deux workers ne partent plus sur le même créneau.
+- Retries bornés, respect de `Retry-After`, arrêt immédiat sur HTTP 401/403,
+  disjoncteur sur rate-limit ; les offres déjà collectées sont conservées.
+- Cache disque des réponses publiques : détails 4 h, sitemaps 1 h. Les recherches
+  restent fraîches ; aucune réponse périmée ne sert de secours silencieux.
+- Parallélisme limité, déduplication des URLs et sélection des slugs de sitemaps
+  avant de télécharger les détails ; budgets de pages et d’offres par source.
+- Verrou Redis commun au worker, à l’admin et au script pour éviter les doubles
+  cycles ; indexation Meilisearch par lots de 100 offres.
+- Un bilan par entreprise dans `ingest_runs`, avec collecte partielle signalée.
 
-Tous les connecteurs passent par une couche HTTP commune
-(`src/server/ingest/http.ts`) qui apporte :
-
-- **retry avec backoff exponentiel + jitter**, et respect de l'en-tête `Retry-After` ;
-- **throttle par hôte** (intervalle minimum entre deux requêtes) et **rotation
-  d'User-Agent**, pour rester poli et éviter le bannissement ;
-- un **disjoncteur par hôte** : après trois rate-limits, la source est coupée
-  pour le reste du cycle et **rend les offres déjà collectées** au lieu de
-  perdre le cycle entier ;
-- un **pool de parallélisme borné** (`mapPool`) : les descriptions d'offres sont
-  récupérées plusieurs de front, et les sources tournent en parallèle entre elles.
-
-Les offres sont en plus **enrichies depuis leur texte** (`ingest/enrich.ts`) :
-politique de télétravail, niveau d'études et type de contrat sont déduits du
-titre et de la description — sans quoi ces facettes resteraient vides. Chaque
-passage de connecteur est archivé dans `ingest_runs` et surveillé dans
-`/admin/sources` (volume, durée, taux d'échec sur 24 h).
+`npm run dev`, `npm start` et Docker lancent le site **avec son worker**.
+`dev:web` et `start:web` servent au développement du frontend seul.
+Le worker tourne toutes les **120 minutes** par défaut
+(`INGESTION_INTERVAL_MINUTES`, minimum 5), et une fois au démarrage. Le cache
+persiste dans un volume Docker. La purge à 60 jours et l’expiration après
+7 jours sans observation conservent leur comportement existant.
 
 ### Classement par spécialité
 
@@ -134,7 +144,7 @@ page d'accueil. Après modification des règles : `npm run specialty:backfill`.
 
 | Domaine        | Choix                                                           |
 | -------------- | --------------------------------------------------------------- |
-| Frontend       | Next.js 14 (App Router), TypeScript strict, Tailwind CSS        |
+| Frontend       | Next.js 15.5.24 (App Router), TypeScript strict, Tailwind CSS        |
 | Data-fetching  | TanStack Query (client) + Server Components, filtres URL (nuqs) |
 | Backend        | Route handlers Next.js (voir `DECISIONS.md`)                    |
 | Base           | PostgreSQL + Prisma                                             |
@@ -159,7 +169,7 @@ src/
 ├── components/             # UI (design sobre & épuré)
 ├── lib/                    # Prisma, Redis, Meilisearch, S3, emails, utils
 ├── server/                 # Logique métier
-│   └── ingest/sources/     # Connecteurs de scraping (LinkedIn, Indeed, France Travail, Glassdoor, The Muse)
+│   └── ingest/sources/     # Collecteurs directs + catalogue d’entreprises (HTML, sitemaps, ATS publics)
 └── workers/                # Crons BullMQ (ingestion, fraîcheur, purge, alertes)
 ```
 
@@ -178,7 +188,7 @@ Body: { "sourceSite": "...", "offers": [ { titre, entreprise, ville, ... } ] }
 1. **Normalisation** des champs bruts (titres, villes, types de contrat).
 2. **Rejet hors périmètre** : tout ce qui n'est pas stage/alternance est refusé et loggé.
 3. **Déduplication** par hash SHA-256 sur `titre + entreprise + ville` normalisés (`dedup_hash` unique en base). Un doublon met à jour `last_seen_at` et est loggé `DUPLICATE`.
-4. **Indexation** dans Meilisearch à chaque écriture.
+4. **Indexation** dans Meilisearch par lots de 100 écritures.
 5. **Expiration** : un cron horaire marque `EXPIRED` toute offre non revue depuis `OFFER_FRESHNESS_DAYS` jours.
 6. **Purge** : un cron quotidien supprime définitivement les offres de plus de `OFFER_MAX_AGE_DAYS` jours (2 mois).
 
@@ -221,22 +231,25 @@ Offre expirée → page dédiée avec 6 offres similaires.
 
 ## Scripts
 
-| Commande               | Effet                                         |
-| ---------------------- | --------------------------------------------- |
-| `npm run dev`          | App Next.js en développement                  |
-| `npm run build`        | Build de production                           |
-| `npm run start:all`    | App + worker (utilisé par Docker)             |
-| `npm run worker`       | Worker BullMQ seul (crons + ingestion)        |
-| `npm run db:seed`      | Seed (2 comptes candidats de démonstration)   |
-| `npm run admin:create` | Provisionne l'administrateur depuis `.env`    |
-| `npm run ingest:now`   | Ingestion manuelle des offres réelles         |
-| `npm run search:sync`  | Ré-indexation complète Postgres → Meilisearch |
-| `npm run test`         | Tests Vitest                                  |
-| `npm run lint`         | ESLint                                        |
+| Commande                      | Effet                                               |
+| ----------------------------- | --------------------------------------------------- |
+| `npm run dev`                 | App Next.js + collecte automatique en développement |
+| `npm run build`               | Build de production                                 |
+| `npm run start` / `start:all` | App + worker (utilisé par Docker)                   |
+| `npm run worker`              | Worker BullMQ seul (crons + ingestion)              |
+| `npm run db:seed`             | Seed (2 comptes candidats de démonstration)         |
+| `npm run admin:create`        | Provisionne l'administrateur depuis `.env`          |
+| `npm run ingest:now`          | Ingestion manuelle des offres réelles               |
+| `npm run collect:offers`      | Export réel sans infrastructure                     |
+| `npm run sources:check`       | Diagnostic des endpoints publics                    |
+| `npm run sources:discover`    | Propositions de sources depuis une page carrière    |
+| `npm run search:sync`         | Ré-indexation complète Postgres → Meilisearch       |
+| `npm run test`                | Tests Vitest                                        |
+| `npm run lint`                | ESLint                                              |
 
 ## Tests
 
-50 tests Vitest couvrent les zones critiques :
+Les tests Vitest couvrent les zones critiques, dont les nouveaux collecteurs publics :
 
 - **Déduplication** (`src/server/ingest/dedup.test.ts`, `normalize.test.ts`) — normalisation accents/casse/ponctuation, hash stable, mapping des enums, rejets ;
 - **Couche HTTP du scraping** (`src/server/ingest/http.test.ts`) — retries, 404 définitif, disjoncteur de rate-limit, bornes du pool de concurrence ;

@@ -1,3 +1,4 @@
+import { STUDENT_OFFER_WHERE } from "@/server/offers/public-scope";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
@@ -26,17 +27,18 @@ import {
 export const dynamic = "force-dynamic";
 
 async function getOffer(slug: string) {
-  return prisma.jobOffer.findUnique({
-    where: { slug },
+  return prisma.jobOffer.findFirst({
+    where: { slug, ...STUDENT_OFFER_WHERE },
     include: { company: true },
   });
 }
 
 export async function generateMetadata({
-  params,
+  params: pendingParams,
 }: {
-  params: { slug: string };
+  params: Promise<{ slug: string }>;
 }): Promise<Metadata> {
+  const params = await pendingParams;
   const offer = await getOffer(params.slug);
   if (!offer) return { title: "Offre introuvable" };
   return {
@@ -96,7 +98,12 @@ function jobPostingJsonLd(offer: NonNullable<Awaited<ReturnType<typeof getOffer>
   };
 }
 
-export default async function OffrePage({ params }: { params: { slug: string } }) {
+export default async function OffrePage({
+  params: pendingParams,
+}: {
+  params: Promise<{ slug: string }>;
+}) {
+  const params = await pendingParams;
   const offer = await getOffer(params.slug);
   if (!offer) notFound();
 

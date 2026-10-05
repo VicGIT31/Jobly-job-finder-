@@ -1,8 +1,9 @@
 import type { RawOffer } from "@/server/ingest/normalize";
-import { inferContractType, inferEducationLevel, inferRemotePolicy } from "@/server/ingest/enrich";
+import { load } from "cheerio";
+import { makeStudentOffer, frenchLocation } from "../scope";
 import { RateLimitedError, fetchText, isHostCircuitOpen, mapPool } from "@/server/ingest/http";
 import { geocodeCityFull } from "./geocode";
-import { TECH_KEYWORDS, TECH_SECTOR, type SourceConnector } from "./types";
+import { TECH_KEYWORDS, type SourceConnector } from "./types";
 
 /**
  * Connecteur LinkedIn — endpoint public « invité » (jobs-guest), celui qui
@@ -30,7 +31,7 @@ const QUERIES: Array<{ keywords: string; internshipType: boolean }> = TECH_KEYWO
     { keywords: `alternance ${kw}`, internshipType: false },
   ],
 );
-const PAGES_PER_QUERY = 2;
+const PAGES_PER_QUERY = 40;
 const PAGE_SIZE = 25;
 /** Descriptions récupérées de front. Au-delà, LinkedIn rate-limite vite. */
 const DETAIL_CONCURRENCY = 4;
@@ -47,7 +48,7 @@ const DETAIL_CONCURRENCY = 4;
 const QUERY_BATCH = 4;
 const HOST = "www.linkedin.com";
 /** Espacement minimum entre deux requêtes LinkedIn (throttle poli). */
-const MIN_INTERVAL_MS = 300;
+const MIN_INTERVAL_MS = 750;
 /** `f_TPR=r604800` = publiées depuis 7 jours : on reste sur du frais. */
 const RECENT_WINDOW = "r604800";
 
@@ -58,6 +59,7 @@ type Card = {
   title: string;
   company: string;
   city: string;
+  location: string;
   url: string;
   postedAt: string | null;
   logoUrl: string | null;
@@ -91,14 +93,14 @@ export function parseCards(html: string): Card[] {
     );
     const location = firstMatch(block, /job-search-card__location">\s*([^<]+?)\s*</);
     if (!url || !title || !company || !location) continue;
-    const id = /\/view\/[^/]*-(\d+)(?:[/?]|$)/.exec(url)?.[1] ?? "";
+    const id = /\/view\/(?:[^/]*-)?(\d+)(?:[/?]|$)/.exec(url)?.[1] ?? "";
     const city = location.split(",")[0].trim();
     // Date de publication réelle de l'annonce (attribut datetime du <time> de la carte).
     const postedAt = firstMatch(block, /datetime="(\d{4}-\d{2}-\d{2})"/);
     // Logo entreprise : media.licdn.com uniquement (static.licdn.com = placeholder).
     const logoRaw = firstMatch(block, /data-delayed-url="([^"]+)"/);
     const logoUrl = logoRaw && logoRaw.includes("company-logo") ? logoRaw : null;
-    cards.push({ id, title, company, city, url: url.split("?")[0], postedAt, logoUrl });
+    cards.push({ id, title, company, city, location, url: url.split("?")[0], postedAt, logoUrl });
   }
   return cards;
 }
@@ -106,27 +108,50 @@ export function parseCards(html: string): Card[] {
 function htmlToText(html: string): string {
   return decodeEntities(
     html
-      .replace(/<\/(p|div|li|h[1-6]|ul|br)>/gi, "\n")
+      .replace(/<\/(p|div|h[1-6])>/gi, "\n\n")
+      .replace(/<\/(li|ul)>/gi, "\n")
+      .replace(/<br\s*\/?>/gi, "\n")
       .replace(/<li[^>]*>/gi, "- ")
       .replace(/<[^>]+>/g, ""),
   )
-    .replace(/\n{2,}/g, "\n")
+    .replace(/\n{3,}/g, "\n\n")
     .trim();
 }
 
-async function fetchDescription(id: string): Promise<string | null> {
+export function parseLinkedInDetails(
+  html: string,
+): { description: string; contract: string } | null {
+  const $ = load(html);
+  const markup = $(".show-more-less-html__markup").first().html();
+  if (!markup) return null;
+  const description = htmlToText(markup).slice(0, 12000);
+  let contract = "";
+  $(".description__job-criteria-item").each((_, item) => {
+    const label = $(item).find(".description__job-criteria-subheader").text();
+    const value = $(item).find(".description__job-criteria-text").text().trim();
+    if (/employment type|type d.emploi/i.test(label)) contract = value;
+    if (
+      /seniority level|niveau hi[eé]rarchique/i.test(label) &&
+      /internship|stagiaire/i.test(value)
+    )
+      contract = "INTERN";
+  });
+  return description.length >= 20 ? { description, contract } : null;
+}
+
+async function fetchDescription(id: string): Promise<ReturnType<typeof parseLinkedInDetails>> {
   if (!id) return null;
-  const html = await fetchText(`${DETAIL_URL}/${id}`, HTTP);
+  const html = await fetchText(`${DETAIL_URL}/${id}`, { ...HTTP, cacheTtlMs: 4 * 60 * 60 * 1000 });
   if (!html) return null;
-  const m = /show-more-less-html__markup[^>]*>([\s\S]*?)<\/div>/.exec(html);
-  if (!m) return null;
-  const text = htmlToText(m[1]);
-  return text.length >= 20 ? text.slice(0, 8000) : null;
+  return parseLinkedInDetails(html);
 }
 
 export class LinkedInConnector implements SourceConnector {
   readonly sourceSite = "linkedin.com";
   readonly label = "LinkedIn";
+  readonly warnings: string[] = [];
+  private readonly exhaustedQueries = new Set<string>();
+  private readonly lastPages = new Map<string, string>();
 
   isEnabled(): boolean {
     return true; // Endpoint invité public : aucune clé requise.
@@ -135,28 +160,44 @@ export class LinkedInConnector implements SourceConnector {
   async fetchOffers(): Promise<RawOffer[]> {
     const offers: RawOffer[] = [];
     const seen = new Set<string>();
+    this.warnings.length = 0;
+    this.exhaustedQueries.clear();
+    this.lastPages.clear();
 
     // Alternance recherche → descriptions, lot par lot (voir QUERY_BATCH).
-    for (let i = 0; i < QUERIES.length; i += QUERY_BATCH) {
-      let cards: Array<Card & { alternance: boolean }>;
-      try {
-        cards = await this.collectCards(QUERIES.slice(i, i + QUERY_BATCH), seen);
-      } catch (err) {
-        if (err instanceof RateLimitedError) break;
-        throw err;
+    pages: for (let page = 0; page < PAGES_PER_QUERY; page++) {
+      for (let i = 0; i < QUERIES.length; i += QUERY_BATCH) {
+        let cards: Array<Card & { alternance: boolean }>;
+        try {
+          cards = await this.collectCards(QUERIES.slice(i, i + QUERY_BATCH), seen, page);
+        } catch (err) {
+          if (err instanceof RateLimitedError) {
+            this.warnings.push("Accès LinkedIn limité ; collecte partielle");
+            break pages;
+          }
+          throw err;
+        }
+
+        // Descriptions + géocodage en parallèle borné. `mapPool` interrompt tout
+        // le pool si LinkedIn coupe, et renvoie ce qui a déjà été construit.
+        offers.push(...(await mapPool(cards, DETAIL_CONCURRENCY, (card) => this.toOffer(card))));
+
+        // Hôte coupé : les lots suivants ne rendraient plus rien.
+        if (isHostCircuitOpen(HOST)) {
+          console.warn(
+            `[linkedin] Rate limit atteint — cycle arrêté avec ${offers.length} offre(s) complète(s).`,
+          );
+          this.warnings.push("Accès LinkedIn limité ; collecte partielle");
+          break pages;
+        }
       }
-
-      // Descriptions + géocodage en parallèle borné. `mapPool` interrompt tout
-      // le pool si LinkedIn coupe, et renvoie ce qui a déjà été construit.
-      offers.push(...(await mapPool(cards, DETAIL_CONCURRENCY, (card) => this.toOffer(card))));
-
-      // Hôte coupé : les lots suivants ne rendraient plus rien.
-      if (isHostCircuitOpen(HOST)) {
-        console.warn(
-          `[linkedin] Rate limit atteint — cycle arrêté avec ${offers.length} offre(s) complète(s).`,
-        );
+      if (this.exhaustedQueries.size === QUERIES.length) break;
+      if (offers.length >= 5000) {
+        this.warnings.push("Budget d'offres LinkedIn atteint ; collecte partielle");
         break;
       }
+      if (page + 1 === PAGES_PER_QUERY)
+        this.warnings.push("Limite de pagination LinkedIn atteinte ; collecte partielle");
     }
 
     return offers;
@@ -164,27 +205,25 @@ export class LinkedInConnector implements SourceConnector {
 
   /** Carte de résultat → offre brute complète (description, géo, enrichissement). */
   private async toOffer(card: Card & { alternance: boolean }): Promise<RawOffer | null> {
-    const description = await fetchDescription(card.id);
-    if (!description) return null;
-    const geo = await geocodeCityFull(card.city);
+    const detail = await fetchDescription(card.id);
+    if (!detail || !frenchLocation(card.location)) return null;
+    const { description, contract } = detail;
 
-    // Type déduit du titre + description (fiable), sinon de la requête d'origine.
-    const inferred = inferContractType(card.title, description.slice(0, 1200));
-    const contractType = inferred ?? (card.alternance ? "alternance" : "stage");
-
-    return {
-      title: card.title.slice(0, 200),
-      companyName: card.company.slice(0, 120),
+    const offer = makeStudentOffer({
+      title: card.title,
+      company: card.company,
       city: card.city.slice(0, 120),
+      country: "FR",
       description,
-      contractType,
-      remotePolicy: inferRemotePolicy(card.title, card.city, description),
-      educationLevel: inferEducationLevel(card.title, description),
-      sector: TECH_SECTOR,
-      sourceUrl: card.url,
-      scrapedAt: new Date(),
-      ...(card.postedAt ? { publishedAt: new Date(card.postedAt) } : {}),
-      ...(card.logoUrl ? { companyLogoUrl: card.logoUrl } : {}),
+      contract,
+      url: card.url,
+      publishedAt: card.postedAt ?? undefined,
+      logo: card.logoUrl ?? undefined,
+    });
+    if (!offer) return null;
+    const geo = await geocodeCityFull(card.city);
+    return {
+      ...offer,
       ...(geo ? { latitude: geo.lat, longitude: geo.lng } : {}),
     };
   }
@@ -198,11 +237,13 @@ export class LinkedInConnector implements SourceConnector {
   private async collectCards(
     queries: typeof QUERIES,
     seen: Set<string>,
+    requestedPage: number,
   ): Promise<Array<Card & { alternance: boolean }>> {
     const cardsById = new Map<string, Card & { alternance: boolean }>();
 
     for (const q of queries) {
-      for (let page = 0; page < PAGES_PER_QUERY; page++) {
+      if (this.exhaustedQueries.has(q.keywords)) continue;
+      for (const page of [requestedPage]) {
         const url = new URL(SEARCH_URL);
         url.searchParams.set("keywords", q.keywords);
         url.searchParams.set("location", "France");
@@ -219,23 +260,36 @@ export class LinkedInConnector implements SourceConnector {
           if (err instanceof RateLimitedError) return [...cardsById.values()];
           throw err;
         }
-        if (!html) break;
+        if (!html) {
+          this.exhaustedQueries.add(q.keywords);
+          break;
+        }
 
         const cards = parseCards(html);
-        if (cards.length === 0) break;
+        if (cards.length === 0) {
+          this.exhaustedQueries.add(q.keywords);
+          break;
+        }
+        const signature = cards
+          .map((card) => card.id)
+          .sort()
+          .join(",");
+        if (this.lastPages.get(q.keywords) === signature) {
+          this.exhaustedQueries.add(q.keywords);
+          this.warnings.push(`LinkedIn répète la page de « ${q.keywords} » ; couverture partielle`);
+          break;
+        }
+        this.lastPages.set(q.keywords, signature);
 
-        let fresh = 0;
         for (const c of cards) {
           // `seen` couvre tout le cycle : une offre déjà traitée dans un lot
           // précédent ne repart pas chercher sa description.
           if (c.id && !seen.has(c.id)) {
             seen.add(c.id);
             cardsById.set(c.id, { ...c, alternance: !q.internshipType });
-            fresh++;
           }
         }
-        // Page entièrement composée de doublons : la requête n'apportera plus rien.
-        if (fresh === 0) break;
+        // Un chevauchement avec une autre recherche ne prouve pas que les pages suivantes sont vides.
       }
     }
 

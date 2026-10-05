@@ -1,5 +1,6 @@
 import type { RawOffer } from "@/server/ingest/normalize";
-import { inferContractType, inferEducationLevel, inferRemotePolicy } from "@/server/ingest/enrich";
+import { inferEducationLevel, inferRemotePolicy } from "@/server/ingest/enrich";
+import { studentContract, isTechOffer } from "../scope";
 import { RateLimitedError, fetchWithRetry } from "@/server/ingest/http";
 import { geocodeCityFull } from "./geocode";
 import { TECH_KEYWORDS, TECH_SECTOR, type SourceConnector } from "./types";
@@ -104,7 +105,8 @@ async function toRawOffer(offer: ApecOffer): Promise<RawOffer | null> {
 
   // Le filtre APEC ne renvoie que de l'alternance ; le titre peut préciser
   // « stage » sur certaines annonces mixtes.
-  const contractType = inferContractType(title, description) ?? "alternance";
+  const contractType = studentContract(title, "", description);
+  if (!contractType || !isTechOffer(title, description)) return null;
 
   return {
     title: title.slice(0, 200),

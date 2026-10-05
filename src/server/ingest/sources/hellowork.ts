@@ -1,5 +1,6 @@
 import type { RawOffer } from "@/server/ingest/normalize";
-import { inferContractType, inferEducationLevel, inferRemotePolicy } from "@/server/ingest/enrich";
+import { inferEducationLevel, inferRemotePolicy } from "@/server/ingest/enrich";
+import { studentContract, isTechOffer } from "../scope";
 import { RateLimitedError, fetchText, isHostCircuitOpen, mapPool } from "@/server/ingest/http";
 import {
   employmentContractType,
@@ -52,7 +53,7 @@ export function parseListingIds(html: string): string[] {
 
 async function toRawOffer(listing: Listing): Promise<RawOffer | null> {
   const url = `${OFFER_URL}/${listing.id}.html`;
-  const html = await fetchText(url, HTTP);
+  const html = await fetchText(url, { ...HTTP, cacheTtlMs: 4 * 60 * 60 * 1000 });
   if (!html) return null;
 
   const posting = extractJobPosting(html);
@@ -78,10 +79,8 @@ async function toRawOffer(listing: Listing): Promise<RawOffer | null> {
   // … » vs « Stage … »). Trouvé en conditions réelles : 252 offres dont le
   // titre contient « Alternance » stockées avec contractType = STAGE tant
   // que le champ structuré était consulté en premier.
-  const contractType =
-    inferContractType(title, description.slice(0, 1200)) ??
-    employmentContractType(posting) ??
-    listing.fallbackContract;
+  const contractType = studentContract(title, employmentContractType(posting) ?? "", description);
+  if (!contractType || !isTechOffer(title, description)) return null;
 
   const geo = await geocodeCityFull(city);
 

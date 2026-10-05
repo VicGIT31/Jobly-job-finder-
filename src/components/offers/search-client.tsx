@@ -82,10 +82,10 @@ export function SearchClient({
   // pour une recherche suivante après changement de filtre.
   const initialQueryStringRef = useRef(queryString);
 
-  const { data, isFetching, isPlaceholderData } = useQuery<OfferSearchResult>({
+  const { data, isFetching, isPlaceholderData, isError, refetch } = useQuery<OfferSearchResult>({
     queryKey: ["search", queryString],
-    queryFn: async () => {
-      const res = await fetch(`/api/search?${queryString}`);
+    queryFn: async ({ signal }) => {
+      const res = await fetch(`/api/search?${queryString}`, { signal });
       if (!res.ok) throw new Error("Recherche indisponible");
       return res.json();
     },
@@ -184,7 +184,7 @@ export function SearchClient({
   const showSkeleton = isFetching && !isPlaceholderData && !data;
 
   return (
-    <div className="grid gap-8 lg:grid-cols-[260px_1fr]">
+    <div className="grid gap-8 lg:grid-cols-[240px_minmax(0,1fr)]">
       <button
         type="button"
         className="btn-outline flex !min-h-[40px] items-center justify-center gap-2 text-sm lg:hidden"
@@ -272,13 +272,13 @@ export function SearchClient({
           </ul>
         )}
 
-        <div className="rule mt-4 flex items-center justify-between pt-3">
+        <div className="rule mt-4 flex flex-wrap items-center justify-between gap-3 pt-3">
           <p className="text-sm text-ink/70" aria-live="polite">
             <strong className="font-display text-lg text-ink">{result.totalHits}</strong> offre
             {result.totalHits > 1 ? "s" : ""}
             {isFetching && <span className="ml-2 text-ink/40">(mise à jour…)</span>}
           </p>
-          <div className="flex items-center gap-3">
+          <div className="flex flex-wrap items-center gap-3">
             {isLoggedIn && <SaveSearchButton queryString={queryString} />}
             <label htmlFor="tri" className="text-sm text-ink/70">
               Trier :
@@ -298,7 +298,22 @@ export function SearchClient({
         </div>
 
         <div className="mt-4">
-          {showSkeleton ? (
+          {isError ? (
+            <div className="card p-5" role="alert">
+              <p className="font-semibold">La recherche n&apos;a pas pu être actualisée.</p>
+              <p className="mt-1 text-sm text-ink/70">
+                Vos filtres sont conservés. Réessayez pour afficher les résultats correspondants.
+              </p>
+              <button
+                type="button"
+                className="btn-outline mt-3"
+                disabled={isFetching}
+                onClick={() => void refetch()}
+              >
+                {isFetching ? "Nouvelle tentative…" : "Réessayer la recherche"}
+              </button>
+            </div>
+          ) : showSkeleton ? (
             <ResultsSkeleton />
           ) : result.hits.length === 0 ? (
             <EmptyState
@@ -318,7 +333,10 @@ export function SearchClient({
         </div>
 
         {result.totalPages > 1 && (
-          <nav aria-label="Pagination" className="rule mt-6 flex items-center justify-between pt-4">
+          <nav
+            aria-label="Pagination"
+            className="rule mt-6 flex flex-wrap items-center justify-between gap-3 pt-4"
+          >
             <button
               type="button"
               className="btn-outline !min-h-[40px] !px-4 !py-1.5 text-sm disabled:pointer-events-none disabled:opacity-40"

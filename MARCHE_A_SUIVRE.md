@@ -22,7 +22,7 @@ docker compose up --build # build + lance app, postgres, redis, meilisearch, min
 
 - Site : http://localhost:3000
 - Au démarrage, le worker **ingère automatiquement de vraies offres** (LinkedIn
-  fonctionne sans clé). Les offres apparaissent en 1 à 2 minutes.
+  fonctionne sans clé). La durée dépend du nombre de sources et de leurs limites de requêtes.
 - Arrêter : `docker compose down` (les données sont conservées).
 - Repartir de zéro (base vide) : `docker compose down -v` puis `docker compose up --build`.
 
@@ -53,46 +53,43 @@ l'identifiant**, puis console sur **`/admin`**.
 
 ---
 
-## 3. Activer TOUTES les sources d'offres
+## 3. Vérifier les sources gratuites
 
-Par défaut, seules **LinkedIn** et **The Muse** tournent (sans clé). Pour ajouter
-**France Travail** (couverture nationale exhaustive) et **Indeed + Glassdoor**
-(via JSearch), renseigne les clés gratuites dans `.env`.
-
-### 3.a France Travail (le plus important — toutes les offres de France)
-
-1. Créer un compte sur **https://francetravail.io** (gratuit).
-2. Menu **« Mes applications »** → **« Créer une application »**.
-3. Souscrire à l'API **« Offres d'emploi v2 »**.
-4. Copier l'**identifiant client** et la **clé secrète** dans `.env` :
-   ```
-   FRANCE_TRAVAIL_CLIENT_ID=xxxxxxxx
-   FRANCE_TRAVAIL_CLIENT_SECRET=xxxxxxxx
-   ```
-
-### 3.b JSearch — Indeed, Glassdoor, WTTJ, JobTeaser… (Google for Jobs)
-
-1. Créer un compte sur **https://www.openwebninja.com**.
-2. Récupérer la clé d'API (en-tête `X-API-Key`).
-3. La copier dans `.env` :
-   ```
-   JSEARCH_API_KEY=xxxxxxxx
-   ```
-
-Une seule clé ouvre **41 éditeurs** mesurés : Indeed, Glassdoor, Welcome to the
-Jungle, JobTeaser, Meteojob, L'Étudiant, France Travail, BeBee, WIZBII… Chaque
-annonce garde le lien de candidature réel chez son éditeur.
-
-### 3.c Appliquer les clés
+Aucune clé de fournisseur d’offres n’est requise. Le catalogue des entreprises
+se trouve dans `config/job-sources.json`. Indeed est désactivé après un refus HTTP
+403 ; les autres sites peuvent aussi limiter la collecte, ce qui est indiqué
+dans les diagnostics. La couverture de tous les sites et de toutes les offres
+ne peut pas être garantie.
 
 ```bash
-docker compose up -d --build app   # recharge l'app avec les nouvelles variables
-docker compose exec app npm run ingest:now   # ingestion immédiate (sans attendre le cron)
+npm ci
+npm run sources:list
+npm run sources:check
+npm run collect:offers -- --sources airbus,thales,capgemini --limit 20 --pages 2
+# Export : reports/collected-offers.json, sans infrastructure nécessaire.
 ```
 
-> ⚠️ Indeed et Glassdoor **bloquent le scraping direct** (403 / captcha). JSearch
-> est la voie légale : il agrège Google for Jobs et remonte leurs annonces avec
-> le vrai lien de candidature.
+Pour étendre la liste à une entreprise :
+
+```bash
+npm run sources:discover -- https://entreprise.fr/carrieres
+# Examiner reports/discovered-sources.json, compléter nom et paramètres,
+# ajouter au catalogue, puis vérifier avant activation :
+npm run sources:check -- --include-disabled --collect --sources identifiant
+```
+
+Pour importer dans le site :
+
+```bash
+docker compose up -d --build app
+docker compose exec app npm run ingest:now
+# Ou importer un export local déjà vérifié :
+npm run ingest:file -- reports/collected-offers.json
+```
+
+`INGEST_SOURCES=airbus,thales,hellowork.com` dans `.env` limite les prochains
+cycles. Le cache public et les journaux évitent les relectures inutiles et
+signalent les erreurs. Voir `SOURCES.md` pour les formats et limites.
 
 ---
 
@@ -116,7 +113,7 @@ dans un **nouvel onglet**.
 
 | Tâche              | Fréquence            | Effet                                                |
 | ------------------ | -------------------- | ---------------------------------------------------- |
-| `ingest-offers`    | 30 min + démarrage   | Récupère les nouvelles offres, déduplique, indexe    |
+| `ingest-offers`    | 2 h + démarrage      | Récupère les nouvelles offres, déduplique, indexe    |
 | `offer-freshness`  | toutes les heures    | Marque `EXPIRED` les offres disparues de leur source |
 | `purge-old-offers` | tous les jours à 3 h | **Supprime** définitivement les offres de +2 mois    |
 | `daily-alerts`     | tous les jours à 8 h | Envoie les alertes email des recherches sauvegardées |
@@ -182,4 +179,4 @@ docker compose down -v                 # arrêter + effacer les données
 - Dépôt : le remote Git `origin` (branche `main`).
 - **Norme de commit** : **1 commit par fichier**, avec préfixe
   **`MOD:`** (modifié), **`ADD:`** (ajouté), **`RM:`** (supprimé).
-  Exemple : `ADD: src/server/ingest/sources/jsearch.ts — connecteur ...`
+  Exemple : `ADD: src/server/ingest/sources/catalog.ts — catalogue public ...`

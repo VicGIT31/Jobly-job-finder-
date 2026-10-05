@@ -23,7 +23,20 @@ export interface SourceConnector {
    * que de changer le défaut global — voir `ingest/normalize.ts`.
    */
   readonly acceptedContracts?: ReadonlySet<ContractType>;
+  /** Diagnostic conservé même si la source rend une collecte partielle. */
+  readonly warnings?: readonly string[];
+  readonly requestPrefixes?: readonly string[];
+  readonly coverage?: CollectionCoverage;
 }
+
+export type CollectionCoverage = {
+  mode: string;
+  catalogTotal: number;
+  listingsSeen: number;
+  detailsRead: number;
+  accepted: number;
+  complete: boolean;
+};
 
 /** Secteurs tech ciblés — sert d'étiquette `sector` par défaut. */
 export const TECH_SECTOR = "Tech / Informatique";

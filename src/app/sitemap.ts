@@ -1,3 +1,4 @@
+import { PUBLIC_OFFER_WHERE } from "@/server/offers/public-scope";
 import type { MetadataRoute } from "next";
 import { prisma } from "@/lib/prisma";
 import { getSettings, publicBaseUrl } from "@/lib/settings";
@@ -10,7 +11,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
 
   const [offers, companies] = await Promise.all([
     prisma.jobOffer.findMany({
-      where: { status: "ACTIVE" },
+      where: PUBLIC_OFFER_WHERE,
       select: { slug: true, updatedAt: true },
     }),
     prisma.company.findMany({ select: { slug: true, updatedAt: true } }),

@@ -1,3 +1,4 @@
+import { htmlToText } from "./html-to-text";
 /**
  * Extraction des annonces au format **schema.org `JobPosting`** (JSON-LD).
  *
@@ -161,18 +162,5 @@ export function employmentContractType(posting: JsonLdJobPosting): string | null
 
 /** Balises HTML retirées du texte de description fourni par le JSON-LD. */
 export function jsonLdText(html: string): string {
-  return html
-    .replace(/<\/(p|div|li|h[1-6])>/gi, "\n")
-    .replace(/<li[^>]*>/gi, "- ")
-    .replace(/<br\s*\/?>/gi, "\n")
-    .replace(/<[^>]+>/g, "")
-    .replace(/&nbsp;/g, " ")
-    .replace(/&amp;/g, "&")
-    .replace(/&#0?39;/g, "'")
-    .replace(/&rsquo;/g, "'")
-    .replace(/&quot;/g, '"')
-    .replace(/&lt;/g, "<")
-    .replace(/&gt;/g, ">")
-    .replace(/\n{2,}/g, "\n")
-    .trim();
+  return htmlToText(html);
 }

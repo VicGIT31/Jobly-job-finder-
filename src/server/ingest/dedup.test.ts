@@ -16,6 +16,40 @@ describe("normalizeForDedup", () => {
 });
 
 describe("computeDedupHash", () => {
+  it("conserve deux réquisitions différentes malgré le même titre, entreprise et ville", () => {
+    expect(
+      computeDedupHash(
+        "Stage IA",
+        "Airbus",
+        "Toulouse",
+        "https://ag.wd3.myworkdayjobs.com/fr-FR/Airbus/job/Toulouse/Stage-IA_JR12345678",
+      ),
+    ).not.toBe(
+      computeDedupHash(
+        "Stage IA",
+        "Airbus",
+        "Toulouse",
+        "https://ag.wd3.myworkdayjobs.com/fr-FR/Airbus/job/Toulouse/Stage-IA_JR87654321",
+      ),
+    );
+  });
+  it("rafraîchit la même annonce même si son titre, langue ou suivi change", () => {
+    expect(
+      computeDedupHash(
+        "Stage IA",
+        "Airbus",
+        "Toulouse",
+        "https://ag.wd3.myworkdayjobs.com/fr-FR/Airbus/job/Toulouse/Stage-IA_JR12345678?utm_source=test",
+      ),
+    ).toBe(
+      computeDedupHash(
+        "Intern AI",
+        "Airbus",
+        "Toulouse",
+        "https://ag.wd3.myworkdayjobs.com/en-US/Airbus/job/Toulouse/Intern-AI_JR12345678",
+      ),
+    );
+  });
   it("produit le même hash pour deux libellés équivalents", () => {
     const a = computeDedupHash("Développeur Full-Stack", "Doctolib", "Paris");
     const b = computeDedupHash("développeur full stack", "DOCTOLIB", "paris");

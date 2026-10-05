@@ -5,3 +5,7 @@ node_modules
 tsconfig.tsbuildinfo
 Dockerfile
 docker-compose.yml
+.cache
+reports
+data/job-alerts
+coverage
