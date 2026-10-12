@@ -1,5 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { ArrowRight } from "lucide-react";
+import { StatusScreen } from "@/components/ui/status-screen";
 
 export const metadata: Metadata = {
   title: "Offre introuvable",
@@ -9,17 +11,16 @@ export const metadata: Metadata = {
 /** Cible du /go/ quand l'offre n'existe pas (lien mort, offre supprimée). */
 export default function OffreIntrouvablePage() {
   return (
-    <div className="mx-auto max-w-6xl px-4 py-24 text-center">
-      <p className="stamp">Lien expiré</p>
-      <h1 className="mt-4 font-display text-3xl font-bold">Cette offre n'existe plus</h1>
-      <p className="mx-auto mt-3 max-w-md text-ink/70">
-        Le lien que vous avez suivi pointe vers une offre qui a été retirée de Jobly.
-      </p>
-      <div className="mt-8">
+    <StatusScreen
+      eyebrow="Lien expiré"
+      title="Cette offre n'existe plus"
+      actions={
         <Link href="/offres" className="btn-cobalt">
-          Explorer les offres actives
+          Explorer les offres actives <ArrowRight aria-hidden="true" size={16} />
         </Link>
-      </div>
-    </div>
+      }
+    >
+      Le lien que vous avez suivi pointe vers une offre qui a été retirée de Jobly.
+    </StatusScreen>
   );
 }

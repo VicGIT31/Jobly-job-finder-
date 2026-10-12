@@ -17,41 +17,57 @@ export default function OpenGraphImage() {
         height: "100%",
         display: "flex",
         flexDirection: "column",
-        justifyContent: "center",
-        padding: "80px",
-        background: "#FAFAFA",
+        justifyContent: "space-between",
+        padding: "72px 80px",
+        background: "#111113",
+        color: "#EDEDF0",
       }}
     >
-      <div style={{ display: "flex", alignItems: "center", gap: 28 }}>
-        <svg width="112" height="112" viewBox="0 0 40 40">
-          <rect width="40" height="40" rx="12" fill="#4F46E5" />
+      <div style={{ display: "flex", alignItems: "center", gap: 22 }}>
+        <svg width="84" height="84" viewBox="0 0 40 40">
+          <rect width="40" height="40" rx="11" fill="#D6FF3D" />
           <path
-            d="M24 12v13a7 7 0 0 1-14 0M18 12h12"
+            d="M24.5 10.5v14a7.25 7.25 0 0 1-14.5 0"
             fill="none"
-            stroke="white"
-            strokeWidth="4"
+            stroke="#111113"
+            strokeWidth="4.25"
             strokeLinecap="round"
           />
-          <circle cx="31" cy="27" r="3" fill="#C7D2FE" />
+          <circle cx="31" cy="29.5" r="3.1" fill="#111113" />
         </svg>
-        <div style={{ display: "flex", fontSize: 96, fontWeight: 800, color: "#171717" }}>
-          Jobly
+        <div style={{ display: "flex", fontSize: 64, fontWeight: 700, letterSpacing: -4 }}>
+          jobly
         </div>
       </div>
 
-      <div style={{ display: "flex", marginTop: 40, fontSize: 46, color: "#171717" }}>
-        Stages &amp; alternances tech en France
-      </div>
-      <div
-        style={{
-          display: "flex",
-          marginTop: 18,
-          fontSize: 30,
-          color: "rgba(23,23,23,0.6)",
-          maxWidth: 900,
-        }}
-      >
-        Trouvez votre première expérience tech. Postulez sur l’annonce d’origine.
+      <div style={{ display: "flex", flexDirection: "column" }}>
+        <div
+          style={{
+            display: "flex",
+            fontSize: 84,
+            fontWeight: 700,
+            letterSpacing: -4,
+            lineHeight: 1,
+          }}
+        >
+          Stages &amp; alternances tech
+        </div>
+        <div
+          style={{
+            display: "flex",
+            fontSize: 84,
+            fontWeight: 700,
+            color: "#D6FF3D",
+            letterSpacing: -4,
+          }}
+        >
+          en France.
+        </div>
+        <div
+          style={{ display: "flex", marginTop: 28, fontSize: 30, color: "rgba(237,237,240,0.6)" }}
+        >
+          Trouvez votre première expérience tech. Postulez sur l’annonce d’origine.
+        </div>
       </div>
     </div>,
     size,

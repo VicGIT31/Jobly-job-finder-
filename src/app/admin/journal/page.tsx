@@ -65,7 +65,7 @@ export default async function AdminJournalPage({
     <div>
       <form method="get" className="flex flex-wrap items-end gap-2">
         <div>
-          <label htmlFor="action" className="mb-1 block text-sm font-semibold">
+          <label htmlFor="action" className="field-label">
             Type d&apos;action
           </label>
           <select id="action" name="action" defaultValue={action ?? ""} className="input-ink">
@@ -77,7 +77,7 @@ export default async function AdminJournalPage({
             ))}
           </select>
         </div>
-        <button type="submit" className="btn-outline !min-h-[44px]">
+        <button type="submit" className="btn-outline">
           Filtrer
         </button>
       </form>
@@ -86,10 +86,10 @@ export default async function AdminJournalPage({
         {total} entrée{total > 1 ? "s" : ""}
       </p>
 
-      <div className="mt-2 overflow-x-auto">
-        <table className="w-full min-w-[720px] border-collapse text-sm">
+      <div className="table-shell mt-2">
+        <table className="w-full min-w-[720px] border-collapse text-left text-sm [&_td:first-child]:pl-4 [&_td:last-child]:pr-4 [&_th:first-child]:pl-4 [&_th:last-child]:pr-4">
           <thead>
-            <tr className="border-b border-ink/15 text-left">
+            <tr className="border-b border-line bg-surface/50 text-left">
               <Th>Date</Th>
               <Th>Auteur</Th>
               <Th>Action</Th>
@@ -98,7 +98,10 @@ export default async function AdminJournalPage({
           </thead>
           <tbody>
             {entries.map((entry) => (
-              <tr key={entry.id} className="border-b border-ink/15">
+              <tr
+                key={entry.id}
+                className="border-b border-line transition-colors last:border-0 hover:bg-ink/[0.02]"
+              >
                 <td className="whitespace-nowrap py-2.5 pr-4 tabular-nums text-ink/70">
                   {entry.createdAt.toLocaleDateString("fr-FR")}{" "}
                   {entry.createdAt.toLocaleTimeString("fr-FR", {
@@ -115,7 +118,7 @@ export default async function AdminJournalPage({
             ))}
             {entries.length === 0 && (
               <tr>
-                <td colSpan={4} className="py-8 text-center text-ink/50">
+                <td colSpan={4} className="py-8 text-center text-ink/60">
                   Aucune action journalisée.
                 </td>
               </tr>
@@ -130,10 +133,7 @@ export default async function AdminJournalPage({
           className="rule mt-4 flex items-center gap-4 pt-3 text-sm"
         >
           {page > 1 && (
-            <Link
-              href={`/admin/journal?${pageParams(page - 1)}`}
-              className="font-semibold text-cobalt underline-offset-4 hover:underline"
-            >
+            <Link href={`/admin/journal?${pageParams(page - 1)}`} className="link">
               ← Précédent
             </Link>
           )}
@@ -141,10 +141,7 @@ export default async function AdminJournalPage({
             Page {page} / {totalPages}
           </span>
           {page < totalPages && (
-            <Link
-              href={`/admin/journal?${pageParams(page + 1)}`}
-              className="font-semibold text-cobalt underline-offset-4 hover:underline"
-            >
+            <Link href={`/admin/journal?${pageParams(page + 1)}`} className="link">
               Suivant →
             </Link>
           )}

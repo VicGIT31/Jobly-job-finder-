@@ -99,58 +99,62 @@ export default async function AdminSourcesPage() {
 
   return (
     <div>
-      <div className="grid gap-3 sm:grid-cols-3">
+      <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
         <div className="card p-4">
-          <p className="font-display text-3xl font-bold tabular-nums">{rows.length}</p>
-          <p className="mt-1 text-xs uppercase tracking-wider text-ink/60">Sources actives</p>
-        </div>
-        <div className="card p-4">
-          <p className="font-display text-3xl font-bold tabular-nums">{totalClicks}</p>
-          <p className="mt-1 text-xs uppercase tracking-wider text-ink/60">
-            Clics « Postuler » (total)
+          <p className="mt-1 font-mono text-[1.75rem] font-semibold tabular-nums leading-none tracking-[-0.04em]">
+            {rows.length}
           </p>
+          <p className="eyebrow mt-2">Sources actives</p>
         </div>
         <div className="card p-4">
-          <p className="font-display text-3xl font-bold tabular-nums">{last30d}</p>
-          <p className="mt-1 text-xs uppercase tracking-wider text-ink/60">Clics sur 30 jours</p>
+          <p className="mt-1 font-mono text-[1.75rem] font-semibold tabular-nums leading-none tracking-[-0.04em]">
+            {totalClicks}
+          </p>
+          <p className="eyebrow mt-2">Clics « Postuler » (total)</p>
+        </div>
+        <div className="card p-4">
+          <p className="mt-1 font-mono text-[1.75rem] font-semibold tabular-nums leading-none tracking-[-0.04em]">
+            {last30d}
+          </p>
+          <p className="eyebrow mt-2">Clics sur 30 jours</p>
         </div>
       </div>
 
       <section className="mt-8" aria-labelledby="sources-titre">
-        <h2 id="sources-titre" className="font-display text-xl font-bold">
+        <h2 id="sources-titre" className="text-lg font-semibold tracking-tight">
           Performance par source
         </h2>
-        <div className="mt-3 overflow-x-auto">
-          <table className="w-full min-w-[560px] border-collapse text-sm">
+        <div className="table-shell mt-3">
+          <table className="w-full min-w-[560px] border-collapse text-left text-sm [&_td:first-child]:pl-4 [&_td:last-child]:pr-4 [&_th:first-child]:pl-4 [&_th:last-child]:pr-4">
             <thead>
-              <tr className="border-b border-ink/15 text-left">
+              <tr className="border-b border-line bg-surface/50 text-left">
                 <th
                   scope="col"
-                  className="py-2 pr-4 text-xs font-semibold uppercase tracking-wide text-ink/50"
+                  className="whitespace-nowrap py-2.5 pr-4 font-mono text-2xs font-medium uppercase tracking-[0.12em] text-ink/60"
                 >
                   Source
                 </th>
                 <th
                   scope="col"
-                  className="py-2 pr-4 text-xs font-semibold uppercase tracking-wide text-ink/50"
+                  className="whitespace-nowrap py-2.5 pr-4 font-mono text-2xs font-medium uppercase tracking-[0.12em] text-ink/60"
                 >
                   Offres actives
                 </th>
                 <th
                   scope="col"
-                  className="py-2 pr-4 text-xs font-semibold uppercase tracking-wide text-ink/50"
+                  className="whitespace-nowrap py-2.5 pr-4 font-mono text-2xs font-medium uppercase tracking-[0.12em] text-ink/60"
                 >
                   Expirées
                 </th>
                 <th
                   scope="col"
-                  className="py-2 pr-4 text-xs font-semibold uppercase tracking-wide text-ink/50"
+                  className="whitespace-nowrap py-2.5 pr-4 font-mono text-2xs font-medium uppercase tracking-[0.12em] text-ink/60"
                 >
                   Clics Postuler
                 </th>
                 <th
                   scope="col"
-                  className="py-2 text-xs font-semibold uppercase tracking-wide text-ink/50"
+                  className="whitespace-nowrap py-2.5 pr-4 font-mono text-2xs font-medium uppercase tracking-[0.12em] text-ink/60"
                 >
                   Clics / offre
                 </th>
@@ -160,12 +164,15 @@ export default async function AdminSourcesPage() {
               {rows.map(([source, stats]) => {
                 const totalOffers = stats.active + stats.expired;
                 return (
-                  <tr key={source} className="border-b border-ink/15">
+                  <tr
+                    key={source}
+                    className="border-b border-line transition-colors last:border-0 hover:bg-ink/[0.02]"
+                  >
                     <td className="py-2.5 pr-4 font-semibold">{source}</td>
                     <td className="py-2.5 pr-4 tabular-nums">{stats.active}</td>
                     <td className="py-2.5 pr-4 tabular-nums text-ink/60">{stats.expired}</td>
                     <td className="py-2.5 pr-4 tabular-nums">{stats.clicks}</td>
-                    <td className="py-2.5 tabular-nums">
+                    <td className="py-2.5 pr-4 tabular-nums">
                       {totalOffers > 0 ? (stats.clicks / totalOffers).toFixed(1) : "0"}
                     </td>
                   </tr>
@@ -173,7 +180,7 @@ export default async function AdminSourcesPage() {
               })}
               {rows.length === 0 && (
                 <tr>
-                  <td colSpan={5} className="py-8 text-center text-ink/50">
+                  <td colSpan={5} className="py-8 text-center text-ink/60">
                     Aucune source pour le moment.
                   </td>
                 </tr>
@@ -181,7 +188,7 @@ export default async function AdminSourcesPage() {
             </tbody>
           </table>
         </div>
-        <p className="mt-3 text-xs text-ink/50">
+        <p className="mt-3 text-xs text-ink/60">
           Les sources sont créées automatiquement à l&apos;ingestion (champ <code>sourceSite</code>{" "}
           de <code>POST /internal/ingest</code>). Pour couper une source, désactivez ses offres dans
           la modération.
@@ -199,8 +206,8 @@ export default async function AdminSourcesPage() {
             en France ou refuser la collecte. L&apos;état réel du dernier passage apparaît
             ci-dessous.
           </p>
-          <div className="mt-4 overflow-x-auto">
-            <table className="w-full min-w-[480px] text-left text-sm">
+          <div className="table-shell mt-4">
+            <table className="w-full min-w-[480px] text-left text-sm [&_td:first-child]:pl-4 [&_td:last-child]:pr-4 [&_th:first-child]:pl-4 [&_th:last-child]:pr-4">
               <thead>
                 <tr>
                   <Th>Source</Th>
@@ -211,16 +218,16 @@ export default async function AdminSourcesPage() {
               </thead>
               <tbody>
                 {catalog.map((source) => (
-                  <tr key={source.id} className="border-t border-ink/15">
+                  <tr key={source.id} className="border-t border-line">
                     <td className="py-2 pr-4 font-semibold">{source.label}</td>
                     <td className="py-2 pr-4">{source.kind}</td>
                     <td className="py-2 pr-4">{source.enabled ? "Activée" : "Désactivée"}</td>
-                    <td className="py-2">
+                    <td className="py-2 pr-4">
                       <a
                         href={source.url}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="text-cobalt underline underline-offset-4"
+                        className="link"
                       >
                         Voir {source.label}
                         <span className="sr-only"> (nouvel onglet)</span>
@@ -239,21 +246,21 @@ export default async function AdminSourcesPage() {
         />
         <div className="flex flex-wrap gap-3">
           <form action={triggerIngestion}>
-            <button type="submit" className="btn-cobalt !min-h-[40px] !px-4 !py-1.5 text-sm">
+            <button type="submit" className="btn-cobalt btn-sm">
               Lancer une ingestion maintenant
             </button>
           </form>
           <form action={reindexSearch}>
-            <button type="submit" className="btn-outline !min-h-[40px] !px-4 !py-1.5 text-sm">
+            <button type="submit" className="btn-outline btn-sm">
               Ré-indexer la recherche
             </button>
           </form>
         </div>
 
-        <div className="mt-4 overflow-x-auto">
-          <table className="w-full min-w-[560px] border-collapse text-sm">
+        <div className="table-shell mt-4">
+          <table className="w-full min-w-[560px] border-collapse text-left text-sm [&_td:first-child]:pl-4 [&_td:last-child]:pr-4 [&_th:first-child]:pl-4 [&_th:last-child]:pr-4">
             <thead>
-              <tr className="border-b border-ink/15 text-left">
+              <tr className="border-b border-line bg-surface/50 text-left">
                 <Th>Connecteur</Th>
                 <Th>Cycles</Th>
                 <Th>Échecs</Th>
@@ -264,7 +271,10 @@ export default async function AdminSourcesPage() {
             </thead>
             <tbody>
               {[...health.entries()].map(([source, stats]) => (
-                <tr key={source} className="border-b border-ink/15">
+                <tr
+                  key={source}
+                  className="border-b border-line transition-colors last:border-0 hover:bg-ink/[0.02]"
+                >
                   <td className="py-2.5 pr-4 font-semibold">
                     {stats.label}
                     {stats.error && (
@@ -275,7 +285,7 @@ export default async function AdminSourcesPage() {
                   <td className="py-2.5 pr-4 tabular-nums">{stats.failures}</td>
                   <td className="py-2.5 pr-4 tabular-nums">{stats.created}</td>
                   <td className="py-2.5 pr-4 text-xs">{coverageLabel(stats.coverage)}</td>
-                  <td className="py-2.5">
+                  <td className="py-2.5 pr-4">
                     {stats.latestOk ? (
                       <Badge tone="accent">Collecte réussie</Badge>
                     ) : stats.latestFetched > 0 ? (
@@ -288,7 +298,7 @@ export default async function AdminSourcesPage() {
               ))}
               {health.size === 0 && (
                 <tr>
-                  <td colSpan={6} className="py-8 text-center text-ink/50">
+                  <td colSpan={6} className="py-8 text-center text-ink/60">
                     Aucun cycle sur les dernières 24 heures.
                   </td>
                 </tr>
@@ -304,10 +314,10 @@ export default async function AdminSourcesPage() {
           title="Derniers événements d'ingestion"
           description="Offre par offre : création, doublon rafraîchi ou rejet (hors périmètre, données invalides)."
         />
-        <div className="overflow-x-auto">
-          <table className="w-full min-w-[640px] border-collapse text-sm">
+        <div className="table-shell">
+          <table className="w-full min-w-[640px] border-collapse text-left text-sm [&_td:first-child]:pl-4 [&_td:last-child]:pr-4 [&_th:first-child]:pl-4 [&_th:last-child]:pr-4">
             <thead>
-              <tr className="border-b border-ink/15 text-left">
+              <tr className="border-b border-line bg-surface/50 text-left">
                 <Th>Date</Th>
                 <Th>Source</Th>
                 <Th>Résultat</Th>
@@ -316,7 +326,10 @@ export default async function AdminSourcesPage() {
             </thead>
             <tbody>
               {logs.map((log) => (
-                <tr key={log.id} className="border-b border-ink/15">
+                <tr
+                  key={log.id}
+                  className="border-b border-line transition-colors last:border-0 hover:bg-ink/[0.02]"
+                >
                   <td className="whitespace-nowrap py-2 pr-4 tabular-nums text-ink/70">
                     {log.createdAt.toLocaleDateString("fr-FR")}{" "}
                     {log.createdAt.toLocaleTimeString("fr-FR", {
@@ -338,7 +351,7 @@ export default async function AdminSourcesPage() {
               ))}
               {logs.length === 0 && (
                 <tr>
-                  <td colSpan={4} className="py-8 text-center text-ink/50">
+                  <td colSpan={4} className="py-8 text-center text-ink/60">
                     Aucun log d&apos;ingestion.
                   </td>
                 </tr>

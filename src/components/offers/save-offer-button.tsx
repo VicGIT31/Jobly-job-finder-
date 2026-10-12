@@ -3,6 +3,7 @@
 import { useMutation } from "@tanstack/react-query";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
+import { Bookmark, BookmarkCheck } from "lucide-react";
 
 export function SaveOfferButton({
   offerId,
@@ -35,7 +36,9 @@ export function SaveOfferButton({
           router.push(`/connexion?callbackUrl=${encodeURIComponent(window.location.pathname)}`)
         }
       >
-        ☆ Sauvegarder (connexion)
+        <Bookmark aria-hidden="true" size={16} />
+        Sauvegarder
+        <span className="text-xs font-normal text-ink/60">(connexion)</span>
       </button>
     );
   }
@@ -43,12 +46,17 @@ export function SaveOfferButton({
   return (
     <button
       type="button"
-      className="btn-outline w-full"
+      className={`btn-outline w-full ${saved ? "!border-accent/40 !bg-accent-soft !text-accent" : ""}`}
       aria-pressed={saved}
       onClick={() => mutation.mutate()}
       disabled={mutation.isPending}
     >
-      {saved ? "★ Sauvegardée" : "☆ Sauvegarder"}
+      {saved ? (
+        <BookmarkCheck aria-hidden="true" size={16} className="animate-[page-in_260ms_ease-out]" />
+      ) : (
+        <Bookmark aria-hidden="true" size={16} />
+      )}
+      {saved ? "Sauvegardée" : "Sauvegarder"}
     </button>
   );
 }

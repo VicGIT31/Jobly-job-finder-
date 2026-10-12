@@ -37,8 +37,8 @@ export function OAuthButtons({ callbackUrl = "/mon-espace" }: { callbackUrl?: st
           Continuer avec LinkedIn
         </button>
       )}
-      <div className="my-2 flex items-center gap-3 text-xs uppercase tracking-widest text-ink/40">
-        <span className="rule flex-1" /> ou <span className="rule flex-1" />
+      <div className="my-4 flex items-center gap-3 font-mono text-2xs uppercase tracking-[0.14em] text-ink/60">
+        <span className="h-px flex-1 bg-line" /> ou <span className="h-px flex-1 bg-line" />
       </div>
     </div>
   );

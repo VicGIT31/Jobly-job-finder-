@@ -16,13 +16,13 @@ export function MatchScoreCard({
 }) {
   if (!isLoggedIn) {
     return (
-      <div className="card mt-4 p-5">
-        <h2 className="flex items-center gap-2 font-display text-lg font-bold">
-          <Target aria-hidden="true" size={18} className="text-cobalt" />
+      <div className="panel">
+        <h2 className="flex items-center gap-2 text-[15px] font-semibold tracking-tight">
+          <Target aria-hidden="true" size={17} className="text-accent" />
           Correspondance
         </h2>
         <p className="mt-2 text-sm text-ink/60">
-          <Link href="/connexion" className="text-cobalt underline-offset-4 hover:underline">
+          <Link href="/connexion" className="link">
             Connectez-vous
           </Link>{" "}
           pour voir en quoi cette offre correspond à votre profil.
@@ -33,19 +33,16 @@ export function MatchScoreCard({
 
   if (!result) {
     return (
-      <div className="card mt-4 p-5">
-        <h2 className="flex items-center gap-2 font-display text-lg font-bold">
-          <Target aria-hidden="true" size={18} className="text-cobalt" />
+      <div className="panel">
+        <h2 className="flex items-center gap-2 text-[15px] font-semibold tracking-tight">
+          <Target aria-hidden="true" size={17} className="text-accent" />
           Correspondance
         </h2>
         <p className="mt-2 text-sm text-ink/60">
           Complétez vos préférences (niveau d'études, spécialité, ville) pour voir votre score de
           correspondance sur cette offre.
         </p>
-        <Link
-          href="/mon-espace"
-          className="mt-3 inline-block text-sm font-semibold text-cobalt underline-offset-4 hover:underline"
-        >
+        <Link href="/mon-espace" className="link mt-3 inline-block text-sm">
           Compléter mon profil →
         </Link>
       </div>
@@ -55,16 +52,18 @@ export function MatchScoreCard({
   const tier = scoreTier(result.score);
 
   return (
-    <div className="card mt-4 p-5">
-      <h2 className="flex items-center gap-2 font-display text-lg font-bold">
-        <Target aria-hidden="true" size={18} className="text-cobalt" />
+    <div className="panel">
+      <h2 className="flex items-center gap-2 text-[15px] font-semibold tracking-tight">
+        <Target aria-hidden="true" size={17} className="text-accent" />
         Correspondance
       </h2>
       <p className="mt-1">
-        <span className="font-display text-3xl font-bold tabular-nums">{result.score}%</span>{" "}
+        <span className="font-mono text-3xl font-semibold tabular-nums tracking-[-0.04em]">
+          {result.score}%
+        </span>{" "}
         <span className={`text-sm font-semibold ${tier.className}`}>{tier.label}</span>
       </p>
-      <p className="mt-0.5 text-xs text-ink/45">
+      <p className="mt-0.5 text-xs text-ink/60">
         Estimation basée sur votre profil, pas une décision de l'employeur.
       </p>
 
@@ -75,8 +74,8 @@ export function MatchScoreCard({
               <p className="font-medium">{factor.label}</p>
               <span className="shrink-0 tabular-nums text-ink/70">{factor.score}%</span>
             </div>
-            <p className="text-xs text-ink/55">{factor.explanation}</p>
-            <div className="mt-1 h-1.5 overflow-hidden rounded-full bg-surface">
+            <p className="text-xs text-ink/60">{factor.explanation}</p>
+            <div className="mt-1 h-1.5 overflow-hidden rounded-full bg-ink/[0.06]">
               <div
                 className="h-full rounded-full bg-cobalt/70"
                 style={{ width: `${factor.score}%` }}

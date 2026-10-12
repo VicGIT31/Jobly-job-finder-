@@ -1,48 +1,42 @@
 import Link from "next/link";
-import { Clock, Laptop, MapPin, Wallet } from "lucide-react";
+import { ArrowUpRight, Clock, Laptop, MapPin, Wallet } from "lucide-react";
 import type { EducationLevel, RemotePolicy, TechSpecialty } from "@prisma/client";
 import type { OfferDocument } from "@/server/search/sync";
-import { CONTRACT_LABELS, COUNTRY_FLAGS, REMOTE_LABELS } from "@/lib/search-params";
+import { COUNTRY_FLAGS, REMOTE_LABELS } from "@/lib/search-params";
 import { computeMatchScore, scoreTier, type MatchCandidate } from "@/server/match/score";
+import { ContractBadge } from "@/components/ui/contract-badge";
 import { CompanyLogo } from "./company-logo";
+import { formatDateFr, formatSalary, timeAgo } from "./format";
 
-export function formatSalary(min: number | null, max: number | null): string | null {
-  if (min == null && max == null) return null;
-  const fmt = (n: number) =>
-    n >= 10000 ? `${Math.round(n / 1000)} k€` : `${n.toLocaleString("fr-FR")} €`;
-  const unit = (min ?? max ?? 0) >= 10000 ? "/an" : "/mois";
-  if (min != null && max != null) return `${fmt(min)}–${fmt(max)} ${unit}`;
-  return `${fmt(min ?? max ?? 0)} ${unit}`;
-}
+// Réexportés pour compatibilité : les helpers vivent dans `./format` (sans
+// dépendance serveur, importables par n'importe quel composant client).
+export { formatDateFr, formatSalary, timeAgo };
 
-/** Date de publication (site d'origine) au format court français : "17 juil. 2026". */
-export function formatDateFr(ts: number): string {
-  return new Date(ts).toLocaleDateString("fr-FR", {
-    day: "numeric",
-    month: "short",
-    year: "numeric",
-  });
-}
-
-export function timeAgo(ts: number): string {
-  const days = Math.floor((Date.now() - ts) / 86_400_000);
-  if (days <= 0) return "aujourd'hui";
-  if (days === 1) return "hier";
-  if (days < 30) return `il y a ${days} jours`;
-  const months = Math.floor(days / 30);
-  return `il y a ${months} mois`;
-}
-
+/**
+ * Carte d'offre — deux mises en page :
+ * - `row` (liste de résultats) : lecture horizontale, optimisée pour le balayage ;
+ * - `tile` (grilles : accueil, entreprise, similaires).
+ * Toute la carte est cliquable (lien étiré) ; « Postuler » reste un lien
+ * distinct, au-dessus de l'overlay, vers la redirection `/go/:id`.
+ */
 export function OfferCard({
   offer,
   candidateProfile,
+  layout = "tile",
+  actions,
 }: {
   offer: OfferDocument;
   /** Profil du candidat connecté, pour afficher le score de correspondance sur la carte (spec §11). */
   candidateProfile?: MatchCandidate | null;
+  layout?: "row" | "tile";
+  /** Actions secondaires (ex. « Retirer ») affichées dans le pied de carte. */
+  actions?: React.ReactNode;
 }) {
   const salary = formatSalary(offer.salaryMin, offer.salaryMax);
   const isNew = Date.now() - offer.publishedAtTs < 3 * 86_400_000;
+  const isExpired = offer.status === "EXPIRED";
+  const remote =
+    REMOTE_LABELS[offer.remotePolicy as keyof typeof REMOTE_LABELS] ?? offer.remotePolicy;
 
   const matchResult = candidateProfile
     ? computeMatchScore(candidateProfile, {
@@ -53,101 +47,151 @@ export function OfferCard({
       })
     : null;
 
+  const isRow = layout === "row";
+
+  const meta = (
+    <dl className="flex flex-wrap items-center gap-x-4 gap-y-1.5 text-[13px] text-ink/65">
+      <div className="flex min-w-0 items-center gap-1.5">
+        <dt className="sr-only">Ville</dt>
+        <MapPin aria-hidden="true" size={14} className="shrink-0 text-ink/35" />
+        <dd className="flex min-w-0 items-center gap-1 truncate">
+          {offer.countryCode !== "FR" && (
+            <span aria-hidden="true">{COUNTRY_FLAGS[offer.countryCode] ?? "🌍"}</span>
+          )}
+          {offer.city}
+        </dd>
+      </div>
+      <div className="flex items-center gap-1.5">
+        <dt className="sr-only">Télétravail</dt>
+        <Laptop aria-hidden="true" size={14} className="shrink-0 text-ink/35" />
+        <dd>{remote}</dd>
+      </div>
+      {salary && (
+        <div className="flex items-center gap-1.5">
+          <dt className="sr-only">Salaire</dt>
+          <Wallet aria-hidden="true" size={14} className="shrink-0 text-ink/35" />
+          <dd className="font-medium text-ink">{salary}</dd>
+        </div>
+      )}
+      <div className="flex items-center gap-1.5">
+        <dt className="sr-only">Publiée le</dt>
+        <Clock aria-hidden="true" size={14} className="shrink-0 text-ink/35" />
+        <dd>
+          <time
+            dateTime={new Date(offer.publishedAtTs).toISOString()}
+            title={formatDateFr(offer.publishedAtTs)}
+          >
+            {timeAgo(offer.publishedAtTs)}
+          </time>
+        </dd>
+      </div>
+    </dl>
+  );
+
+  const applyLink = !isExpired && (
+    // z-10 pour passer au-dessus de l'overlay de la carte ; nouvel onglet vers la source.
+    <a
+      href={`/go/${offer.id}`}
+      target="_blank"
+      rel="nofollow noopener"
+      className="relative z-10 inline-flex min-h-[40px] shrink-0 items-center gap-1 rounded-lg border border-line bg-paper px-3.5 text-[13px] font-semibold text-ink transition-[background-color,border-color,color,transform] duration-base ease-out hover:border-transparent hover:bg-volt hover:text-volt-ink active:scale-[0.97] group-hover:border-ink/20"
+    >
+      Postuler
+      <ArrowUpRight
+        aria-hidden="true"
+        size={15}
+        className="transition-transform duration-base ease-out group-hover:-translate-y-px group-hover:translate-x-px"
+      />
+      <span className="sr-only">
+        {offer.title} sur {offer.sourceSite}, nouvel onglet
+      </span>
+    </a>
+  );
+
+  const matchBadge = matchResult && (
+    <span
+      className={`font-mono text-2xs font-semibold tabular-nums ${scoreTier(matchResult.score).className}`}
+      title="Estimation basée sur votre profil, pas une décision de l'employeur."
+    >
+      {matchResult.score}% match
+    </span>
+  );
+
   return (
-    <article className="card group relative p-4 transition-colors duration-150 hover:border-cobalt/35 sm:p-5">
-      <div className="flex flex-wrap items-start gap-3">
-        <CompanyLogo name={offer.companyName} logoUrl={offer.companyLogo} />
-        <div className="min-w-0 flex-1 basis-[160px]">
-          <p className="flex items-center gap-2 text-sm font-medium text-ink/60">
+    <article
+      className={`group relative flex rounded-xl border border-line bg-paper shadow-card transition-[border-color,box-shadow,transform] duration-base ease-out hover:border-ink/20 hover:shadow-lift ${
+        isRow
+          ? "flex-col gap-4 p-4 sm:flex-row sm:items-center sm:gap-5 sm:p-5"
+          : "h-full flex-col p-5 hover:-translate-y-0.5"
+      } ${isExpired ? "opacity-75" : ""}`}
+    >
+      {/* Liseré d'accent qui se dessine au survol. */}
+      <span
+        aria-hidden="true"
+        className="pointer-events-none absolute inset-y-4 left-0 w-[3px] origin-center scale-y-0 rounded-r-full bg-accent transition-transform duration-slow ease-out group-hover:scale-y-100"
+      />
+
+      <div
+        className={`flex min-w-0 flex-1 gap-4 ${isRow ? "items-start sm:items-center" : "flex-col"}`}
+      >
+        <div className={`flex items-start gap-3 ${isRow ? "" : "justify-between"}`}>
+          <CompanyLogo
+            name={offer.companyName}
+            logoUrl={offer.companyLogo}
+            slug={offer.companySlug}
+            size={isRow ? 48 : 40}
+          />
+          {!isRow && <ContractBadge type={offer.contractType} />}
+        </div>
+
+        <div className="min-w-0 flex-1">
+          <p className="flex items-center gap-2 text-[13px] font-medium text-ink/60">
             <span className="truncate">{offer.companyName}</span>
-            {isNew && (
-              <span className="shrink-0 rounded-full bg-emerald-50 px-2 py-0.5 text-xs font-semibold text-emerald-700 dark:bg-emerald-950 dark:text-emerald-300">
-                Nouveau
+            {isNew && !isExpired && <span className="badge-new shrink-0">Nouveau</span>}
+            {isExpired && (
+              <span className="shrink-0 rounded-full bg-ink/10 px-2 py-0.5 text-2xs font-semibold text-ink/60">
+                Expirée
               </span>
             )}
           </p>
-          <h3 className="mt-1 text-lg font-semibold leading-snug tracking-tight">
+          <h3
+            className={`mt-1 font-semibold leading-snug tracking-[-0.015em] text-ink ${
+              isRow ? "text-[17px]" : "line-clamp-3 text-base"
+            }`}
+          >
             <Link
               href={`/offres/${offer.slug}`}
-              className="break-words after:absolute after:inset-0 group-hover:text-cobalt"
+              className="break-words transition-colors duration-base after:absolute after:inset-0 after:rounded-xl group-hover:text-accent"
             >
               {offer.title}
             </Link>
           </h3>
-        </div>
-        <div className="flex shrink-0 flex-col items-end gap-1">
-          <span
-            className="stamp"
-            aria-label={`Contrat : ${CONTRACT_LABELS[offer.contractType as keyof typeof CONTRACT_LABELS] ?? offer.contractType}`}
-          >
-            {CONTRACT_LABELS[offer.contractType as keyof typeof CONTRACT_LABELS] ??
-              offer.contractType}
-          </span>
-          {matchResult && (
-            <span
-              className={`text-xs font-semibold tabular-nums ${scoreTier(matchResult.score).className}`}
-              title="Estimation basée sur votre profil, pas une décision de l'employeur."
-            >
-              {matchResult.score}% match
-            </span>
-          )}
+          <div className={isRow ? "mt-2" : "mt-3"}>{meta}</div>
         </div>
       </div>
 
-      <dl className="mt-3.5 flex flex-wrap items-center gap-x-4 gap-y-1.5 text-sm text-ink/70">
-        <div className="flex items-center gap-1.5">
-          <dt className="sr-only">Ville</dt>
-          <MapPin aria-hidden="true" size={14} className="shrink-0 text-ink/40" />
-          <dd className="flex items-center gap-1">
-            {offer.countryCode !== "FR" && (
-              <span aria-hidden="true">{COUNTRY_FLAGS[offer.countryCode] ?? "🌍"}</span>
-            )}
-            {offer.city}
-          </dd>
-        </div>
-        <div className="flex items-center gap-1.5">
-          <dt className="sr-only">Télétravail</dt>
-          <Laptop aria-hidden="true" size={14} className="shrink-0 text-ink/40" />
-          <dd>
-            {REMOTE_LABELS[offer.remotePolicy as keyof typeof REMOTE_LABELS] ?? offer.remotePolicy}
-          </dd>
-        </div>
-        {salary && (
-          <div className="flex items-center gap-1.5">
-            <dt className="sr-only">Salaire</dt>
-            <Wallet aria-hidden="true" size={14} className="shrink-0 text-ink/40" />
-            <dd className="font-semibold text-ink">{salary}</dd>
+      {isRow ? (
+        <div className="flex shrink-0 items-center justify-between gap-3 border-t border-line pt-3 sm:flex-col sm:items-end sm:justify-center sm:border-0 sm:pt-0">
+          <div className="flex items-center gap-2">
+            {matchBadge}
+            <ContractBadge type={offer.contractType} />
           </div>
-        )}
-        <div className="flex items-center gap-1.5">
-          <dt className="sr-only">Publiée le</dt>
-          <Clock aria-hidden="true" size={14} className="shrink-0 text-ink/40" />
-          <dd className="text-ink/60">
-            <time dateTime={new Date(offer.publishedAtTs).toISOString()}>
-              {formatDateFr(offer.publishedAtTs)}
-            </time>{" "}
-            · {timeAgo(offer.publishedAtTs)}
-          </dd>
+          <div className="relative z-10 flex items-center gap-2">
+            {actions}
+            {applyLink}
+          </div>
         </div>
-      </dl>
-
-      <div className="rule mt-3.5 flex items-center justify-between gap-2 pt-3">
-        <span className="min-w-0 truncate text-xs text-ink/65">
-          {offer.sector} · Source : {offer.sourceSite}
-        </span>
-        {/* z-10 pour passer au-dessus de l'overlay de la carte ; nouvel onglet vers la source. */}
-        <a
-          href={`/go/${offer.id}`}
-          target="_blank"
-          rel="nofollow noopener"
-          className="relative z-10 inline-flex min-h-[44px] shrink-0 items-center gap-1 rounded-lg bg-cobalt-soft px-3 py-2 text-sm font-semibold text-cobalt transition-colors duration-150 group-hover:bg-cobalt group-hover:text-white"
-        >
-          Postuler <span aria-hidden="true">↗</span>
-          <span className="sr-only">
-            {offer.title} sur {offer.sourceSite}, nouvel onglet
+      ) : (
+        <div className="mt-auto flex items-center justify-between gap-3 pt-5">
+          <span className="min-w-0 truncate font-mono text-2xs text-ink/60">
+            {matchBadge ?? offer.sourceSite}
           </span>
-        </a>
-      </div>
+          <div className="relative z-10 flex items-center gap-2">
+            {actions}
+            {applyLink}
+          </div>
+        </div>
+      )}
     </article>
   );
 }

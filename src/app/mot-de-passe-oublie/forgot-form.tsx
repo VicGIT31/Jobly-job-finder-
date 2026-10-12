@@ -17,19 +17,19 @@ export function ForgotForm() {
 
   if (result?.ok) {
     return (
-      <p className="rounded-lg border border-cobalt/20 bg-cobalt-soft p-4 text-sm" role="status">
+      <p className="alert-success" role="status">
         ✓ {result.message}
       </p>
     );
   }
 
   return (
-    <form onSubmit={onSubmit} className="flex flex-col gap-3">
+    <form onSubmit={onSubmit} className="flex flex-col gap-4">
       <p className="text-sm text-ink/70">
         Indiquez votre email : nous vous enverrons un lien pour choisir un nouveau mot de passe.
       </p>
       <div>
-        <label htmlFor="email" className="mb-1 block text-sm font-semibold">
+        <label htmlFor="email" className="field-label">
           Email
         </label>
         <input
@@ -42,11 +42,11 @@ export function ForgotForm() {
         />
       </div>
       {result && !result.ok && (
-        <p className="rounded-lg border border-ink/15 p-2 text-sm" role="alert">
+        <p className="alert-error" role="alert">
           {result.error}
         </p>
       )}
-      <button type="submit" className="btn-cobalt w-full" disabled={pending}>
+      <button type="submit" className="btn-cobalt mt-1 w-full" disabled={pending}>
         {pending ? "Envoi…" : "Envoyer le lien"}
       </button>
     </form>

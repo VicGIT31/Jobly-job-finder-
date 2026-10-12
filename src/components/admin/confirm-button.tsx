@@ -8,7 +8,7 @@
 export function ConfirmButton({
   children,
   message,
-  className = "text-sm font-semibold text-red-600 underline-offset-4 hover:underline",
+  className = "rounded-md text-sm font-medium text-danger underline-offset-4 transition-colors hover:underline",
 }: {
   children: React.ReactNode;
   message: string;

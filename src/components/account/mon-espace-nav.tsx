@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import * as m from "motion/react-m";
 import {
   BarChart3,
   Bell,
@@ -12,6 +13,8 @@ import {
   Shield,
   User,
 } from "lucide-react";
+import { SPRING } from "@/components/motion/tokens";
+import { MotionProvider } from "@/components/motion/motion-provider";
 
 const ITEMS = [
   { href: "/mon-espace", label: "Profil & CV", icon: User, exact: true },
@@ -25,35 +28,50 @@ const ITEMS = [
 ] as const;
 
 /**
- * Nav icônes + libellés (spec §4) avec indicateur de page active — absent
- * jusqu'ici (8 liens texte plats, aucun moyen de savoir où l'on se trouve).
- * Composant client uniquement pour `usePathname()` ; le layout parent reste
- * un Server Component pour la garde d'accès.
+ * Nav de l'espace candidat : barre latérale collante sur grand écran, barre
+ * d'onglets défilante sur mobile. La pastille active glisse d'un lien à
+ * l'autre (`layoutId`). Composant client uniquement pour `usePathname()` ;
+ * le layout parent reste un Server Component pour la garde d'accès.
  */
 export function MonEspaceNav() {
   const pathname = usePathname();
 
   return (
-    <nav
-      aria-label="Navigation de l'espace candidat"
-      className="rule mt-4 flex flex-wrap gap-1 overflow-x-auto pt-3"
-    >
-      {ITEMS.map(({ href, label, icon: Icon, exact }) => {
-        const active = exact ? pathname === href : pathname?.startsWith(href);
-        return (
-          <Link
-            key={href}
-            href={href}
-            aria-current={active ? "page" : undefined}
-            className={`flex items-center gap-1.5 whitespace-nowrap rounded-lg px-3 py-2 text-sm font-semibold transition-colors ${
-              active ? "bg-cobalt text-white" : "text-ink/70 hover:bg-ink/5 hover:text-ink"
-            }`}
-          >
-            <Icon aria-hidden="true" size={16} strokeWidth={2.25} />
-            {label}
-          </Link>
-        );
-      })}
-    </nav>
+    <MotionProvider>
+      <nav aria-label="Navigation de l'espace candidat" className="lg:self-start">
+        <ul className="scrollbar-none -mx-4 flex gap-1 overflow-x-auto border-b border-line px-4 pb-3 sm:-mx-6 sm:px-6 lg:sticky lg:top-[calc(var(--header-h)+24px)] lg:mx-0 lg:flex-col lg:overflow-visible lg:border-b-0 lg:px-0 lg:pb-0">
+          {ITEMS.map(({ href, label, icon: Icon, exact }) => {
+            const active = exact ? pathname === href : pathname?.startsWith(href);
+            return (
+              <li key={href} className="relative shrink-0">
+                <Link
+                  href={href}
+                  aria-current={active ? "page" : undefined}
+                  className={`relative z-10 flex min-h-[40px] items-center gap-2.5 whitespace-nowrap rounded-lg px-3 py-2 text-sm font-medium transition-colors duration-base ${
+                    active ? "text-canvas" : "text-ink/65 hover:bg-ink/[0.05] hover:text-ink"
+                  }`}
+                >
+                  <Icon
+                    aria-hidden="true"
+                    size={16}
+                    strokeWidth={2}
+                    className={active ? "text-volt" : "text-ink/60"}
+                  />
+                  {label}
+                </Link>
+                {active && (
+                  <m.span
+                    layoutId="mon-espace-pill"
+                    transition={SPRING.snappy}
+                    aria-hidden="true"
+                    className="absolute inset-0 rounded-lg bg-ink"
+                  />
+                )}
+              </li>
+            );
+          })}
+        </ul>
+      </nav>
+    </MotionProvider>
   );
 }

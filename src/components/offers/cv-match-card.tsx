@@ -20,13 +20,13 @@ export function CvMatchCard({
 
   if (!hasCv) {
     return (
-      <div className="card mt-4 p-5">
-        <h2 className="flex items-center gap-2 font-display text-lg font-bold">
-          <FileText aria-hidden="true" size={18} className="text-cobalt" />
+      <div className="panel">
+        <h2 className="flex items-center gap-2 text-[15px] font-semibold tracking-tight">
+          <FileText aria-hidden="true" size={17} className="text-accent" />
           Correspondance CV
         </h2>
         <p className="mt-2 text-sm text-ink/60">
-          <Link href="/mon-espace" className="text-cobalt underline-offset-4 hover:underline">
+          <Link href="/mon-espace" className="link">
             Ajoutez votre CV
           </Link>{" "}
           pour voir les mots-clés de cette offre que vous couvrez déjà.
@@ -37,9 +37,9 @@ export function CvMatchCard({
 
   if (!result) {
     return (
-      <div className="card mt-4 p-5">
-        <h2 className="flex items-center gap-2 font-display text-lg font-bold">
-          <FileText aria-hidden="true" size={18} className="text-cobalt" />
+      <div className="panel">
+        <h2 className="flex items-center gap-2 text-[15px] font-semibold tracking-tight">
+          <FileText aria-hidden="true" size={17} className="text-accent" />
           Correspondance CV
         </h2>
         <p className="mt-2 text-sm text-ink/60">
@@ -50,30 +50,32 @@ export function CvMatchCard({
   }
 
   return (
-    <div className="card mt-4 p-5">
-      <h2 className="flex items-center gap-2 font-display text-lg font-bold">
-        <FileText aria-hidden="true" size={18} className="text-cobalt" />
+    <div className="panel">
+      <h2 className="flex items-center gap-2 text-[15px] font-semibold tracking-tight">
+        <FileText aria-hidden="true" size={17} className="text-accent" />
         Correspondance CV
       </h2>
       <p className="mt-1">
-        <span className="font-display text-3xl font-bold tabular-nums">{result.score}%</span>{" "}
+        <span className="font-mono text-3xl font-semibold tabular-nums tracking-[-0.04em]">
+          {result.score}%
+        </span>{" "}
         <span className="text-sm text-ink/60">des mots-clés de l'offre trouvés dans votre CV</span>
       </p>
-      <p className="mt-0.5 text-xs text-ink/45">
+      <p className="mt-0.5 text-xs text-ink/60">
         Comparaison lexicale simple, pas une analyse par IA.
       </p>
-      <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-surface">
+      <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-ink/[0.06]">
         <div className="h-full rounded-full bg-cobalt/70" style={{ width: `${result.score}%` }} />
       </div>
 
       {result.found.length > 0 && (
         <div className="mt-3">
-          <p className="text-xs font-semibold uppercase tracking-wide text-ink/50">Trouvés</p>
+          <p className="eyebrow">Trouvés</p>
           <div className="mt-1 flex flex-wrap gap-1.5">
             {result.found.map((kw) => (
               <span
                 key={kw}
-                className="rounded-full bg-emerald-50 px-2 py-0.5 text-xs font-medium text-emerald-700 dark:bg-emerald-950 dark:text-emerald-300"
+                className="rounded-full bg-success-soft px-2 py-0.5 text-xs font-medium text-success"
               >
                 ✓ {kw}
               </span>
@@ -84,9 +86,7 @@ export function CvMatchCard({
 
       {result.missing.length > 0 && (
         <div className="mt-3">
-          <p className="text-xs font-semibold uppercase tracking-wide text-ink/50">
-            Manquants ou non détectés
-          </p>
+          <p className="eyebrow">Manquants ou non détectés</p>
           <div className="mt-1 flex flex-wrap gap-1.5">
             {result.missing.map((kw) => (
               <span

@@ -37,13 +37,13 @@ export function AiDraftPanel({ offerId, isLoggedIn }: { offerId: string; isLogge
 
   if (!isLoggedIn) {
     return (
-      <div className="card mt-4 p-5">
-        <h2 className="flex items-center gap-2 font-display text-lg font-bold">
-          <Sparkles aria-hidden="true" size={18} className="text-cobalt" />
+      <div className="panel">
+        <h2 className="flex items-center gap-2 text-[15px] font-semibold tracking-tight">
+          <Sparkles aria-hidden="true" size={17} className="text-accent" />
           Brouillon de réponse
         </h2>
         <p className="mt-2 text-sm text-ink/60">
-          <Link href="/connexion" className="text-cobalt underline-offset-4 hover:underline">
+          <Link href="/connexion" className="link">
             Connectez-vous
           </Link>{" "}
           pour générer un brouillon de réponse personnalisé pour cette offre.
@@ -53,12 +53,12 @@ export function AiDraftPanel({ offerId, isLoggedIn }: { offerId: string; isLogge
   }
 
   return (
-    <div className="card mt-4 p-5">
-      <h2 className="flex items-center gap-2 font-display text-lg font-bold">
-        <Sparkles aria-hidden="true" size={18} className="text-cobalt" />
+    <div className="panel">
+      <h2 className="flex items-center gap-2 text-[15px] font-semibold tracking-tight">
+        <Sparkles aria-hidden="true" size={17} className="text-accent" />
         Brouillon de réponse
       </h2>
-      <p className="mt-1 text-xs text-ink/45">
+      <p className="mt-1 text-xs text-ink/60">
         Basé sur votre profil (
         <Link href="/mon-espace" className="underline-offset-4 hover:underline">
           à compléter ici
@@ -67,10 +67,7 @@ export function AiDraftPanel({ offerId, isLoggedIn }: { offerId: string; isLogge
       </p>
 
       <div className="mt-3 space-y-2">
-        <label
-          htmlFor="ai-question"
-          className="text-xs font-semibold uppercase tracking-wide text-ink/50"
-        >
+        <label htmlFor="ai-question" className="eyebrow block">
           Question ou consigne
         </label>
         <textarea
@@ -79,20 +76,17 @@ export function AiDraftPanel({ offerId, isLoggedIn }: { offerId: string; isLogge
           onChange={(e) => setQuestion(e.target.value)}
           maxLength={500}
           rows={2}
-          className="w-full rounded-lg border border-ink/15 bg-surface p-2 text-sm"
+          className="input-ink text-sm"
         />
 
-        <label
-          htmlFor="ai-tone"
-          className="text-xs font-semibold uppercase tracking-wide text-ink/50"
-        >
+        <label htmlFor="ai-tone" className="eyebrow block">
           Ton
         </label>
         <select
           id="ai-tone"
           value={tone}
           onChange={(e) => setTone(e.target.value as Tone)}
-          className="w-full rounded-lg border border-ink/15 bg-surface p-2 text-sm"
+          className="input-ink text-sm"
         >
           {AI_TONES.map((t) => (
             <option key={t} value={t}>
@@ -105,28 +99,28 @@ export function AiDraftPanel({ offerId, isLoggedIn }: { offerId: string; isLogge
           type="button"
           onClick={() => mutation.mutate()}
           disabled={mutation.isPending || question.trim().length === 0}
-          className="btn-cobalt w-full text-sm disabled:opacity-50"
+          className="btn-cobalt w-full"
         >
           {mutation.isPending ? "Génération…" : "Générer un brouillon"}
         </button>
       </div>
 
       {error && (
-        <p className="mt-3 text-sm text-red-600 dark:text-red-400" role="alert">
+        <p className="mt-3 text-sm text-danger" role="alert">
           {error}
         </p>
       )}
 
       {result && (
         <div className="mt-3">
-          <p className="text-xs font-semibold uppercase tracking-wide text-ink/50">
+          <p className="eyebrow">
             {result.isRealAi ? "Brouillon généré par IA" : "Brouillon gabarit (sans IA)"}
           </p>
           <textarea
             readOnly
             value={result.text}
             rows={8}
-            className="mt-1 w-full rounded-lg border border-ink/15 bg-surface p-2 text-sm"
+            className="input-ink mt-1.5 text-sm leading-relaxed"
             onFocus={(e) => e.currentTarget.select()}
           />
         </div>

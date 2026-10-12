@@ -6,6 +6,8 @@ import { prisma } from "@/lib/prisma";
 import { OfferCard } from "@/components/offers/offer-card";
 import { offerToDocument } from "@/server/search/sync";
 import { unhideOffer } from "@/server/account/actions";
+import { EyeOff } from "lucide-react";
+import { AccountEmptyState, SectionHeader } from "@/components/account/section-header";
 
 export const metadata: Metadata = { title: "Offres masquées" };
 
@@ -21,37 +23,47 @@ export default async function MasqueesPage() {
 
   return (
     <section aria-labelledby="masquees-titre">
-      <h2 id="masquees-titre" className="font-display text-xl font-bold">
-        {hidden.length} offre{hidden.length > 1 ? "s" : ""} masquée{hidden.length > 1 ? "s" : ""}
-      </h2>
-      <p className="mt-1 text-sm text-ink/60">
-        Ces offres n'apparaissent plus dans vos résultats de recherche.
-      </p>
+      <SectionHeader
+        id="masquees-titre"
+        title={
+          <>
+            {hidden.length} offre{hidden.length > 1 ? "s" : ""} masquée
+            {hidden.length > 1 ? "s" : ""}
+          </>
+        }
+        description="Ces offres n'apparaissent plus dans vos résultats de recherche."
+      />
 
       {hidden.length === 0 ? (
-        <div className="mt-4 rounded-xl border border-dashed border-ink/20 p-10 text-center">
-          <p className="text-ink/70">Aucune offre masquée pour l'instant.</p>
-          <Link href="/offres" className="btn-cobalt mt-4">
-            Explorer les offres
-          </Link>
-        </div>
+        <AccountEmptyState
+          icon={<EyeOff aria-hidden="true" size={22} />}
+          title="Aucune offre masquée pour l'instant"
+          action={
+            <Link href="/offres" className="btn-cobalt">
+              Explorer les offres
+            </Link>
+          }
+        >
+          Masquez une offre depuis sa page pour ne plus la voir dans vos recherches.
+        </AccountEmptyState>
       ) : (
-        <div className="mt-4 grid gap-3 md:grid-cols-2">
+        <div className="mt-6 grid grid-cols-1 gap-3 md:grid-cols-2">
           {hidden.map(({ offer, id }) => (
-            <div key={id} className="relative">
-              <OfferCard offer={offerToDocument(offer)} />
-              <form
-                action={unhideOffer.bind(null, offer.id)}
-                className="absolute bottom-3 right-3 z-10"
-              >
-                <button
-                  type="submit"
-                  className="text-xs text-ink/50 underline-offset-4 hover:text-ink hover:underline"
-                >
-                  Réafficher
-                </button>
-              </form>
-            </div>
+            <OfferCard
+              key={id}
+              offer={offerToDocument(offer)}
+              actions={
+                <form action={unhideOffer.bind(null, offer.id)}>
+                  <button
+                    type="submit"
+                    className="inline-flex min-h-[40px] items-center rounded-lg px-2.5 text-[13px] font-medium text-ink/60 transition-colors hover:bg-ink/[0.06] hover:text-ink"
+                  >
+                    Réafficher
+                    <span className="sr-only"> {offer.title}</span>
+                  </button>
+                </form>
+              }
+            />
           ))}
         </div>
       )}

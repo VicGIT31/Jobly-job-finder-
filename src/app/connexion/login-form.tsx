@@ -47,24 +47,21 @@ export function LoginForm() {
   return (
     <div>
       {verification === "ok" && (
-        <p
-          className="mb-4 rounded-lg border border-cobalt/20 bg-cobalt-soft p-3 text-sm"
-          role="status"
-        >
+        <p className="alert-success mb-5" role="status">
           ✓ Adresse email confirmée, vous pouvez vous connecter.
         </p>
       )}
       {verification === "erreur" && (
-        <p className="mb-4 rounded-lg border border-ink/15 p-3 text-sm" role="alert">
+        <p className="alert-error mb-5" role="alert">
           Lien de vérification invalide ou expiré.
         </p>
       )}
 
       <OAuthButtons callbackUrl={callbackUrl} />
 
-      <form onSubmit={onSubmit} className="flex flex-col gap-3">
+      <form onSubmit={onSubmit} className="flex flex-col gap-4">
         <div>
-          <label htmlFor="email" className="mb-1 block text-sm font-semibold">
+          <label htmlFor="email" className="field-label">
             Email ou identifiant
           </label>
           {/* `type="text"` volontairement : le champ accepte aussi un identifiant
@@ -81,7 +78,7 @@ export function LoginForm() {
           />
         </div>
         <div>
-          <label htmlFor="password" className="mb-1 block text-sm font-semibold">
+          <label htmlFor="password" className="field-label">
             Mot de passe
           </label>
           <input
@@ -97,29 +94,23 @@ export function LoginForm() {
         </div>
 
         {error && (
-          <p id="login-error" className="rounded-lg border border-ink/15 p-2 text-sm" role="alert">
+          <p id="login-error" className="alert-error" role="alert">
             {error}
           </p>
         )}
 
-        <button type="submit" className="btn-cobalt w-full" disabled={pending}>
+        <button type="submit" className="btn-cobalt mt-1 w-full" disabled={pending}>
           {pending ? "Connexion…" : "Se connecter"}
         </button>
       </form>
 
-      <div className="rule mt-5 flex flex-col gap-1 pt-4 text-sm">
-        <Link
-          href="/mot-de-passe-oublie"
-          className="text-cobalt underline-offset-4 hover:underline"
-        >
+      <div className="mt-8 flex flex-col gap-2 border-t border-line pt-6 text-sm">
+        <Link href="/mot-de-passe-oublie" className="link">
           Mot de passe oublié ?
         </Link>
-        <p className="text-ink/70">
+        <p className="text-ink/60">
           Pas encore de compte ?{" "}
-          <Link
-            href="/inscription"
-            className="font-semibold text-cobalt underline-offset-4 hover:underline"
-          >
+          <Link href="/inscription" className="link">
             Inscrivez-vous
           </Link>
         </p>

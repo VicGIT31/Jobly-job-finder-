@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { ArrowLeft } from "lucide-react";
 import { JoblyMark } from "@/components/brand/jobly-logo";
 import { requireAdminPage } from "@/server/admin/guard";
 import { AdminNav } from "./admin-nav";
@@ -14,27 +15,36 @@ export default async function AdminLayout({ children }: { children: React.ReactN
   const admin = await requireAdminPage();
 
   return (
-    <div className="mx-auto max-w-6xl px-4 py-8">
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <div className="flex items-center gap-3">
+    <div className="container-page py-8 sm:py-10">
+      <div className="flex flex-wrap items-center justify-between gap-4">
+        <div className="flex min-w-0 items-center gap-3">
           <JoblyMark size="md" />
-          <div>
-            <h1 className="font-display text-2xl font-bold leading-none tracking-tight">
-              Console d&apos;administration
-            </h1>
-            <p className="mt-1 text-xs text-ink/55">
-              Connecté en tant que {admin.name ?? admin.email}
-            </p>
+          <div className="min-w-0">
+            <p className="eyebrow">Administration</p>
+            <h1 className="mt-1 text-2xl font-semibold leading-none tracking-tight">Console</h1>
           </div>
         </div>
-        <Link href="/" className="btn-outline !min-h-[38px] !px-4 !py-1.5 text-sm">
-          ← Retour au site
-        </Link>
+        <div className="flex items-center gap-3">
+          <p className="hidden items-center gap-2 text-xs text-ink/60 sm:flex">
+            <span aria-hidden="true" className="h-1.5 w-1.5 rounded-full bg-success" />
+            Connecté en tant que{" "}
+            <span className="max-w-[220px] truncate font-medium text-ink/80">
+              {admin.name ?? admin.email}
+            </span>
+          </p>
+          <Link href="/" className="btn-outline btn-sm">
+            <ArrowLeft aria-hidden="true" size={15} />
+            Retour au site
+          </Link>
+        </div>
       </div>
+      <p className="mt-2 truncate text-xs text-ink/60 sm:hidden">
+        Connecté en tant que {admin.name ?? admin.email}
+      </p>
 
       <AdminNav />
 
-      <div className="mt-6">{children}</div>
+      <div className="mt-8">{children}</div>
     </div>
   );
 }

@@ -17,12 +17,20 @@ export function StatCard({
   tone?: "neutral" | "accent" | "warn";
 }) {
   const valueTone =
-    tone === "accent" ? "text-cobalt" : tone === "warn" ? "text-amber-600" : "text-ink";
+    tone === "accent" ? "text-accent" : tone === "warn" ? "text-warning" : "text-ink";
+  const dot = tone === "accent" ? "bg-accent" : tone === "warn" ? "bg-warning" : "bg-ink/25";
   return (
     <div className="card p-4">
-      <p className={`font-display text-3xl font-bold tabular-nums ${valueTone}`}>{value}</p>
-      <p className="mt-1 text-xs uppercase tracking-wider text-ink/60">{label}</p>
-      {hint && <p className="mt-1 text-xs text-ink/45">{hint}</p>}
+      <p className="eyebrow flex items-center gap-1.5">
+        <span aria-hidden="true" className={`h-1.5 w-1.5 rounded-full ${dot}`} />
+        {label}
+      </p>
+      <p
+        className={`mt-2.5 font-mono text-[1.75rem] font-semibold tabular-nums leading-none tracking-[-0.04em] ${valueTone}`}
+      >
+        {value}
+      </p>
+      {hint && <p className="mt-2 text-xs text-ink/60">{hint}</p>}
     </div>
   );
 }
@@ -38,7 +46,7 @@ export function Th({
   return (
     <th
       scope="col"
-      className={`py-2 pr-4 text-xs font-semibold uppercase tracking-wide text-ink/50 ${className}`}
+      className={`whitespace-nowrap py-2.5 pr-4 font-mono text-2xs font-medium uppercase tracking-[0.12em] text-ink/60 ${className}`}
     >
       {children}
     </th>
@@ -56,8 +64,8 @@ export function SectionTitle({
   description?: string;
 }) {
   return (
-    <div className="mb-3">
-      <h2 id={id} className="font-display text-xl font-bold">
+    <div className="mb-4">
+      <h2 id={id} className="text-lg font-semibold tracking-tight">
         {title}
       </h2>
       {description && <p className="mt-1 text-sm text-ink/60">{description}</p>}
@@ -92,9 +100,9 @@ export function Field({
 }) {
   return (
     <div>
-      <label htmlFor={name} className="mb-1 block text-sm font-semibold">
+      <label htmlFor={name} className="field-label">
         {label}
-        {required && <span className="ml-1 text-cobalt">*</span>}
+        {required && <span className="ml-1 text-accent">*</span>}
       </label>
       {rows ? (
         <textarea
@@ -104,7 +112,7 @@ export function Field({
           defaultValue={defaultValue}
           placeholder={placeholder}
           required={required}
-          className="input-ink !h-auto py-2 font-mono text-xs"
+          className="input-ink !h-auto py-2.5 font-mono text-xs leading-relaxed"
         />
       ) : (
         <input
@@ -117,7 +125,7 @@ export function Field({
           className="input-ink"
         />
       )}
-      {hint && <p className="mt-1 text-xs text-ink/50">{hint}</p>}
+      {hint && <p className="mt-1.5 text-xs text-ink/60">{hint}</p>}
     </div>
   );
 }
@@ -135,19 +143,26 @@ export function Switch({
   hint?: string;
 }) {
   return (
-    <div className="flex items-start gap-3 rounded-lg border border-ink/10 bg-surface p-3">
-      <input
-        id={name}
-        name={name}
-        type="checkbox"
-        defaultChecked={defaultChecked}
-        className="mt-0.5 h-4 w-4 accent-cobalt"
-      />
+    <div className="flex items-start gap-3 rounded-xl border border-line bg-paper p-3.5 transition-colors hover:border-ink/20">
+      {/* Case native conservée (envoi du formulaire), présentée en interrupteur. */}
+      <span className="relative mt-0.5 inline-flex shrink-0">
+        <input
+          id={name}
+          name={name}
+          type="checkbox"
+          defaultChecked={defaultChecked}
+          className="peer h-5 w-9 cursor-pointer appearance-none rounded-full bg-ink/15 transition-colors duration-base checked:bg-accent focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
+        />
+        <span
+          aria-hidden="true"
+          className="pointer-events-none absolute left-0.5 top-0.5 h-4 w-4 rounded-full bg-paper shadow-card transition-transform duration-base ease-out peer-checked:translate-x-4"
+        />
+      </span>
       <div>
-        <label htmlFor={name} className="text-sm font-semibold">
+        <label htmlFor={name} className="cursor-pointer text-sm font-medium">
           {label}
         </label>
-        {hint && <p className="mt-0.5 text-xs text-ink/55">{hint}</p>}
+        {hint && <p className="mt-0.5 text-xs text-ink/60">{hint}</p>}
       </div>
     </div>
   );
@@ -166,14 +181,14 @@ export function Badge({
 }) {
   const style =
     tone === "accent"
-      ? "bg-cobalt-soft text-cobalt dark:text-indigo-300"
+      ? "bg-accent-soft text-accent"
       : tone === "danger"
-        ? "bg-red-50 text-red-700 dark:bg-red-950 dark:text-red-300"
-        : "bg-ink/10 text-ink/70";
+        ? "bg-danger-soft text-danger"
+        : "bg-ink/[0.07] text-ink/65";
   return (
     <span
       title={title}
-      className={`inline-block rounded-full px-2.5 py-0.5 text-[11px] font-semibold ${style}`}
+      className={`inline-flex items-center whitespace-nowrap rounded-full px-2.5 py-0.5 text-[11px] font-semibold ${style}`}
     >
       {children}
     </span>

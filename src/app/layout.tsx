@@ -1,5 +1,5 @@
-import type { Metadata } from "next";
-import { Inter } from "next/font/google";
+import type { Metadata, Viewport } from "next";
+import { Geist, Geist_Mono, Instrument_Serif } from "next/font/google";
 import { headers } from "next/headers";
 import { NuqsAdapter } from "nuqs/adapters/next/app";
 import "./globals.css";
@@ -10,9 +10,24 @@ import { SiteHeader } from "@/components/site-header";
 import { SiteFooter } from "@/components/site-footer";
 import { MaintenanceScreen } from "./maintenance-screen";
 
-const inter = Inter({
+// Geist pour l'interface, Geist Mono pour les métadonnées, Instrument Serif
+// (italique) pour les accents éditoriaux des titres.
+const geist = Geist({ subsets: ["latin"], variable: "--font-geist", display: "swap" });
+// Polices secondaires non préchargées : elles ne doivent pas concurrencer
+// Geist sur le chemin critique (LCP).
+const geistMono = Geist_Mono({
   subsets: ["latin"],
-  variable: "--font-inter",
+  variable: "--font-geist-mono",
+  display: "swap",
+  preload: false,
+});
+const serif = Instrument_Serif({
+  subsets: ["latin"],
+  weight: "400",
+  style: "italic",
+  variable: "--font-serif",
+  display: "swap",
+  preload: false,
 });
 
 /**
@@ -58,6 +73,13 @@ export async function generateMetadata(): Promise<Metadata> {
   };
 }
 
+export const viewport: Viewport = {
+  themeColor: [
+    { media: "(prefers-color-scheme: light)", color: "#F7F6F2" },
+    { media: "(prefers-color-scheme: dark)", color: "#09090B" },
+  ],
+};
+
 /** Chemins toujours servis, même en maintenance : sans eux, plus de retour possible. */
 const MAINTENANCE_ALLOWLIST = ["/admin", "/connexion", "/api"];
 
@@ -80,12 +102,16 @@ export default async function RootLayout({
   }
 
   return (
-    <html lang="fr" className={inter.variable} suppressHydrationWarning>
+    <html
+      lang="fr"
+      className={`${geist.variable} ${geistMono.variable} ${serif.variable}`}
+      suppressHydrationWarning
+    >
       <head>
         {/* Anti-FOUC : applique le thème avant le premier rendu */}
         <script
           dangerouslySetInnerHTML={{
-            __html: `try{const t=localStorage.getItem("theme");if(t==="dark"||(!t&&matchMedia("(prefers-color-scheme: dark)").matches))document.documentElement.classList.add("dark")}catch(e){}`,
+            __html: `document.documentElement.classList.add("js");try{const t=localStorage.getItem("theme");if(t==="dark"||(!t&&matchMedia("(prefers-color-scheme: dark)").matches))document.documentElement.classList.add("dark")}catch(e){}`,
           }}
         />
       </head>

@@ -50,20 +50,20 @@ export default async function AdminCompaniesPage({
 
   return (
     <div>
-      <div className="grid gap-3 sm:grid-cols-2">
+      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
         <StatCard label="Entreprises listées" value={total} />
         <StatCard label="Mises en avant sur l'accueil" value={featuredCount} tone="accent" />
       </div>
 
       <form method="get" className="mt-6 flex flex-wrap items-end gap-2">
         <div className="flex-1 sm:max-w-xs">
-          <label htmlFor="q" className="mb-1 block text-sm font-semibold">
+          <label htmlFor="q" className="field-label">
             Recherche
           </label>
           <input id="q" name="q" defaultValue={q} className="input-ink" placeholder="Nom" />
         </div>
         <div>
-          <label htmlFor="filtre" className="mb-1 block text-sm font-semibold">
+          <label htmlFor="filtre" className="field-label">
             Filtre
           </label>
           <select
@@ -76,15 +76,15 @@ export default async function AdminCompaniesPage({
             <option value="avant">Mises en avant</option>
           </select>
         </div>
-        <button type="submit" className="btn-outline !min-h-[44px]">
+        <button type="submit" className="btn-outline">
           Filtrer
         </button>
       </form>
 
-      <div className="mt-4 overflow-x-auto">
-        <table className="w-full min-w-[720px] border-collapse text-sm">
+      <div className="table-shell mt-4">
+        <table className="w-full min-w-[720px] border-collapse text-left text-sm [&_td:first-child]:pl-4 [&_td:last-child]:pr-4 [&_th:first-child]:pl-4 [&_th:last-child]:pr-4">
           <thead>
-            <tr className="border-b border-ink/15 text-left">
+            <tr className="border-b border-line bg-surface/50 text-left">
               <Th>Entreprise</Th>
               <Th>Secteur</Th>
               <Th>Offres</Th>
@@ -94,28 +94,28 @@ export default async function AdminCompaniesPage({
           </thead>
           <tbody>
             {companies.map((company) => (
-              <tr key={company.id} className="border-b border-ink/15">
+              <tr
+                key={company.id}
+                className="border-b border-line transition-colors last:border-0 hover:bg-ink/[0.02]"
+              >
                 <td className="max-w-[280px] py-2.5 pr-4">
                   <Link
                     href={`/entreprises/${company.slug}`}
-                    className="block truncate font-semibold underline-offset-4 hover:text-cobalt hover:underline"
+                    className="block truncate font-semibold transition-colors hover:text-accent"
                   >
                     {company.name}
                   </Link>
-                  <span className="text-xs text-ink/50">{company.size}</span>
+                  <span className="text-xs text-ink/60">{company.size}</span>
                 </td>
                 <td className="py-2.5 pr-4 text-ink/70">{company.sector}</td>
                 <td className="py-2.5 pr-4 tabular-nums">{company._count.offers}</td>
                 <td className="py-2.5 pr-4">
                   {company.featured ? <Badge tone="accent">En avant</Badge> : <Badge>—</Badge>}
                 </td>
-                <td className="py-2.5">
+                <td className="py-2.5 pr-4">
                   <div className="flex flex-wrap items-center gap-3">
                     <form action={toggleCompanyFeatured.bind(null, company.id)}>
-                      <button
-                        type="submit"
-                        className="text-sm font-semibold text-cobalt underline-offset-4 hover:underline"
-                      >
+                      <button type="submit" className="link text-sm">
                         {company.featured ? "Retirer de l'accueil" : "Mettre en avant"}
                       </button>
                     </form>
@@ -132,7 +132,7 @@ export default async function AdminCompaniesPage({
             ))}
             {companies.length === 0 && (
               <tr>
-                <td colSpan={5} className="py-8 text-center text-ink/50">
+                <td colSpan={5} className="py-8 text-center text-ink/60">
                   Aucune entreprise ne correspond.
                 </td>
               </tr>
@@ -147,10 +147,7 @@ export default async function AdminCompaniesPage({
           className="rule mt-4 flex items-center gap-4 pt-3 text-sm"
         >
           {page > 1 && (
-            <Link
-              href={`/admin/entreprises?${pageParams(page - 1)}`}
-              className="font-semibold text-cobalt underline-offset-4 hover:underline"
-            >
+            <Link href={`/admin/entreprises?${pageParams(page - 1)}`} className="link">
               ← Précédent
             </Link>
           )}
@@ -158,17 +155,14 @@ export default async function AdminCompaniesPage({
             Page {page} / {totalPages}
           </span>
           {page < totalPages && (
-            <Link
-              href={`/admin/entreprises?${pageParams(page + 1)}`}
-              className="font-semibold text-cobalt underline-offset-4 hover:underline"
-            >
+            <Link href={`/admin/entreprises?${pageParams(page + 1)}`} className="link">
               Suivant →
             </Link>
           )}
         </nav>
       )}
 
-      <p className="mt-6 text-xs text-ink/45">
+      <p className="mt-6 text-xs text-ink/60">
         Les fiches entreprises sont créées automatiquement à l&apos;ingestion. Supprimer une
         entreprise supprime aussi ses offres (base et index de recherche).
       </p>

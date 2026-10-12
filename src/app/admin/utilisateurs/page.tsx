@@ -85,7 +85,7 @@ export default async function AdminUsersPage({
 
   return (
     <div>
-      <div className="grid gap-3 sm:grid-cols-3">
+      <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
         <StatCard label="Comptes au total" value={total} />
         <StatCard label="Administrateurs" value={adminCount} tone="accent" />
         <StatCard
@@ -97,7 +97,7 @@ export default async function AdminUsersPage({
 
       <form method="get" className="mt-6 flex flex-wrap items-end gap-2">
         <div className="flex-1 sm:max-w-xs">
-          <label htmlFor="q" className="mb-1 block text-sm font-semibold">
+          <label htmlFor="q" className="field-label">
             Recherche
           </label>
           <input
@@ -109,7 +109,7 @@ export default async function AdminUsersPage({
           />
         </div>
         <div>
-          <label htmlFor="role" className="mb-1 block text-sm font-semibold">
+          <label htmlFor="role" className="field-label">
             Rôle
           </label>
           <select id="role" name="role" defaultValue={role ?? ""} className="input-ink !w-auto">
@@ -119,7 +119,7 @@ export default async function AdminUsersPage({
           </select>
         </div>
         <div>
-          <label htmlFor="etat" className="mb-1 block text-sm font-semibold">
+          <label htmlFor="etat" className="field-label">
             État
           </label>
           <select id="etat" name="etat" defaultValue={etat ?? ""} className="input-ink !w-auto">
@@ -127,15 +127,15 @@ export default async function AdminUsersPage({
             <option value="suspendus">Suspendus</option>
           </select>
         </div>
-        <button type="submit" className="btn-outline !min-h-[44px]">
+        <button type="submit" className="btn-outline">
           Filtrer
         </button>
       </form>
 
-      <div className="mt-4 overflow-x-auto">
-        <table className="w-full min-w-[900px] border-collapse text-sm">
+      <div className="table-shell mt-4">
+        <table className="w-full min-w-[900px] border-collapse text-left text-sm [&_td:first-child]:pl-4 [&_td:last-child]:pr-4 [&_th:first-child]:pl-4 [&_th:last-child]:pr-4">
           <thead>
-            <tr className="border-b border-ink/15 text-left">
+            <tr className="border-b border-line bg-surface/50 text-left">
               <Th>Compte</Th>
               <Th>Rôle</Th>
               <Th>État</Th>
@@ -148,14 +148,14 @@ export default async function AdminUsersPage({
             {users.map((user) => {
               const isSelf = user.id === admin?.id;
               return (
-                <tr key={user.id} className="border-b border-ink/15 align-top">
+                <tr key={user.id} className="border-b border-line align-top">
                   <td className="max-w-[260px] py-3 pr-4">
                     <p className="truncate font-semibold">{user.name ?? "—"}</p>
                     <p className="truncate text-xs text-ink/60">{user.email}</p>
                     {user.username && (
-                      <p className="truncate text-xs text-ink/45">@{user.username}</p>
+                      <p className="truncate text-xs text-ink/60">@{user.username}</p>
                     )}
-                    {user.school && <p className="truncate text-xs text-ink/45">{user.school}</p>}
+                    {user.school && <p className="truncate text-xs text-ink/60">{user.school}</p>}
                   </td>
                   <td className="py-3 pr-4">
                     {user.role === "ADMIN" ? (
@@ -184,35 +184,26 @@ export default async function AdminUsersPage({
                   <td className="py-3 pr-4 tabular-nums text-ink/70">
                     {user.createdAt.toLocaleDateString("fr-FR")}
                   </td>
-                  <td className="py-3">
+                  <td className="py-3 pr-4">
                     {isSelf ? (
-                      <p className="text-xs text-ink/45">
+                      <p className="text-xs text-ink/60">
                         Votre compte — actions désactivées par sécurité.
                       </p>
                     ) : (
                       <div className="flex flex-col items-start gap-1.5">
                         <form action={toggleUserRole.bind(null, user.id)}>
-                          <button
-                            type="submit"
-                            className="text-sm font-semibold text-cobalt underline-offset-4 hover:underline"
-                          >
+                          <button type="submit" className="link text-sm">
                             {user.role === "ADMIN" ? "Retirer l'accès admin" : "Passer admin"}
                           </button>
                         </form>
                         <form action={toggleUserSuspension.bind(null, user.id)}>
-                          <button
-                            type="submit"
-                            className="text-sm font-semibold text-cobalt underline-offset-4 hover:underline"
-                          >
+                          <button type="submit" className="link text-sm">
                             {user.suspendedAt ? "Réactiver" : "Suspendre"}
                           </button>
                         </form>
                         {!user.emailVerified && (
                           <form action={verifyUserEmail.bind(null, user.id)}>
-                            <button
-                              type="submit"
-                              className="text-sm font-semibold text-cobalt underline-offset-4 hover:underline"
-                            >
+                            <button type="submit" className="link text-sm">
                               Valider l&apos;email
                             </button>
                           </form>
@@ -228,12 +219,9 @@ export default async function AdminUsersPage({
                             required
                             placeholder="Nouveau mot de passe"
                             aria-label={`Nouveau mot de passe pour ${user.email}`}
-                            className="input-ink !min-h-[32px] !w-40 !py-1 text-xs"
+                            className="input-ink !min-h-[34px] !w-40 !py-1 text-xs"
                           />
-                          <button
-                            type="submit"
-                            className="text-xs font-semibold text-cobalt underline-offset-4 hover:underline"
-                          >
+                          <button type="submit" className="link text-xs">
                             Définir
                           </button>
                         </form>
@@ -252,7 +240,7 @@ export default async function AdminUsersPage({
             })}
             {users.length === 0 && (
               <tr>
-                <td colSpan={6} className="py-8 text-center text-ink/50">
+                <td colSpan={6} className="py-8 text-center text-ink/60">
                   Aucun compte ne correspond.
                 </td>
               </tr>
@@ -267,10 +255,7 @@ export default async function AdminUsersPage({
           className="rule mt-4 flex items-center gap-4 pt-3 text-sm"
         >
           {page > 1 && (
-            <Link
-              href={`/admin/utilisateurs?${pageParams(page - 1)}`}
-              className="font-semibold text-cobalt underline-offset-4 hover:underline"
-            >
+            <Link href={`/admin/utilisateurs?${pageParams(page - 1)}`} className="link">
               ← Précédent
             </Link>
           )}
@@ -278,17 +263,14 @@ export default async function AdminUsersPage({
             Page {page} / {totalPages}
           </span>
           {page < totalPages && (
-            <Link
-              href={`/admin/utilisateurs?${pageParams(page + 1)}`}
-              className="font-semibold text-cobalt underline-offset-4 hover:underline"
-            >
+            <Link href={`/admin/utilisateurs?${pageParams(page + 1)}`} className="link">
               Suivant →
             </Link>
           )}
         </nav>
       )}
 
-      <p className="mt-6 text-xs text-ink/45">
+      <p className="mt-6 text-xs text-ink/60">
         Le dernier compte administrateur actif ne peut être ni rétrogradé, ni suspendu, ni supprimé
         : c&apos;est ce qui garantit qu&apos;il reste toujours un accès à cette console.
       </p>

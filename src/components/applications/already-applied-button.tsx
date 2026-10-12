@@ -24,7 +24,9 @@ export function AlreadyAppliedButton({
 
   if (tracked) {
     return (
-      <p className="mt-2 text-center text-xs font-semibold text-cobalt">✓ Dans vos candidatures</p>
+      <p className="mt-1 flex min-h-[32px] items-center justify-center gap-1 text-xs font-semibold text-success">
+        ✓ Dans vos candidatures
+      </p>
     );
   }
 
@@ -32,7 +34,7 @@ export function AlreadyAppliedButton({
     return (
       <button
         type="button"
-        className="mt-2 w-full text-center text-xs text-ink/50 underline-offset-4 hover:text-ink hover:underline"
+        className="mt-1 min-h-[32px] w-full rounded-md text-center text-xs text-ink/60 transition-colors hover:text-ink"
         onClick={() =>
           router.push(`/connexion?callbackUrl=${encodeURIComponent(window.location.pathname)}`)
         }
@@ -46,7 +48,7 @@ export function AlreadyAppliedButton({
     <button
       type="button"
       disabled={pending}
-      className="mt-2 w-full text-center text-xs text-ink/50 underline-offset-4 hover:text-ink hover:underline disabled:opacity-50"
+      className="mt-1 min-h-[32px] w-full rounded-md text-center text-xs text-ink/60 transition-colors hover:text-ink disabled:opacity-50"
       onClick={() =>
         startTransition(async () => {
           const res = await markAlreadyApplied(offerId);

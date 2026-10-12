@@ -46,16 +46,13 @@ export default async function AdminDashboardPage() {
       {(general.maintenanceMode || !ingestion.ingestionEnabled || !general.registrationOpen) && (
         <div
           role="status"
-          className="mb-6 flex flex-wrap items-center gap-2 rounded-xl border border-amber-300/60 bg-amber-50 p-3 text-sm dark:border-amber-500/30 dark:bg-amber-950/40"
+          className="mb-6 flex flex-wrap items-center gap-2 rounded-xl border border-warning/30 bg-warning-soft p-3.5 text-sm"
         >
           <span className="font-semibold">Mode dégradé actif :</span>
           {general.maintenanceMode && <Badge tone="danger">Site en maintenance</Badge>}
           {!general.registrationOpen && <Badge tone="danger">Inscriptions fermées</Badge>}
           {!ingestion.ingestionEnabled && <Badge tone="danger">Ingestion suspendue</Badge>}
-          <Link
-            href="/admin/parametres"
-            className="ml-auto font-semibold text-cobalt underline-offset-4 hover:underline"
-          >
+          <Link href="/admin/parametres" className="link ml-auto">
             Modifier →
           </Link>
         </div>
@@ -65,7 +62,7 @@ export default async function AdminDashboardPage() {
         <h2 id="kpi" className="sr-only">
           Indicateurs
         </h2>
-        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
           <StatCard label="Offres actives" value={activeOffers} tone="accent" />
           <StatCard label="Offres expirées" value={expiredOffers} />
           <StatCard label="Nouvelles (24 h)" value={newOffers24h} hint="Créées par l'ingestion" />
@@ -89,19 +86,16 @@ export default async function AdminDashboardPage() {
         />
         <div className="flex flex-wrap gap-3">
           <form action={triggerIngestion}>
-            <button type="submit" className="btn-cobalt !min-h-[40px] !px-4 !py-1.5 text-sm">
+            <button type="submit" className="btn-cobalt btn-sm">
               Lancer une ingestion
             </button>
           </form>
           <form action={reindexSearch}>
-            <button type="submit" className="btn-outline !min-h-[40px] !px-4 !py-1.5 text-sm">
+            <button type="submit" className="btn-outline btn-sm">
               Ré-indexer la recherche
             </button>
           </form>
-          <Link
-            href="/admin/offres?statut=ACTIVE"
-            className="btn-outline !min-h-[40px] !px-4 !py-1.5 text-sm"
-          >
+          <Link href="/admin/offres?statut=ACTIVE" className="btn-outline btn-sm">
             Modérer les offres
           </Link>
         </div>
@@ -113,10 +107,10 @@ export default async function AdminDashboardPage() {
           title="Derniers passages d'ingestion"
           description="Une ligne par source et par cycle : volume récupéré, résultat, durée."
         />
-        <div className="overflow-x-auto">
-          <table className="w-full min-w-[680px] border-collapse text-sm">
+        <div className="table-shell">
+          <table className="w-full min-w-[680px] border-collapse text-left text-sm [&_td:first-child]:pl-4 [&_td:last-child]:pr-4 [&_th:first-child]:pl-4 [&_th:last-child]:pr-4">
             <thead>
-              <tr className="border-b border-ink/15 text-left">
+              <tr className="border-b border-line bg-surface/50 text-left">
                 <Th>Date</Th>
                 <Th>Source</Th>
                 <Th>Récupérées</Th>
@@ -128,7 +122,10 @@ export default async function AdminDashboardPage() {
             </thead>
             <tbody>
               {lastRuns.map((run) => (
-                <tr key={run.id} className="border-b border-ink/15">
+                <tr
+                  key={run.id}
+                  className="border-b border-line transition-colors last:border-0 hover:bg-ink/[0.02]"
+                >
                   <td className="py-2.5 pr-4 tabular-nums text-ink/70">
                     {run.startedAt.toLocaleDateString("fr-FR")}{" "}
                     {run.startedAt.toLocaleTimeString("fr-FR", {
@@ -143,7 +140,7 @@ export default async function AdminDashboardPage() {
                   <td className="py-2.5 pr-4 tabular-nums text-ink/60">
                     {(run.durationMs / 1000).toFixed(1)} s
                   </td>
-                  <td className="py-2.5">
+                  <td className="py-2.5 pr-4">
                     {run.ok ? (
                       <Badge tone="accent">OK</Badge>
                     ) : (
@@ -156,7 +153,7 @@ export default async function AdminDashboardPage() {
               ))}
               {lastRuns.length === 0 && (
                 <tr>
-                  <td colSpan={7} className="py-8 text-center text-ink/50">
+                  <td colSpan={7} className="py-8 text-center text-ink/60">
                     Aucun cycle d&apos;ingestion enregistré pour l&apos;instant.
                   </td>
                 </tr>

@@ -13,14 +13,14 @@ export default async function AdminSettingsPage() {
   ]);
 
   return (
-    <div className="flex flex-col gap-10">
-      <form action={saveGeneralSettings}>
+    <div className="flex flex-col gap-6">
+      <form action={saveGeneralSettings} className="panel">
         <SectionTitle
           id="general"
           title="Site"
           description="Contenu de marque et disponibilité du service."
         />
-        <div className="grid gap-4 sm:grid-cols-2">
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
           <div className="sm:col-span-2">
             <Field
               name="tagline"
@@ -35,7 +35,7 @@ export default async function AdminSettingsPage() {
             defaultValue={general.contactEmail}
             type="email"
           />
-          <div className="grid gap-3 sm:col-span-2 sm:grid-cols-2">
+          <div className="grid grid-cols-1 gap-3 sm:col-span-2 sm:grid-cols-2">
             <Switch
               name="registrationOpen"
               label="Inscriptions ouvertes"
@@ -63,13 +63,13 @@ export default async function AdminSettingsPage() {
         </button>
       </form>
 
-      <form action={saveIngestionSettings} className="rule pt-8">
+      <form action={saveIngestionSettings} className="panel">
         <SectionTitle
           id="ingestion"
           title="Ingestion des offres"
           description="Durée de vie des offres et activation des cycles automatiques."
         />
-        <div className="grid gap-4 sm:grid-cols-2">
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
           <Field
             name="freshnessDays"
             label="Expiration (jours sans être revue)"

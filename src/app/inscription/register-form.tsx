@@ -20,7 +20,7 @@ export function RegisterForm() {
   if (result?.ok) {
     return (
       <div>
-        <p className="rounded-lg border border-cobalt/20 bg-cobalt-soft p-4 text-sm" role="status">
+        <p className="alert-success" role="status">
           ✓ {result.message}
         </p>
         <Link href="/connexion" className="btn-cobalt mt-4 w-full">
@@ -34,9 +34,9 @@ export function RegisterForm() {
     <div>
       <OAuthButtons />
 
-      <form onSubmit={onSubmit} className="flex flex-col gap-3">
+      <form onSubmit={onSubmit} className="flex flex-col gap-4">
         <div>
-          <label htmlFor="name" className="mb-1 block text-sm font-semibold">
+          <label htmlFor="name" className="field-label">
             Nom complet
           </label>
           <input
@@ -50,7 +50,7 @@ export function RegisterForm() {
           />
         </div>
         <div>
-          <label htmlFor="email" className="mb-1 block text-sm font-semibold">
+          <label htmlFor="email" className="field-label">
             Email
           </label>
           <input
@@ -63,8 +63,8 @@ export function RegisterForm() {
           />
         </div>
         <div>
-          <label htmlFor="password" className="mb-1 block text-sm font-semibold">
-            Mot de passe <span className="font-normal text-ink/50">(8 caractères min.)</span>
+          <label htmlFor="password" className="field-label">
+            Mot de passe <span className="font-normal text-ink/60">(8 caractères min.)</span>
           </label>
           <input
             id="password"
@@ -78,22 +78,19 @@ export function RegisterForm() {
         </div>
 
         {result && !result.ok && (
-          <p className="rounded-lg border border-ink/15 p-2 text-sm" role="alert">
+          <p className="alert-error" role="alert">
             {result.error}
           </p>
         )}
 
-        <button type="submit" className="btn-cobalt w-full" disabled={pending}>
+        <button type="submit" className="btn-cobalt mt-1 w-full" disabled={pending}>
           {pending ? "Création…" : "Créer mon compte"}
         </button>
       </form>
 
-      <p className="rule mt-5 pt-4 text-sm text-ink/70">
+      <p className="mt-8 border-t border-line pt-6 text-sm text-ink/60">
         Déjà inscrit·e ?{" "}
-        <Link
-          href="/connexion"
-          className="font-semibold text-cobalt underline-offset-4 hover:underline"
-        >
+        <Link href="/connexion" className="link">
           Connectez-vous
         </Link>
       </p>

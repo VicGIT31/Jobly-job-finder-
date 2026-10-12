@@ -30,7 +30,7 @@ export function HideOfferButton({
     return (
       <button
         type="button"
-        className="mt-2 w-full text-center text-xs text-ink/50 underline-offset-4 hover:text-ink hover:underline"
+        className="mt-1 min-h-[32px] w-full rounded-md text-center text-xs text-ink/60 transition-colors hover:text-ink"
         onClick={() =>
           router.push(`/connexion?callbackUrl=${encodeURIComponent(window.location.pathname)}`)
         }
@@ -43,7 +43,7 @@ export function HideOfferButton({
   return (
     <button
       type="button"
-      className="mt-2 w-full text-center text-xs text-ink/50 underline-offset-4 hover:text-ink hover:underline disabled:opacity-50"
+      className="mt-1 min-h-[32px] w-full rounded-md text-center text-xs text-ink/60 transition-colors hover:text-ink disabled:opacity-50"
       aria-pressed={hidden}
       onClick={() => mutation.mutate()}
       disabled={mutation.isPending}

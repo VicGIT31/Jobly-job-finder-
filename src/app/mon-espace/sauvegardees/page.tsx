@@ -6,6 +6,8 @@ import { prisma } from "@/lib/prisma";
 import { OfferCard } from "@/components/offers/offer-card";
 import { offerToDocument } from "@/server/search/sync";
 import { removeSavedOffer } from "@/server/account/actions";
+import { Bookmark } from "lucide-react";
+import { AccountEmptyState, SectionHeader } from "@/components/account/section-header";
 
 export const metadata: Metadata = { title: "Offres sauvegardées" };
 
@@ -21,39 +23,47 @@ export default async function SauvegardeesPage() {
 
   return (
     <section aria-labelledby="sauvegardees-titre">
-      <h2 id="sauvegardees-titre" className="font-display text-xl font-bold">
-        {saved.length} offre{saved.length > 1 ? "s" : ""} sauvegardée{saved.length > 1 ? "s" : ""}
-      </h2>
+      <SectionHeader
+        id="sauvegardees-titre"
+        title={
+          <>
+            {saved.length} offre{saved.length > 1 ? "s" : ""} sauvegardée
+            {saved.length > 1 ? "s" : ""}
+          </>
+        }
+        description="Vos offres mises de côté, à retrouver avant de postuler."
+      />
 
       {saved.length === 0 ? (
-        <div className="mt-4 rounded-xl border border-dashed border-ink/20 p-10 text-center">
-          <p className="text-ink/70">
-            Sauvegardez des offres depuis leur page pour les retrouver ici.
-          </p>
-          <Link href="/offres" className="btn-cobalt mt-4">
-            Explorer les offres
-          </Link>
-        </div>
+        <AccountEmptyState
+          icon={<Bookmark aria-hidden="true" size={22} />}
+          title="Aucune offre sauvegardée"
+          action={
+            <Link href="/offres" className="btn-cobalt">
+              Explorer les offres
+            </Link>
+          }
+        >
+          Sauvegardez des offres depuis leur page pour les retrouver ici.
+        </AccountEmptyState>
       ) : (
-        <div className="mt-4 grid gap-3 md:grid-cols-2">
+        <div className="mt-6 grid grid-cols-1 gap-3 md:grid-cols-2">
           {saved.map(({ offer, id }) => (
-            <div key={id} className="relative">
-              <OfferCard offer={offerToDocument(offer)} />
-              {offer.status === "EXPIRED" && (
-                <span className="stamp absolute right-3 top-3 bg-paper">Expirée</span>
-              )}
-              <form
-                action={removeSavedOffer.bind(null, offer.id)}
-                className="absolute bottom-3 right-3 z-10"
-              >
-                <button
-                  type="submit"
-                  className="text-xs text-ink/50 underline-offset-4 hover:text-ink hover:underline"
-                >
-                  Retirer
-                </button>
-              </form>
-            </div>
+            <OfferCard
+              key={id}
+              offer={offerToDocument(offer)}
+              actions={
+                <form action={removeSavedOffer.bind(null, offer.id)}>
+                  <button
+                    type="submit"
+                    className="inline-flex min-h-[40px] items-center rounded-lg px-2.5 text-[13px] font-medium text-ink/60 transition-colors hover:bg-danger-soft hover:text-danger"
+                  >
+                    Retirer
+                    <span className="sr-only"> {offer.title} des offres sauvegardées</span>
+                  </button>
+                </form>
+              }
+            />
           ))}
         </div>
       )}

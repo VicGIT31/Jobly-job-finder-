@@ -1,6 +1,7 @@
 import { STUDENT_OFFER_WHERE } from "@/server/offers/public-scope";
 import type { Metadata } from "next";
 import Link from "next/link";
+import { Clock } from "lucide-react";
 import { notFound } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import { OfferCard } from "@/components/offers/offer-card";
@@ -30,28 +31,39 @@ export default async function OffreExpireePage({
   const similar = await findSimilarOffers(offer, 6);
 
   return (
-    <div className="mx-auto max-w-6xl px-4 py-12">
-      <div className="mx-auto max-w-xl rounded-xl border border-cobalt/20 bg-cobalt-soft p-8 text-center">
-        <p className="stamp !border-[#141414] bg-transparent">Offre expirée</p>
-        <h1 className="mt-4 font-display text-3xl font-bold leading-tight">{offer.title}</h1>
-        <p className="mt-2 text-sm">
-          {offer.company.name} — {offer.city}. Cette offre n'est plus disponible sur{" "}
+    <div className="container-page pb-8 pt-12">
+      <div className="mx-auto max-w-2xl rounded-3xl border border-line bg-paper p-8 text-center shadow-card sm:p-10">
+        <span className="inline-flex items-center gap-1.5 rounded-full bg-warning-soft px-3 py-1 text-xs font-semibold text-warning">
+          <Clock aria-hidden="true" size={13} />
+          Offre expirée
+        </span>
+        <h1 className="mt-5 text-2xl font-semibold leading-tight tracking-[-0.03em] sm:text-3xl">
+          {offer.title}
+        </h1>
+        <p className="mt-3 text-sm text-ink/60">
+          {offer.company.name} — {offer.city}. Cette offre n&apos;est plus disponible sur{" "}
           {offer.sourceSite}.
         </p>
       </div>
 
-      <section className="mt-12" aria-labelledby="similaires">
-        <h2 id="similaires" className="rule pt-6 text-center font-display text-2xl font-bold">
-          {similar.length > 0 ? "Ces offres pourraient vous plaire" : "Explorez les offres actives"}
+      <section className="mt-16" aria-labelledby="similaires">
+        <h2 id="similaires" className="text-center text-display-sm font-semibold">
+          {similar.length > 0 ? (
+            <>
+              Ces offres pourraient <span className="serif-accent text-accent">vous plaire</span>
+            </>
+          ) : (
+            "Explorez les offres actives"
+          )}
         </h2>
         {similar.length > 0 ? (
-          <div className="mt-6 grid gap-3 md:grid-cols-2 lg:grid-cols-3">
+          <div className="mt-10 grid grid-cols-1 gap-3 md:grid-cols-2 lg:grid-cols-3">
             {similar.map((o) => (
               <OfferCard key={o.id} offer={offerToDocument(o)} />
             ))}
           </div>
         ) : (
-          <p className="mt-4 text-center">
+          <p className="mt-8 text-center">
             <Link href="/offres" className="btn-cobalt">
               Voir toutes les offres
             </Link>

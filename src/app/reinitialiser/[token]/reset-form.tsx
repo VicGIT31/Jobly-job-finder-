@@ -21,7 +21,7 @@ export function ResetForm({ token, email }: { token: string; email: string }) {
   if (result?.ok) {
     return (
       <div>
-        <p className="rounded-lg border border-cobalt/20 bg-cobalt-soft p-4 text-sm" role="status">
+        <p className="alert-success" role="status">
           ✓ {result.message}
         </p>
         <Link href="/connexion" className="btn-cobalt mt-4 w-full">
@@ -32,10 +32,10 @@ export function ResetForm({ token, email }: { token: string; email: string }) {
   }
 
   return (
-    <form onSubmit={onSubmit} className="flex flex-col gap-3">
+    <form onSubmit={onSubmit} className="flex flex-col gap-4">
       <div>
-        <label htmlFor="password" className="mb-1 block text-sm font-semibold">
-          Nouveau mot de passe <span className="font-normal text-ink/50">(8 caractères min.)</span>
+        <label htmlFor="password" className="field-label">
+          Nouveau mot de passe <span className="font-normal text-ink/60">(8 caractères min.)</span>
         </label>
         <input
           id="password"
@@ -48,11 +48,11 @@ export function ResetForm({ token, email }: { token: string; email: string }) {
         />
       </div>
       {result && !result.ok && (
-        <p className="rounded-lg border border-ink/15 p-2 text-sm" role="alert">
+        <p className="alert-error" role="alert">
           {result.error}
         </p>
       )}
-      <button type="submit" className="btn-cobalt w-full" disabled={pending}>
+      <button type="submit" className="btn-cobalt mt-1 w-full" disabled={pending}>
         {pending ? "Mise à jour…" : "Mettre à jour"}
       </button>
     </form>

@@ -3,6 +3,8 @@ import { redirect } from "next/navigation";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { followUpFlag } from "@/lib/follow-up";
+import { TriangleAlert } from "lucide-react";
+import { SectionHeader } from "@/components/account/section-header";
 import {
   ApplicationBoard,
   type ApplicationItem,
@@ -49,21 +51,24 @@ export default async function CandidaturesPage() {
 
   return (
     <section aria-labelledby="candidatures-titre">
-      <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
-        <h2 id="candidatures-titre" className="font-display text-xl font-bold">
-          {items.length} candidature{items.length > 1 ? "s" : ""} suivie
-          {items.length > 1 ? "s" : ""}
-        </h2>
-        {needsAttention > 0 && (
-          <span className="inline-flex items-center gap-1 text-sm font-semibold text-amber-700 dark:text-amber-400">
-            <span aria-hidden="true">⚠</span> {needsAttention} à relancer
-          </span>
-        )}
-      </div>
-      <p className="mt-1 text-sm text-ink/60">
-        Créées automatiquement quand vous cliquez « Postuler », ou ajoutées à la main pour une
-        candidature faite ailleurs.
-      </p>
+      <SectionHeader
+        id="candidatures-titre"
+        title={
+          <>
+            {items.length} candidature{items.length > 1 ? "s" : ""} suivie
+            {items.length > 1 ? "s" : ""}
+          </>
+        }
+        description="Créées automatiquement quand vous cliquez « Postuler », ou ajoutées à la main pour une candidature faite ailleurs."
+        aside={
+          needsAttention > 0 ? (
+            <span className="inline-flex items-center gap-1.5 rounded-full bg-warning-soft px-3 py-1 text-sm font-medium text-warning">
+              <TriangleAlert aria-hidden="true" size={14} />
+              {needsAttention} à relancer
+            </span>
+          ) : undefined
+        }
+      />
 
       <ApplicationBoard items={items} />
     </section>

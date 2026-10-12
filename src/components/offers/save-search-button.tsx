@@ -2,6 +2,7 @@
 
 import { useMutation } from "@tanstack/react-query";
 import { useState } from "react";
+import { BellPlus, Check, LoaderCircle } from "lucide-react";
 
 /** Crée une alerte depuis la recherche filtrée courante, en un clic. */
 export function SaveSearchButton({ queryString }: { queryString: string }) {
@@ -22,20 +23,39 @@ export function SaveSearchButton({ queryString }: { queryString: string }) {
 
   if (saved) {
     return (
-      <span className="text-sm font-semibold text-cobalt" role="status">
-        ✓ Alerte créée
+      <span
+        className="inline-flex h-9 animate-page-in items-center gap-1.5 rounded-lg bg-success-soft px-3 text-[13px] font-semibold text-success"
+        role="status"
+      >
+        <Check aria-hidden="true" size={15} strokeWidth={2.5} />
+        Alerte créée
       </span>
     );
   }
 
   return (
-    <button
-      type="button"
-      className="btn-outline !min-h-[36px] !px-3 !py-1 text-sm"
-      onClick={() => mutation.mutate()}
-      disabled={mutation.isPending}
-    >
-      {mutation.isPending ? "Création…" : "＋ Créer une alerte"}
-    </button>
+    <>
+      <button
+        type="button"
+        className="btn-outline btn-sm"
+        onClick={() => mutation.mutate()}
+        disabled={mutation.isPending}
+      >
+        {mutation.isPending ? (
+          <LoaderCircle aria-hidden="true" size={15} className="animate-spin" />
+        ) : (
+          <BellPlus aria-hidden="true" size={15} />
+        )}
+        <span className="hidden sm:inline">
+          {mutation.isPending ? "Création…" : "Créer une alerte"}
+        </span>
+        <span className="sr-only sm:hidden">Créer une alerte</span>
+      </button>
+      {mutation.isError && (
+        <span className="text-xs text-danger" role="alert">
+          Échec, réessayez.
+        </span>
+      )}
+    </>
   );
 }

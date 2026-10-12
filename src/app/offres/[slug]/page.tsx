@@ -1,6 +1,17 @@
 import { STUDENT_OFFER_WHERE } from "@/server/offers/public-scope";
 import type { Metadata } from "next";
 import Link from "next/link";
+import {
+  ArrowUpRight,
+  Building2,
+  CalendarDays,
+  ChevronRight,
+  GraduationCap,
+  Laptop,
+  MapPin,
+  TriangleAlert,
+  Wallet,
+} from "lucide-react";
 import { notFound } from "next/navigation";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
@@ -13,6 +24,9 @@ import { HideOfferButton } from "@/components/offers/hide-offer-button";
 import { MatchScoreCard } from "@/components/offers/match-score-card";
 import { CvMatchCard } from "@/components/offers/cv-match-card";
 import { AiDraftPanel } from "@/components/offers/ai-draft-panel";
+import { ContractBadge } from "@/components/ui/contract-badge";
+import { isPlaceholderDescription } from "@/components/companies/company-text";
+import { SpecialtyIcon } from "@/components/ui/specialty-icon";
 import { findSimilarOffers } from "@/server/offers/similar";
 import { offerToDocument } from "@/server/search/sync";
 import { computeMatchScore } from "@/server/match/score";
@@ -22,6 +36,7 @@ import {
   COUNTRY_FLAGS,
   EDUCATION_LABELS,
   REMOTE_LABELS,
+  SPECIALTY_LABELS,
 } from "@/lib/search-params";
 
 export const dynamic = "force-dynamic";
@@ -150,162 +165,265 @@ export default async function OffrePage({
 
   const isExpired = offer.status === "EXPIRED";
   const salary = formatSalary(offer.salaryMin, offer.salaryMax);
+  const isLoggedIn = Boolean(session?.user);
+  const specialtyLabel = SPECIALTY_LABELS[offer.specialty as keyof typeof SPECIALTY_LABELS];
+
+  const facts = [
+    {
+      icon: MapPin,
+      label: "Lieu",
+      value: (
+        <>
+          {offer.countryCode !== "FR" && (
+            <span aria-hidden="true">{COUNTRY_FLAGS[offer.countryCode] ?? "🌍"} </span>
+          )}
+          {offer.city}
+        </>
+      ),
+    },
+    { icon: Laptop, label: "Télétravail", value: REMOTE_LABELS[offer.remotePolicy] },
+    { icon: GraduationCap, label: "Niveau", value: EDUCATION_LABELS[offer.educationLevel] },
+    {
+      icon: Wallet,
+      label: "Rémunération",
+      value: salary ?? <span className="text-ink/60">Non précisée</span>,
+    },
+  ];
 
   return (
-    <div className="mx-auto max-w-6xl px-4 py-8">
+    <div className="container-page pb-28 pt-6 lg:pb-8">
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(jobPostingJsonLd(offer)) }}
       />
 
-      <nav aria-label="Fil d'Ariane" className="text-sm text-ink/60">
-        <Link href="/offres" className="underline-offset-4 hover:underline">
-          Offres
-        </Link>{" "}
-        / <span aria-current="page">{offer.title}</span>
+      <nav aria-label="Fil d'Ariane" className="text-[13px] text-ink/60">
+        <ol className="flex min-w-0 items-center gap-1.5">
+          <li>
+            <Link href="/offres" className="transition-colors hover:text-ink">
+              Offres
+            </Link>
+          </li>
+          <li aria-hidden="true">
+            <ChevronRight size={13} />
+          </li>
+          <li className="min-w-0 truncate">
+            <Link
+              href={`/entreprises/${offer.company.slug}`}
+              className="transition-colors hover:text-ink"
+            >
+              {offer.company.name}
+            </Link>
+          </li>
+          <li aria-hidden="true" className="hidden sm:block">
+            <ChevronRight size={13} />
+          </li>
+          <li className="hidden min-w-0 truncate text-ink/70 sm:block" aria-current="page">
+            {offer.title}
+          </li>
+        </ol>
       </nav>
 
       {isExpired && (
-        <div className="mt-4 rounded-lg border border-cobalt/20 bg-cobalt-soft p-4" role="alert">
-          <p className="font-display text-lg font-bold">Cette offre a expiré</p>
-          <p className="text-sm">
-            Elle n'a plus été vue sur {offer.sourceSite} depuis le{" "}
-            {offer.lastSeenAt.toLocaleDateString("fr-FR")}. Jetez un œil aux offres similaires
-            ci-dessous.
-          </p>
+        <div className="alert-info mt-5 flex items-start gap-3" role="alert">
+          <TriangleAlert aria-hidden="true" size={18} className="mt-0.5 shrink-0 text-warning" />
+          <div>
+            <p className="font-semibold">Cette offre a expiré</p>
+            <p className="mt-0.5 text-ink/70">
+              Elle n&apos;a plus été vue sur {offer.sourceSite} depuis le{" "}
+              {offer.lastSeenAt.toLocaleDateString("fr-FR")}. Jetez un œil aux offres similaires
+              ci-dessous.
+            </p>
+          </div>
         </div>
       )}
 
-      <div className="mt-6 grid gap-10 lg:grid-cols-[1fr_320px]">
-        <article>
-          <div className="flex items-start gap-4">
-            <CompanyLogo name={offer.company.name} logoUrl={offer.company.logoUrl} size={56} />
-            <div className="min-w-0">
-              <p className="text-sm font-medium text-ink/60">
+      <div className="mt-8 grid grid-cols-[minmax(0,1fr)] gap-10 lg:grid-cols-[minmax(0,1fr)_360px] lg:gap-14">
+        <article className="min-w-0">
+          <header>
+            <div className="flex items-center gap-3">
+              <CompanyLogo
+                name={offer.company.name}
+                logoUrl={offer.company.logoUrl}
+                slug={offer.company.slug}
+                website={offer.company.website}
+                size={56}
+              />
+              <div className="min-w-0">
                 <Link
                   href={`/entreprises/${offer.company.slug}`}
-                  className="underline-offset-4 hover:underline"
+                  className="block truncate font-medium text-ink/80 transition-colors hover:text-accent"
                 >
                   {offer.company.name}
                 </Link>
-              </p>
-              <h1 className="mt-1 font-display text-3xl font-bold leading-tight sm:text-4xl">
-                {offer.title}
-              </h1>
+                <p className="flex items-center gap-1.5 text-[13px] text-ink/60">
+                  {specialtyLabel && (
+                    <>
+                      <SpecialtyIcon specialty={offer.specialty} size={13} />
+                      {specialtyLabel} ·{" "}
+                    </>
+                  )}
+                  {offer.sector}
+                </p>
+              </div>
             </div>
-          </div>
 
-          <div className="mt-4 flex flex-wrap items-center gap-2">
-            <span className="stamp">{CONTRACT_LABELS[offer.contractType]}</span>
-            <span className="ticket">
-              {offer.countryCode !== "FR" && (
-                <span aria-hidden="true">{COUNTRY_FLAGS[offer.countryCode] ?? "🌍"}</span>
-              )}
-              {offer.city}
-            </span>
-            <span className="ticket">{REMOTE_LABELS[offer.remotePolicy]}</span>
-            <span className="ticket">{EDUCATION_LABELS[offer.educationLevel]}</span>
-            {salary && <span className="ticket font-semibold">{salary}</span>}
-          </div>
+            <h1 className="mt-6 text-[clamp(1.75rem,1.2rem+2.2vw,2.75rem)] font-semibold leading-[1.08] tracking-[-0.035em]">
+              {offer.title}
+            </h1>
 
-          <div className="mt-6 text-[15px]">
-            <Markdown content={offer.description} />
+            <div className="mt-5 flex flex-wrap items-center gap-3">
+              <ContractBadge type={offer.contractType} className="!px-3 !py-1.5 !text-[13px]" />
+              <span className="flex items-center gap-1.5 text-[13px] text-ink/60">
+                <CalendarDays aria-hidden="true" size={14} />
+                Publiée{" "}
+                <time dateTime={offer.publishedAt.toISOString()}>
+                  {timeAgo(offer.publishedAt.getTime())}
+                </time>
+              </span>
+            </div>
+
+            <dl className="mt-8 grid grid-cols-2 overflow-hidden rounded-xl border border-line bg-paper sm:grid-cols-4">
+              {facts.map(({ icon: Icon, label, value }, i) => (
+                <div
+                  key={label}
+                  className={`p-4 ${i % 2 === 1 ? "border-l border-line" : ""} ${
+                    i >= 2 ? "border-t border-line sm:border-t-0" : ""
+                  } ${i >= 1 ? "sm:border-l" : ""}`}
+                >
+                  <dt className="eyebrow flex items-center gap-1.5">
+                    <Icon aria-hidden="true" size={13} />
+                    {label}
+                  </dt>
+                  <dd className="mt-2 text-sm font-medium">{value}</dd>
+                </div>
+              ))}
+            </dl>
+          </header>
+
+          <div className="mt-10">
+            <h2 className="eyebrow">Description du poste</h2>
+            <div className="mt-2 max-w-[70ch] text-[15.5px] leading-[1.75] text-ink/85">
+              <Markdown content={offer.description} />
+            </div>
           </div>
         </article>
 
-        <aside className="lg:sticky lg:top-6 lg:self-start">
-          <div className="card p-5">
+        <aside className="space-y-4 lg:sticky lg:top-[calc(var(--header-h)+24px)] lg:self-start">
+          <div className="panel">
             {!isExpired ? (
               <>
                 <a
                   href={`/go/${offer.id}`}
                   target="_blank"
                   rel="nofollow noopener"
-                  className="btn-cobalt w-full text-base"
+                  className="btn-volt group !min-h-[52px] w-full !whitespace-normal text-center text-base"
                 >
-                  Postuler <span aria-hidden="true">↗</span>
-                  <span className="sr-only">(sur {offer.sourceSite}, nouvel onglet)</span>
+                  Postuler sur {offer.sourceSite.replace(/^www\./, "")}
+                  <ArrowUpRight
+                    aria-hidden="true"
+                    size={18}
+                    className="transition-transform duration-base ease-out group-hover:-translate-y-0.5 group-hover:translate-x-0.5"
+                  />
+                  <span className="sr-only">(nouvel onglet)</span>
                 </a>
-                <p className="mt-2 text-center text-xs text-ink/55">
-                  Vous serez redirigé·e vers {offer.sourceSite}
+                <p className="mt-2.5 text-center text-xs text-ink/60">
+                  Vous serez redirigé·e vers l&apos;annonce d&apos;origine
                 </p>
               </>
             ) : (
-              <Link href={`/offres/${offer.slug}/expiree`} className="btn-outline w-full">
+              <Link href={`/offres/${offer.slug}/expiree`} className="btn-cobalt w-full">
                 Voir les offres similaires
               </Link>
             )}
 
-            <div className="mt-3">
-              <SaveOfferButton
-                offerId={offer.id}
-                initialSaved={saved}
-                isLoggedIn={Boolean(session?.user)}
-              />
-              <AlreadyAppliedButton
-                offerId={offer.id}
-                initialTracked={tracked}
-                isLoggedIn={Boolean(session?.user)}
-              />
-              <HideOfferButton
-                offerId={offer.id}
-                initialHidden={hidden}
-                isLoggedIn={Boolean(session?.user)}
-              />
+            <div className="mt-4">
+              <SaveOfferButton offerId={offer.id} initialSaved={saved} isLoggedIn={isLoggedIn} />
+              <div className="mt-1 flex flex-col items-center">
+                <AlreadyAppliedButton
+                  offerId={offer.id}
+                  initialTracked={tracked}
+                  isLoggedIn={isLoggedIn}
+                />
+                <HideOfferButton
+                  offerId={offer.id}
+                  initialHidden={hidden}
+                  isLoggedIn={isLoggedIn}
+                />
+              </div>
             </div>
 
-            <dl className="rule mt-4 space-y-2 pt-4 text-sm">
-              <div className="flex justify-between gap-2">
+            <dl className="mt-5 space-y-2.5 border-t border-line pt-5 text-[13px]">
+              <div className="flex justify-between gap-3">
                 <dt className="text-ink/60">Publiée le</dt>
                 <dd className="text-right">
                   <time dateTime={offer.publishedAt.toISOString()}>
                     {formatDateFr(offer.publishedAt.getTime())}
-                  </time>{" "}
-                  ({timeAgo(offer.publishedAt.getTime())})
+                  </time>
                 </dd>
               </div>
-              <div className="flex justify-between gap-2">
-                <dt className="text-ink/60">Secteur</dt>
-                <dd className="text-right">{offer.sector}</dd>
+              <div className="flex justify-between gap-3">
+                <dt className="text-ink/60">Contrat</dt>
+                <dd className="text-right">{CONTRACT_LABELS[offer.contractType]}</dd>
               </div>
-              <div className="flex justify-between gap-2">
+              <div className="flex justify-between gap-3">
                 <dt className="text-ink/60">Source</dt>
-                <dd>{offer.sourceSite}</dd>
+                <dd className="truncate text-right font-mono text-xs">{offer.sourceSite}</dd>
               </div>
-              <div className="flex justify-between gap-2">
-                <dt className="text-ink/60">Scrapée le</dt>
-                <dd>{offer.scrapedAt.toLocaleDateString("fr-FR")}</dd>
+              <div className="flex justify-between gap-3">
+                <dt className="text-ink/60">Collectée le</dt>
+                <dd className="text-right">{offer.scrapedAt.toLocaleDateString("fr-FR")}</dd>
               </div>
             </dl>
           </div>
 
-          <MatchScoreCard isLoggedIn={Boolean(session?.user)} result={matchResult} />
+          <MatchScoreCard isLoggedIn={isLoggedIn} result={matchResult} />
           <CvMatchCard
-            isLoggedIn={Boolean(session?.user)}
+            isLoggedIn={isLoggedIn}
             hasCv={Boolean(candidateProfile?.cvText)}
             result={cvMatchResult}
           />
-          <AiDraftPanel offerId={offer.id} isLoggedIn={Boolean(session?.user)} />
+          <AiDraftPanel offerId={offer.id} isLoggedIn={isLoggedIn} />
 
-          <div className="card mt-4 p-5">
-            <h2 className="font-display text-lg font-bold">{offer.company.name}</h2>
-            <p className="mt-2 line-clamp-4 text-sm text-ink/75">{offer.company.description}</p>
+          <div className="panel">
+            <div className="flex items-center gap-3">
+              <CompanyLogo
+                name={offer.company.name}
+                logoUrl={offer.company.logoUrl}
+                slug={offer.company.slug}
+                website={offer.company.website}
+                size={40}
+              />
+              <div className="min-w-0">
+                <h2 className="truncate font-semibold">{offer.company.name}</h2>
+                <p className="flex items-center gap-1 text-xs text-ink/60">
+                  <Building2 aria-hidden="true" size={12} />
+                  {offer.company.sector}
+                </p>
+              </div>
+            </div>
+            {!isPlaceholderDescription(offer.company.description) && (
+              <p className="mt-3 line-clamp-4 text-sm leading-relaxed text-ink/65">
+                {offer.company.description}
+              </p>
+            )}
             <Link
               href={`/entreprises/${offer.company.slug}`}
-              className="mt-3 inline-block text-sm font-semibold text-cobalt underline-offset-4 hover:underline"
+              className="link mt-3 inline-block text-sm"
             >
-              Voir l'entreprise et ses offres →
+              Voir l&apos;entreprise et ses offres →
             </Link>
           </div>
         </aside>
       </div>
 
       {similar.length > 0 && (
-        <section className="mt-14" aria-labelledby="similaires">
-          <h2 id="similaires" className="rule pt-6 font-display text-2xl font-bold">
-            Offres similaires
+        <section className="mt-20 border-t border-line pt-12" aria-labelledby="similaires">
+          <p className="eyebrow">À voir aussi</p>
+          <h2 id="similaires" className="mt-3 text-display-sm font-semibold">
+            Offres <span className="serif-accent">similaires</span>
           </h2>
-          <div className="mt-4 grid gap-3 md:grid-cols-2 lg:grid-cols-3">
+          <div className="mt-8 grid grid-cols-1 gap-3 md:grid-cols-2 lg:grid-cols-3">
             {similar.map((o) => (
               <OfferCard
                 key={o.id}
@@ -315,6 +433,28 @@ export default async function OffrePage({
             ))}
           </div>
         </section>
+      )}
+
+      {/* Barre d'action mobile : « Postuler » toujours à portée de pouce. */}
+      {!isExpired && (
+        <div className="fixed inset-x-0 bottom-0 z-30 border-t border-line bg-canvas/90 p-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] backdrop-blur-xl lg:hidden">
+          <div className="flex items-center gap-3">
+            <div className="min-w-0 flex-1">
+              <p className="truncate text-sm font-semibold">{offer.title}</p>
+              <p className="truncate text-xs text-ink/60">{offer.company.name}</p>
+            </div>
+            <a
+              href={`/go/${offer.id}`}
+              target="_blank"
+              rel="nofollow noopener"
+              className="btn-volt shrink-0"
+            >
+              Postuler
+              <ArrowUpRight aria-hidden="true" size={16} />
+              <span className="sr-only">(sur {offer.sourceSite}, nouvel onglet)</span>
+            </a>
+          </div>
+        </div>
       )}
     </div>
   );

@@ -25,7 +25,7 @@ export default async function AdminSeoPage() {
 
   return (
     <div>
-      <div className="grid gap-3 sm:grid-cols-3">
+      <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
         <StatCard label="URLs dans le sitemap" value={sitemapUrls} tone="accent" />
         <StatCard label="Offres indexables" value={activeOffers} />
         <StatCard
@@ -36,28 +36,22 @@ export default async function AdminSeoPage() {
       </div>
 
       <div className="mt-4 flex flex-wrap gap-4 text-sm">
-        <Link
-          href="/robots.txt"
-          className="font-semibold text-cobalt underline-offset-4 hover:underline"
-        >
+        <Link href="/robots.txt" className="link">
           Voir robots.txt →
         </Link>
-        <Link
-          href="/sitemap.xml"
-          className="font-semibold text-cobalt underline-offset-4 hover:underline"
-        >
+        <Link href="/sitemap.xml" className="link">
           Voir sitemap.xml →
         </Link>
       </div>
 
       <form action={saveSeoSettings} className="mt-8 flex flex-col gap-8">
-        <section aria-labelledby="identite">
+        <section className="panel" aria-labelledby="identite">
           <SectionTitle
             id="identite"
             title="Identité et titres"
             description="Ce que voient les moteurs de recherche et les réseaux sociaux."
           />
-          <div className="grid gap-4 sm:grid-cols-2">
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
             <Field required name="siteName" label="Nom du site" defaultValue={seo.siteName} />
             <Field
               name="titleTemplate"
@@ -96,13 +90,13 @@ export default async function AdminSeoPage() {
           </div>
         </section>
 
-        <section aria-labelledby="indexation">
+        <section className="panel" aria-labelledby="indexation">
           <SectionTitle
             id="indexation"
             title="Indexation et robots"
             description="Contrôle de ce que les robots ont le droit d'explorer."
           />
-          <div className="grid gap-4 sm:grid-cols-2">
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
             <div className="sm:col-span-2">
               <Switch
                 name="indexable"
@@ -136,13 +130,13 @@ export default async function AdminSeoPage() {
           </div>
         </section>
 
-        <section aria-labelledby="verification">
+        <section className="panel" aria-labelledby="verification">
           <SectionTitle
             id="verification"
             title="Vérification de propriété"
             description="Balises meta demandées par les consoles de recherche."
           />
-          <div className="grid gap-4 sm:grid-cols-2">
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
             <Field
               name="googleSiteVerification"
               label="Google Search Console"

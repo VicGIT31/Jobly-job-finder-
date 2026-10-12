@@ -1,6 +1,9 @@
 import { PUBLIC_OFFER_WHERE } from "@/server/offers/public-scope";
 import type { Metadata } from "next";
 import Link from "next/link";
+import { ArrowUpRight, Briefcase, Building2, ChevronRight, Users } from "lucide-react";
+import { CompanyLogo } from "@/components/offers/company-logo";
+import { companySizeLabel, isPlaceholderDescription } from "@/components/companies/company-text";
 import { notFound } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import { OfferCard } from "@/components/offers/offer-card";
@@ -52,72 +55,113 @@ export default async function EntreprisePage({
     a === "FR" ? -1 : b === "FR" ? 1 : a.localeCompare(b),
   );
 
+  const offerCount = company.offers.length;
+
   return (
-    <div className="mx-auto max-w-6xl px-4 py-8">
-      <nav aria-label="Fil d'Ariane" className="text-sm text-ink/60">
-        <Link href="/entreprises" className="underline-offset-4 hover:underline">
-          Entreprises
-        </Link>{" "}
-        / <span aria-current="page">{company.name}</span>
+    <div className="container-page pb-8 pt-6">
+      <nav aria-label="Fil d'Ariane" className="text-[13px] text-ink/60">
+        <ol className="flex items-center gap-1.5">
+          <li>
+            <Link href="/entreprises" className="transition-colors hover:text-ink">
+              Entreprises
+            </Link>
+          </li>
+          <li aria-hidden="true">
+            <ChevronRight size={13} />
+          </li>
+          <li className="truncate text-ink/70" aria-current="page">
+            {company.name}
+          </li>
+        </ol>
       </nav>
 
-      <header className="mt-4 border-b border-ink/10 pb-8">
-        <div className="flex items-center gap-3">
-          <h1 className="font-display text-4xl font-bold tracking-tight">{company.name}</h1>
-          {company.featured && <span className="stamp">À la une</span>}
-        </div>
-        <p className="mt-2 text-sm uppercase tracking-wider text-ink/60">
-          {company.sector} · {company.size} salariés
-          {company.website && (
-            <>
-              {" · "}
-              <a
-                href={company.website}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="normal-case text-cobalt underline-offset-4 hover:underline"
-              >
-                Site web ↗
-              </a>
-            </>
-          )}
-        </p>
-        {countries.length > 1 && (
-          <p className="mt-2 flex flex-wrap items-center gap-1.5 text-sm text-ink/70">
-            <span className="text-ink/50">Recrute en :</span>
-            {countries.map((c) => (
-              <span key={c} className="ticket">
-                {c !== "FR" && <span aria-hidden="true">{COUNTRY_FLAGS[c] ?? "🌍"}</span>}
-                {COUNTRY_LABELS[c] ?? c}
+      <header className="relative mt-6 overflow-hidden rounded-3xl border border-line bg-paper p-6 shadow-card sm:p-10">
+        <div
+          aria-hidden="true"
+          className="bg-dots absolute inset-0 [mask-image:radial-gradient(ellipse_60%_80%_at_100%_0%,black,transparent)]"
+        />
+        <div className="relative flex flex-col gap-6 sm:flex-row sm:items-start">
+          <CompanyLogo
+            name={company.name}
+            logoUrl={company.logoUrl}
+            slug={company.slug}
+            website={company.website}
+            size={72}
+          />
+          <div className="min-w-0 flex-1">
+            <div className="flex flex-wrap items-center gap-3">
+              <h1 className="text-display-sm font-semibold">{company.name}</h1>
+              {company.featured && <span className="stamp">À la une</span>}
+            </div>
+            <p className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-1.5 text-sm text-ink/60">
+              <span className="flex items-center gap-1.5">
+                <Building2 aria-hidden="true" size={15} className="text-ink/40" />
+                {company.sector}
               </span>
-            ))}
-          </p>
-        )}
-        <p className="mt-4 max-w-3xl leading-relaxed text-ink/85">{company.description}</p>
+              {companySizeLabel(company.size) && (
+                <span className="flex items-center gap-1.5">
+                  <Users aria-hidden="true" size={15} className="text-ink/40" />
+                  {companySizeLabel(company.size)}
+                </span>
+              )}
+              {company.website && (
+                <a
+                  href={company.website}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="link inline-flex items-center gap-1"
+                >
+                  Site web <ArrowUpRight aria-hidden="true" size={14} />
+                </a>
+              )}
+            </p>
+            {countries.length > 1 && (
+              <p className="mt-4 flex flex-wrap items-center gap-1.5 text-sm text-ink/70">
+                <span className="eyebrow mr-1">Recrute en</span>
+                {countries.map((c) => (
+                  <span key={c} className="ticket !min-h-[28px] text-xs">
+                    {c !== "FR" && <span aria-hidden="true">{COUNTRY_FLAGS[c] ?? "🌍"}</span>}
+                    {COUNTRY_LABELS[c] ?? c}
+                  </span>
+                ))}
+              </p>
+            )}
+            {!isPlaceholderDescription(company.description) && (
+              <p className="mt-5 max-w-3xl leading-relaxed text-ink/75">{company.description}</p>
+            )}
+          </div>
+          <div className="shrink-0 rounded-2xl border border-line bg-surface/60 px-5 py-4 sm:text-right">
+            <p className="font-mono text-3xl font-semibold tabular-nums tracking-[-0.04em]">
+              {offerCount}
+            </p>
+            <p className="eyebrow mt-1">
+              offre{offerCount > 1 ? "s" : ""} active{offerCount > 1 ? "s" : ""}
+            </p>
+          </div>
+        </div>
       </header>
 
-      <section className="mt-8" aria-labelledby="offres-entreprise">
-        <h2 id="offres-entreprise" className="font-display text-2xl font-bold">
-          {company.offers.length} offre{company.offers.length > 1 ? "s" : ""} active
-          {company.offers.length > 1 ? "s" : ""}
+      <section className="mt-12" aria-labelledby="offres-entreprise">
+        <h2 id="offres-entreprise" className="text-xl font-semibold tracking-tight">
+          Postes ouverts chez {company.name}
         </h2>
-        {company.offers.length > 0 ? (
-          <div className="mt-5 grid gap-3 md:grid-cols-2">
+        {offerCount > 0 ? (
+          <div className="mt-6 grid grid-cols-1 gap-3">
             {company.offers.map((offer) => (
-              <OfferCard key={offer.id} offer={offerToDocument(offer)} />
+              <OfferCard key={offer.id} offer={offerToDocument(offer)} layout="row" />
             ))}
           </div>
         ) : (
-          <p className="mt-4 rounded-xl border border-dashed border-ink/20 p-8 text-center text-ink/70">
-            Aucune offre active pour le moment —{" "}
-            <Link
-              href="/offres"
-              className="font-semibold text-cobalt underline-offset-4 hover:underline"
-            >
-              voir toutes les offres
+          <div className="empty-state mt-6">
+            <Briefcase aria-hidden="true" size={24} className="text-ink/40" />
+            <p className="mt-3 font-semibold">Aucune offre active pour le moment</p>
+            <p className="mt-1 text-sm text-ink/60">
+              Les nouvelles annonces apparaissent ici dès leur collecte.
+            </p>
+            <Link href="/offres" className="btn-outline btn-sm mt-5">
+              Voir toutes les offres
             </Link>
-            .
-          </p>
+          </div>
         )}
       </section>
     </div>

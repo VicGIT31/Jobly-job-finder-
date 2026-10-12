@@ -7,7 +7,10 @@ export const metadata: Metadata = { title: "Connexion" };
 
 export default function ConnexionPage() {
   return (
-    <AuthCard title="Connexion">
+    <AuthCard
+      title="Bon retour"
+      subtitle="Connectez-vous pour retrouver vos alertes, offres et candidatures."
+    >
       <Suspense>
         <LoginForm />
       </Suspense>

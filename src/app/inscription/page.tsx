@@ -13,7 +13,10 @@ export default async function InscriptionPage() {
   const { registrationOpen } = await getSettings("general");
 
   return (
-    <AuthCard title="Inscription">
+    <AuthCard
+      title="Créer un compte"
+      subtitle="Gratuit. Les offres restent consultables sans compte."
+    >
       {registrationOpen ? (
         <RegisterForm />
       ) : (
@@ -22,7 +25,7 @@ export default async function InscriptionPage() {
             Les inscriptions sont momentanément fermées. Revenez bientôt — les offres restent
             consultables sans compte.
           </p>
-          <Link href="/offres" className="btn-cobalt mt-5 w-full">
+          <Link href="/offres" className="btn-cobalt mt-6 w-full">
             Voir les offres
           </Link>
         </div>

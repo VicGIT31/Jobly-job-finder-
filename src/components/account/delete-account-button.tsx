@@ -1,6 +1,7 @@
 "use client";
 
 import { useTransition } from "react";
+import { Trash2 } from "lucide-react";
 import { deleteAccount } from "@/server/account/actions";
 
 /** Suppression définitive du compte — confirmation explicite requise (spec §45). */
@@ -23,8 +24,9 @@ export function DeleteAccountButton() {
       type="button"
       onClick={onClick}
       disabled={pending}
-      className="text-sm font-semibold text-red-600 underline-offset-4 hover:underline disabled:opacity-50"
+      className="btn btn-sm border border-danger/40 bg-paper text-danger hover:bg-danger hover:text-white"
     >
+      <Trash2 aria-hidden="true" size={14} />
       {pending ? "Suppression…" : "Supprimer mon compte et mes données"}
     </button>
   );

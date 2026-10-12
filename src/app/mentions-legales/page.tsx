@@ -12,14 +12,17 @@ export default async function MentionsLegalesPage() {
   const { contactEmail } = await getSettings("general");
 
   return (
-    <div className="mx-auto max-w-3xl px-4 py-12">
-      <h1 className="font-display text-4xl font-bold tracking-tight">
-        Mentions légales<span className="text-cobalt">.</span>
+    <div className="container-page max-w-3xl pb-8 pt-12 sm:pt-16">
+      <p className="eyebrow">Informations</p>
+      <h1 className="mt-3 text-display-sm font-semibold">
+        Mentions <span className="serif-accent">légales</span>
       </h1>
 
-      <div className="mt-8 space-y-8 text-[15px] leading-relaxed">
+      <div className="mt-12 space-y-10 text-[15px] leading-[1.75] text-ink/75">
         <section>
-          <h2 className="rule pt-4 font-display text-xl font-bold">Éditeur</h2>
+          <h2 className="border-t border-line pt-6 text-lg font-semibold tracking-tight text-ink">
+            Éditeur
+          </h2>
           <p className="mt-2">
             Jobly — projet de démonstration. 42 rue de l'Exemple, 75000 Paris. Directeur de la
             publication : Jobly. Contact : {contactEmail}.
@@ -27,7 +30,9 @@ export default async function MentionsLegalesPage() {
         </section>
 
         <section>
-          <h2 className="rule pt-4 font-display text-xl font-bold">Hébergement</h2>
+          <h2 className="border-t border-line pt-6 text-lg font-semibold tracking-tight text-ink">
+            Hébergement
+          </h2>
           <p className="mt-2">
             Application auto-hébergée (Docker). Base de données PostgreSQL, moteur de recherche
             Meilisearch, stockage S3-compatible.
@@ -35,7 +40,9 @@ export default async function MentionsLegalesPage() {
         </section>
 
         <section>
-          <h2 className="rule pt-4 font-display text-xl font-bold">Nature du service</h2>
+          <h2 className="border-t border-line pt-6 text-lg font-semibold tracking-tight text-ink">
+            Nature du service
+          </h2>
           <p className="mt-2">
             Jobly est un agrégateur : les offres d'emploi affichées proviennent de sites tiers (la «
             source » est mentionnée sur chaque offre). Jobly n'héberge aucune candidature : le
@@ -45,7 +52,9 @@ export default async function MentionsLegalesPage() {
         </section>
 
         <section>
-          <h2 className="rule pt-4 font-display text-xl font-bold">Données personnelles</h2>
+          <h2 className="border-t border-line pt-6 text-lg font-semibold tracking-tight text-ink">
+            Données personnelles
+          </h2>
           <p className="mt-2">
             Les comptes candidats stockent : email, nom, école, année de diplôme, CV (fichier PDF),
             offres sauvegardées, alertes et historique de clics « Postuler ». Ces données servent
@@ -57,7 +66,9 @@ export default async function MentionsLegalesPage() {
         </section>
 
         <section>
-          <h2 className="rule pt-4 font-display text-xl font-bold">Cookies</h2>
+          <h2 className="border-t border-line pt-6 text-lg font-semibold tracking-tight text-ink">
+            Cookies
+          </h2>
           <p className="mt-2">
             Jobly utilise uniquement des cookies techniques de session (authentification). Aucun
             cookie publicitaire ou de mesure d'audience tierce n'est déposé.
