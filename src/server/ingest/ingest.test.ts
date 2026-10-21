@@ -20,6 +20,71 @@ import { processIngest } from "./ingest";
 
 beforeEach(() => vi.clearAllMocks());
 describe("rafraîchissement et indexation par lots", () => {
+  const studentOffer = {
+    title: "Stage développeur",
+    companyName: "Test",
+    city: "Paris",
+    description: "Développement de logiciels TypeScript",
+    contractType: "stage",
+    sector: "Tech",
+    sourceUrl: "https://example.com/job/1",
+  };
+  it("rejette une annonce expirée, trop ancienne, observée trop tôt ou datée dans le futur", async () => {
+    const now = Date.now();
+    const result = await processIngest("example.com", [
+      { ...studentOffer, validThrough: new Date(now - 1000) },
+      { ...studentOffer, publishedAt: new Date(now - 61 * 86_400_000) },
+      { ...studentOffer, publishedAt: new Date(now + 3 * 86_400_000) },
+      { ...studentOffer, scrapedAt: new Date(now - 8 * 86_400_000) },
+    ]);
+    expect(result.rejected).toBe(4);
+    expect(mocks.update).not.toHaveBeenCalled();
+  });
+  it("conserve l'observation et la date limite réelles lors d'une mise à jour", async () => {
+    mocks.findUnique.mockResolvedValue({ id: "existing", companyId: "company", blockedAt: null });
+    mocks.update.mockImplementation(async ({ data }) => ({ ...data, id: "existing", company: {} }));
+    const scrapedAt = new Date(Date.now() - 3600_000);
+    const validThrough = new Date(Date.now() + 2 * 86_400_000);
+    await processIngest("example.com", [
+      { ...studentOffer, scrapedAt, validThrough, salaryMin: 1000, salaryMax: 1500 },
+    ]);
+    expect(mocks.update.mock.calls[0][0].data).toMatchObject({
+      scrapedAt,
+      lastSeenAt: scrapedAt,
+      validThrough,
+      salaryMin: 1000,
+      salaryMax: 1500,
+    });
+  });
+  it("distingue une annonce inchangée d'une vraie mise à jour", async () => {
+    const existing = {
+      ...studentOffer,
+      specialty: "AUTRE",
+      contractType: "STAGE",
+      status: "ACTIVE",
+      id: "existing",
+      companyId: "company",
+      blockedAt: null,
+    };
+    mocks.findUnique.mockResolvedValue(existing);
+    mocks.update.mockResolvedValue({ ...existing, company: {} });
+    const result = await processIngest("example.com", [studentOffer]);
+    expect(result.duplicates).toBe(1);
+    expect(result.updated).toBe(0);
+  });
+  it("signale une indexation en échec sans perdre l'écriture en base", async () => {
+    mocks.findUnique.mockResolvedValue({ id: "existing", companyId: "company", blockedAt: null });
+    mocks.update.mockResolvedValue({ id: "existing", company: {} });
+    mocks.sync.mockRejectedValueOnce(new Error("index indisponible"));
+    const log = vi.spyOn(console, "error").mockImplementation(() => undefined);
+    try {
+      const result = await processIngest("example.com", [studentOffer]);
+      expect(result.indexingErrors).toBe(1);
+      expect(mocks.update).toHaveBeenCalledOnce();
+    } finally {
+      log.mockRestore();
+    }
+  });
   it("rejette aussi les imports internes non tech ou hors France avant écriture", async () => {
     const offer = {
       title: "Stage développeur",
@@ -59,7 +124,7 @@ describe("rafraîchissement et indexation par lots", () => {
       sourceUrl: "https://example.com/job/1",
     };
     const result = await processIngest("example.com", [raw, { ...raw, title: "Stage data" }]);
-    expect(result.duplicates).toBe(2);
+    expect(result.updated).toBe(2);
     expect(mocks.update.mock.calls[0][0].data.description).toBe(raw.description);
     expect(mocks.update.mock.calls[0][0].data).not.toHaveProperty("status");
     expect(mocks.sync).toHaveBeenCalledTimes(1);
@@ -105,5 +170,10 @@ describe("rafraîchissement et indexation par lots", () => {
     expect(data).not.toHaveProperty("description");
     expect(data).not.toHaveProperty("sourceUrl");
     expect(data).not.toHaveProperty("educationLevel");
+    expect(data).not.toHaveProperty("lastSeenAt");
+    expect(data).not.toHaveProperty("status");
+    expect(data).not.toHaveProperty("contractType");
+    expect(data).not.toHaveProperty("publishedAt");
+    expect(data).not.toHaveProperty("scrapedAt");
   });
 });

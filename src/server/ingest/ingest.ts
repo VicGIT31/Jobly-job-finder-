@@ -11,6 +11,7 @@ import {
 } from "./normalize";
 import { syncOffersToSearch } from "@/server/search/sync";
 import { isTechOffer } from "./scope";
+import { getSettings } from "@/lib/settings";
 
 export type IngestSummary = {
   received: number;
@@ -19,6 +20,7 @@ export type IngestSummary = {
   duplicates: number;
   rejected: number;
   errors: Array<{ index: number; reason: string }>;
+  indexingErrors: number;
 };
 
 /**
@@ -37,13 +39,26 @@ export async function processIngest(
     duplicates: 0,
     rejected: 0,
     errors: [],
+    indexingErrors: 0,
   };
+  const { maxAgeDays, freshnessDays } = await getSettings("ingestion");
+  const now = new Date();
   const searchBatch: Parameters<typeof syncOffersToSearch>[0] = [];
   async function queueSearch(
     offer: Parameters<typeof syncOffersToSearch>[0][number],
   ): Promise<void> {
     searchBatch.push(offer);
-    if (searchBatch.length >= 100) await safeSync(searchBatch.splice(0));
+    if (searchBatch.length >= 100) await flushSearch(searchBatch.splice(0));
+  }
+
+  async function flushSearch(offers: Parameters<typeof syncOffersToSearch>[0]): Promise<void> {
+    if (!offers.length) return;
+    try {
+      await syncOffersToSearch(offers);
+    } catch (error) {
+      summary.indexingErrors++;
+      console.error("[ingest] Indexation échouée ; réparation au prochain rapprochement :", error);
+    }
   }
 
   try {
@@ -69,6 +84,20 @@ export async function processIngest(
       let normalized;
       try {
         normalized = normalizeOffer(parsed.data, options);
+        if (normalized.validThrough && normalized.validThrough <= now)
+          throw new NormalizationError("Annonce expirée à la source", "validThrough");
+        if (
+          normalized.publishedAt &&
+          normalized.publishedAt.getTime() < now.getTime() - maxAgeDays * 86_400_000
+        )
+          throw new NormalizationError("Annonce trop ancienne pour être republiée", "publishedAt");
+        if (normalized.publishedAt && normalized.publishedAt.getTime() > now.getTime() + 86_400_000)
+          throw new NormalizationError("Date de publication future incohérente", "publishedAt");
+        if (
+          normalized.scrapedAt.getTime() < now.getTime() - freshnessDays * 86_400_000 ||
+          normalized.scrapedAt.getTime() > now.getTime() + 300_000
+        )
+          throw new NormalizationError("Observation périmée ou future", "scrapedAt");
         if (
           normalized.countryCode !== "FR" ||
           !["STAGE", "ALTERNANCE"].includes(normalized.contractType) ||
@@ -114,59 +143,77 @@ export async function processIngest(
         }
         const updated = await prisma.jobOffer.update({
           where: { id: existing.id },
-          data: {
-            dedupHash,
-            lastSeenAt: new Date(),
-            scrapedAt: normalized.scrapedAt,
-            // Reclassement à chaque passage : profite des règles affinées depuis.
-            ...(normalized.descriptionIsExcerpt ? {} : { specialty }),
-            // Idem pour le pays : une heuristique de détection affinée entre
-            // deux cycles corrige les offres déjà en base, pas seulement les
-            // nouvelles (observé : XX → DE après ajout de CITY_TO_ISO).
-            countryCode: normalized.countryCode,
-            // Idem pour le type de contrat : une correction de connecteur
-            // (ex. priorité texte > champ structuré pour stage/alternance)
-            // corrige aussi les offres déjà en base au prochain passage, pas
-            // seulement les nouvelles.
-            contractType: normalized.contractType,
-            ...(normalized.descriptionIsExcerpt
-              ? {}
-              : {
-                  description: normalized.description,
-                  title: normalized.title,
-                  city: normalized.city,
-                  remotePolicy: normalized.remotePolicy,
-                  educationLevel: normalized.educationLevel,
-                }),
-            // Une offre bloquée en modération reste hors ligne, même si la source
-            // continue de la publier : seule la console peut la débloquer.
-            ...(existing.blockedAt ? {} : { status: "ACTIVE" as const }),
-            ...(normalized.descriptionIsExcerpt
-              ? {}
-              : {
-                  sourceUrl: normalized.sourceUrl,
-                  sourceSite: offerSourceSite,
-                }),
-            // La date de publication réelle prime sur la date d'ingestion
-            // enregistrée par défaut lors de la création.
-            ...(normalized.publishedAt ? { publishedAt: normalized.publishedAt } : {}),
-            // Coordonnées : rétro-remplies quand le géocodage les a trouvées
-            // (indispensable au filtre « à moins de X km »).
-            ...(normalized.latitude != null && normalized.longitude != null
-              ? { latitude: normalized.latitude, longitude: normalized.longitude }
-              : {}),
-          },
+          // Un extrait ne prouve ni la disponibilité ni une modification de la fiche.
+          data: normalized.descriptionIsExcerpt
+            ? {}
+            : {
+                dedupHash,
+                lastSeenAt: normalized.scrapedAt,
+                scrapedAt: normalized.scrapedAt,
+                specialty,
+                sector: normalized.sector,
+                countryCode: normalized.countryCode,
+                contractType: normalized.contractType,
+                description: normalized.description,
+                title: normalized.title,
+                city: normalized.city,
+                remotePolicy: normalized.remotePolicy,
+                educationLevel: normalized.educationLevel,
+                // La modération reste prioritaire sur le retour de l'annonce à la source.
+                ...(existing.blockedAt ? {} : { status: "ACTIVE" as const }),
+                sourceUrl: normalized.sourceUrl,
+                sourceSite: offerSourceSite,
+                ...(normalized.publishedAt ? { publishedAt: normalized.publishedAt } : {}),
+                validThrough: normalized.validThrough,
+                ...(normalized.salaryMin != null ? { salaryMin: normalized.salaryMin } : {}),
+                ...(normalized.salaryMax != null ? { salaryMax: normalized.salaryMax } : {}),
+                ...(normalized.latitude != null && normalized.longitude != null
+                  ? { latitude: normalized.latitude, longitude: normalized.longitude }
+                  : {}),
+              },
           include: { company: true },
         });
-        summary.duplicates++;
+        const changed =
+          [
+            "title",
+            "description",
+            "specialty",
+            "contractType",
+            "city",
+            "remotePolicy",
+            "educationLevel",
+            "countryCode",
+            "sourceUrl",
+            "status",
+            "salaryMin",
+            "salaryMax",
+            "latitude",
+            "longitude",
+            "sourceSite",
+            "sector",
+          ].some(
+            (key) =>
+              existing[key as keyof typeof existing] !== updated[key as keyof typeof updated],
+          ) ||
+          ["publishedAt", "validThrough"].some((key) => {
+            const before = existing[key as "publishedAt" | "validThrough"];
+            const after = updated[key as "publishedAt" | "validThrough"];
+            return before?.getTime() !== after?.getTime();
+          });
+        if (changed) summary.updated++;
+        else summary.duplicates++;
         await prisma.ingestLog.create({
           data: {
             sourceSite,
-            result: "DUPLICATE",
+            result: changed ? "UPDATED" : "DUPLICATE",
             offerId: existing.id,
             dedupHash,
             rawTitle: normalized.title,
-            message: "Doublon : last_seen_at rafraîchi",
+            message: normalized.descriptionIsExcerpt
+              ? "Extrait reçu : fraîcheur et contenu complet préservés"
+              : changed
+                ? "Contenu actualisé et reclassé"
+                : "Annonce vérifiée, contenu inchangé",
           },
         });
         await queueSearch(updated);
@@ -211,9 +258,10 @@ export async function processIngest(
             sourceUrl: normalized.sourceUrl,
             sourceSite: offerSourceSite,
             scrapedAt: normalized.scrapedAt,
-            lastSeenAt: new Date(),
+            lastSeenAt: normalized.scrapedAt,
             dedupHash,
             status: "ACTIVE",
+            validThrough: normalized.validThrough,
             ...(normalized.publishedAt ? { publishedAt: normalized.publishedAt } : {}),
           },
           include: { company: true },
@@ -249,7 +297,7 @@ export async function processIngest(
     }
   } finally {
     // Même si une écriture échoue, les offres déjà persistées sont indexées.
-    await safeSync(searchBatch);
+    await flushSearch(searchBatch);
   }
 
   return summary;
@@ -268,14 +316,4 @@ async function uniqueOfferSlug(title: string, company: string, city: string): Pr
   const existing = await prisma.jobOffer.findUnique({ where: { slug: base } });
   if (!existing) return base;
   return `${base}-${Date.now().toString(36)}`;
-}
-
-/** La sync Meilisearch ne doit jamais faire échouer l'ingestion (ré-indexable via search:sync). */
-async function safeSync(offers: Parameters<typeof syncOffersToSearch>[0]): Promise<void> {
-  if (!offers.length) return;
-  try {
-    await syncOffersToSearch(offers);
-  } catch (err) {
-    console.error("[ingest] Sync Meilisearch échouée :", err);
-  }
 }
