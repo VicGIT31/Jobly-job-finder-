@@ -2,20 +2,13 @@
  * Ré-indexation complète Postgres → Meilisearch.
  * Usage : npm run search:sync
  */
-import { PrismaClient } from "@prisma/client";
-import { configureOffersIndex } from "../src/lib/meilisearch";
-import { syncOffersToSearch } from "../src/server/search/sync";
-
-const prisma = new PrismaClient();
+import "./load-env";
+import { prisma } from "../src/lib/prisma";
+import { reconcileSearchIndex } from "../src/server/search/reconcile";
 
 async function main(): Promise<void> {
-  console.log("🔎 Configuration de l'index Meilisearch…");
-  await configureOffersIndex();
-
-  const offers = await prisma.jobOffer.findMany({ include: { company: true } });
-  console.log(`🔎 Indexation de ${offers.length} offres…`);
-  await syncOffersToSearch(offers);
-  console.log("🔎 Terminé.");
+  console.log("Réconciliation PostgreSQL → Meilisearch…");
+  console.log(await reconcileSearchIndex());
 }
 
 main()
