@@ -9,6 +9,28 @@ import {
 } from "./scope";
 
 describe("périmètre France / stage-alternance tech", () => {
+  it("se fonde sur les missions, sans confondre le secteur de l'employeur et le poste", () => {
+    expect(
+      isTechOffer(
+        "Stage contrôle qualité",
+        "Notre entreprise fait du cloud, du Python et de la cybersécurité.\nVos missions\nContrôler la conformité dimensionnelle des pièces mécaniques.",
+      ),
+    ).toBe(false);
+    expect(
+      isTechOffer(
+        "Stage simulation",
+        "Vos missions\nDévelopper des simulations en MATLAB et Simulink.",
+      ),
+    ).toBe(true);
+    expect(
+      isTechOffer(
+        "Stage Community Manager Transformation IA",
+        "Animation des réseaux sociaux et du plan de communication.",
+      ),
+    ).toBe(false);
+    expect(isTechOffer("Ingénieure / Ingénieur GRC - Stage")).toBe(true);
+    expect(isTechOffer("Stage Analyste SOC")).toBe(true);
+  });
   it("distingue le support SAP de la gestion des commandes en magasin", () => {
     expect(isTechOffer("Junior SAP Specialist - Apprenticeship")).toBe(true);
     expect(isTechOffer("Digital Merchandiser (WaterSports)")).toBe(false);

@@ -1,3 +1,5 @@
+import { classifySpecialty } from "./classify";
+import { offerMissionText } from "./offer-text";
 import type { RawOffer } from "./normalize";
 import { inferContractType, inferEducationLevel, inferRemotePolicy } from "./enrich";
 import { nonStudentContractEvidence } from "./contract-evidence";
@@ -15,22 +17,22 @@ export const foldText = (value: string) =>
 const TECH =
   /\b(developpeu\w*|developer|software|logiciel\w*|informatique|data|devops|cloud|cyber\w*|machine learning|intelligence artificielle|ia|ai|digital\w*|numerique\w*|electronique|robotique|sap|full[ -]?stack|front[ -]?end|back[ -]?end|sre|qa|it|sysadmin|systemes? embarques?|reseaux? informatiques?|ux|ui|test[\w -]*logiciel|technico[ -]fonctionnel\w*)\b/;
 const NON_TECH =
-  /\b(commercial\w*|commerce|business develop\w*|sales|account executive|customer success|partner development|revenue operations|enablement|event operations|approvision\w*|achats?|stocks?|controle de gestion|export\w*|douane|communication|hse|legal|video editor|motion designer|vendeu\w*|vente|ressources humaines|human resources|recruit\w*|rh|recrutement|comptab\w*|marketing|finance|handicap|juridique|logistique)\b/;
+  /\b(commercial\w*|commerce|business develop\w*|sales|account executive|customer success|partner development|revenue operations|enablement|event operations|approvision\w*|achats?|stocks?|controle de gestion|export\w*|douane|communication|hse|legal|video editor|motion designer|community manager|community management|mecanique|genie civil|vendeu\w*|vente|ressources humaines|human resources|recruit\w*|rh|recrutement|comptab\w*|marketing|finance|handicap|juridique|logistique)\b/;
 const TECH_TASK =
-  /\b(python|javascript|typescript|sql|power[ -]?bi|spark|hadoop|aws|azure|kubernetes|docker|linux|tensorflow|pytorch|scikit|react|angular|devops|cybersecurite|cybersecurity|sap|erp|produits? digitaux|digital product|machine learning|deep learning|intelligence artificielle|developpement logiciel|tests? (?:de |des |du )?logiciel\w*|developper.{0,80}logiciel\w*|developpement d.(?:un |une )?(?:outil|application|logiciel)|scripts? (?:python|java|sql))\b/;
+  /\b(python|javascript|typescript|sql|matlab|simulink|vhdl|verilog|fpga|power[ -]?bi|spark|hadoop|aws|azure|kubernetes|docker|linux|tensorflow|pytorch|scikit|react|angular|devops|cybersecurite|cybersecurity|sap|erp|produits? digitaux|digital product|machine learning|deep learning|intelligence artificielle|developpement logiciel|tests? (?:de |des |du )?logiciel\w*|developper.{0,80}logiciel\w*|developpement d.(?:un |une )?(?:outil|application|logiciel)|scripts? (?:python|java|sql))\b/;
 
 /** Évite notamment « développer l'activité commerciale » et les offres RH d'une ESN. */
 const TECH_ROLE =
   /\b(developpeu\w*|developer|software|logiciel\w*|informatique|data (?:analyst\w*|engineer|science|scientist)|devops|cyber\w*|machine learning|full[ -]?stack|front[ -]?end|back[ -]?end)\b/;
 const SUPPORT_ROLE =
-  /\b(ressources humaines|human resources|rh|hr|talent development|merchandis\w*|controleur de gestion|fp&a|recrutement|recruit\w*|sales|commercial\w*|commerce|marketing|communication|douane|export\w*|legal|juridique|comptab\w*|services? et experience client|conseiller\w*|vendeu\w*|vente)\b/;
+  /\b(ressources humaines|human resources|rh|hr|talent development|community manager|community management|merchandis\w*|controleur de gestion|fp&a|recrutement|recruit\w*|sales|commercial\w*|commerce|marketing|communication|douane|export\w*|legal|juridique|comptab\w*|services? et experience client|conseiller\w*|vendeu\w*|vente)\b/;
 export function isTechOffer(title: string, description = ""): boolean {
   const text = foldText(title);
   if (/\bbusiness develop\w*\b/.test(text)) return false;
   if (SUPPORT_ROLE.test(text) && !TECH_ROLE.test(text)) return false;
-  if (TECH.test(text)) return true;
+  if (classifySpecialty(title) !== "AUTRE" || TECH.test(text)) return true;
   if (NON_TECH.test(text)) return false;
-  return TECH_TASK.test(foldText(description.slice(0, 12000)));
+  return TECH_TASK.test(offerMissionText(description));
 }
 
 /** Le titre et le contrat structuré priment sur le vocabulaire du pied de page. */
@@ -120,6 +122,7 @@ export function makeStudentOffer(input: {
   contract?: string;
   url: string;
   publishedAt?: string | number;
+  validThrough?: string | number;
   logo?: string;
   remote?: string;
 }): RawOffer | null {
@@ -130,6 +133,8 @@ export function makeStudentOffer(input: {
   if (!contract || !url || description.trim().length < 20 || !input.company.trim() || !city.trim())
     return null;
   const date = validDate(input.publishedAt);
+  const validThrough = validDate(input.validThrough);
+  if (validThrough && validThrough.getTime() <= Date.now()) return null;
   const geo = geocodeCity(city);
   return {
     title: title.trim().slice(0, 200),
@@ -148,6 +153,7 @@ export function makeStudentOffer(input: {
     remotePolicy: input.remote ?? inferRemotePolicy(title, description),
     educationLevel: inferEducationLevel(title, description),
     ...(date ? { publishedAt: date } : {}),
+    ...(validThrough ? { validThrough } : {}),
     ...(geo ? { latitude: geo.lat, longitude: geo.lng } : {}),
     ...(input.logo && publicUrl(input.logo) ? { companyLogoUrl: input.logo } : {}),
   };
@@ -185,6 +191,7 @@ export function jsonLdOffer(
           : posting.employmentType),
       url,
       publishedAt: posting.datePosted,
+      validThrough: posting.validThrough,
       ...(typeof posting.hiringOrganization?.logo === "string"
         ? { logo: posting.hiringOrganization.logo }
         : {}),
