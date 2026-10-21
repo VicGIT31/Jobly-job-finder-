@@ -22,7 +22,7 @@ export function getMeili(): Meilisearch {
 export async function configureOffersIndex(): Promise<void> {
   const meili = getMeili();
   const index = meili.index(OFFERS_INDEX);
-  await index.updateSettings({
+  const task = await index.updateSettings({
     searchableAttributes: ["title", "companyName", "sector", "city", "descriptionText"],
     filterableAttributes: [
       "contractType",
@@ -46,4 +46,9 @@ export async function configureOffersIndex(): Promise<void> {
     },
     pagination: { maxTotalHits: 50000 },
   });
+  const result = await meili.tasks.waitForTask(task.taskUid, { timeout: 60_000 });
+  if (result.status !== "succeeded")
+    throw new Error(
+      `Configuration de recherche échouée : ${result.error?.message ?? result.status}`,
+    );
 }

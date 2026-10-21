@@ -1,5 +1,6 @@
 import type { Company, JobOffer } from "@prisma/client";
 import { getMeili, OFFERS_INDEX } from "@/lib/meilisearch";
+import { confirmSearchTask } from "./task";
 
 export type OfferWithCompany = JobOffer & { company: Company };
 
@@ -68,12 +69,16 @@ export function offerToDocument(offer: OfferWithCompany): OfferDocument {
 export async function syncOffersToSearch(offers: OfferWithCompany[]): Promise<void> {
   if (offers.length === 0) return;
   const meili = getMeili();
-  await meili.index(OFFERS_INDEX).addDocuments(offers.map(offerToDocument), { primaryKey: "id" });
+  const task = await meili
+    .index(OFFERS_INDEX)
+    .addDocuments(offers.map(offerToDocument), { primaryKey: "id" });
+  await confirmSearchTask(task);
 }
 
 /** Supprime des offres de l'index. */
 export async function removeOffersFromSearch(offerIds: string[]): Promise<void> {
   if (offerIds.length === 0) return;
   const meili = getMeili();
-  await meili.index(OFFERS_INDEX).deleteDocuments(offerIds);
+  const task = await meili.index(OFFERS_INDEX).deleteDocuments(offerIds);
+  await confirmSearchTask(task);
 }
