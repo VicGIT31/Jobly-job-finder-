@@ -3,6 +3,7 @@ import { inferEducationLevel } from "@/server/ingest/enrich";
 import { RateLimitedError, fetchJson } from "@/server/ingest/http";
 import { geocodeCityFull } from "./geocode";
 import { TECH_SECTOR, type SourceConnector } from "./types";
+import { studentContract } from "../scope";
 
 /**
  * Connecteur Free-Work (ex Freelance-Info) — API publique API Platform
@@ -120,7 +121,8 @@ async function toRawOffer(job: FreeWorkJob, contractType: string): Promise<RawOf
     companyName: company.slice(0, 120),
     city: city.slice(0, 120),
     description: fullDescription.slice(0, 8000),
-    contractType,
+    // Un filtre de recherche peut renvoyer le même stage dans deux listes.
+    contractType: studentContract(title, "", description) ?? contractType,
     // Champ structuré côté source : plus fiable que la déduction textuelle.
     remotePolicy: REMOTE_MODES[job.remoteMode ?? ""] ?? "onsite",
     educationLevel: inferEducationLevel(title, description),
@@ -138,13 +140,16 @@ async function toRawOffer(job: FreeWorkJob, contractType: string): Promise<RawOf
 export class FreeWorkConnector implements SourceConnector {
   readonly sourceSite = "free-work.com";
   readonly label = "Free-Work";
+  readonly warnings: string[] = [];
 
   isEnabled(): boolean {
     return true; // API publique : aucune clé requise.
   }
 
   async fetchOffers(): Promise<RawOffer[]> {
+    this.warnings.length = 0;
     const offers: RawOffer[] = [];
+    const seen = new Set<string>();
 
     for (const contract of CONTRACTS) {
       for (let page = 1; page <= MAX_PAGES; page++) {
@@ -160,15 +165,24 @@ export class FreeWorkConnector implements SourceConnector {
           if (err instanceof RateLimitedError) return offers;
           throw err;
         }
+        if (!json) {
+          this.warnings.push("Réponse Free-Work inaccessible ou illisible");
+          break;
+        }
         const members = responseMembers(json);
         if (members.length === 0) break;
 
         for (const job of members) {
           const mapped = await toRawOffer(job, contract.contractType);
-          if (mapped) offers.push(mapped);
+          if (mapped && !seen.has(mapped.sourceUrl)) {
+            seen.add(mapped.sourceUrl);
+            offers.push(mapped);
+          }
         }
 
         if (members.length < PAGE_SIZE) break;
+        if (page === MAX_PAGES)
+          this.warnings.push("Budget de pages Free-Work atteint ; couverture partielle");
       }
     }
 
