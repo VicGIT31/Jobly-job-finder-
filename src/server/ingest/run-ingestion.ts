@@ -1,11 +1,12 @@
 import { prisma } from "@/lib/prisma";
 import { processIngest, type IngestSummary } from "./ingest";
-import { getHttpFailures, resetHttpState } from "./http";
+import { getHttpFailures, resetHttpState, withCollectionBudget } from "./http";
 import { getSourceConnectors } from "./sources";
 import { isTechOffer } from "./scope";
 import { getRedis } from "@/lib/redis";
 import { randomUUID } from "node:crypto";
 import type { SourceConnector, CollectionCoverage } from "./sources/types";
+import { reconcileCatalog } from "./reconcile-catalog";
 
 export type IngestionRunResult = {
   source: string;
@@ -17,6 +18,7 @@ export type IngestionRunResult = {
   error?: string;
   warnings?: string[];
   coverage?: CollectionCoverage;
+  expired?: number;
 };
 
 /**
@@ -105,7 +107,19 @@ async function runConnector(connector: SourceConnector): Promise<IngestionRunRes
   const started = Date.now();
   const failureOffset = getHttpFailures().length;
   try {
-    const fetched = await connector.fetchOffers();
+    const configuredBudget = Number(process.env.INGEST_SOURCE_TIMEOUT_SECONDS ?? 900);
+    const seconds =
+      Number.isFinite(configuredBudget) && configuredBudget >= 30
+        ? Math.min(configuredBudget, 3600)
+        : 900;
+    let budgetExpired = false;
+    const fetched = await withCollectionBudget(
+      seconds * 1000,
+      () => connector.fetchOffers(),
+      () => {
+        budgetExpired = true;
+      },
+    );
     // Le périmètre courant est France + stage/alternance tech ; les anciens
     // connecteurs internationaux restent disponibles dans le dépôt, hors cycle.
     const offers = fetched.filter(
@@ -121,6 +135,7 @@ async function runConnector(connector: SourceConnector): Promise<IngestionRunRes
       .slice(failureOffset)
       .filter((failure) => prefixes.some((prefix) => failure.url.startsWith(prefix)));
     const warnings = [...(connector.warnings ?? [])];
+    if (budgetExpired) warnings.push("Budget de temps atteint ; collecte partielle conservée");
     if (failures.length)
       warnings.push(
         `${failures.length} requête(s) en échec : ${[...new Set(failures.map((failure) => failure.message))].join(", ")}`,
@@ -128,6 +143,9 @@ async function runConnector(connector: SourceConnector): Promise<IngestionRunRes
     const summary = await processIngest(connector.sourceSite, offers, {
       acceptedContracts: connector.acceptedContracts,
     });
+    if (summary.indexingErrors)
+      warnings.push(`${summary.indexingErrors} lot(s) non indexé(s) ; réparation programmée`);
+    const expired = await reconcileCatalog(connector, new Date(started), warnings);
     const durationMs = Date.now() - started;
     console.log(
       `[ingestion] ${connector.label} : ${offers.length} récupérées → ` +
@@ -141,6 +159,7 @@ async function runConnector(connector: SourceConnector): Promise<IngestionRunRes
       fetched: offers.length,
       durationMs,
       summary,
+      expired,
       ...(connector.coverage ? { coverage: connector.coverage } : {}),
       ...(warnings.length ? { warnings, error: warnings.join(" ; ") } : {}),
     };
@@ -177,7 +196,9 @@ async function recordRun(result: IngestionRunResult): Promise<void> {
         rejected: result.summary?.rejected ?? 0,
         durationMs: result.durationMs,
         error: result.error?.slice(0, 500) ?? null,
-        ...(result.coverage ? { coverageJson: result.coverage } : {}),
+        ...(result.coverage
+          ? { coverageJson: { ...result.coverage, expired: result.expired ?? 0 } }
+          : {}),
       },
     });
   } catch (err) {

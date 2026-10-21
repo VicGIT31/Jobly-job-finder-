@@ -24,6 +24,20 @@ beforeEach(() => {
 afterEach(() => vi.restoreAllMocks());
 
 describe("coordination des collectes automatiques", () => {
+  it("signale un budget dépassé même si un ancien connecteur rend ses résultats partiels", async () => {
+    vi.spyOn(AbortSignal, "timeout").mockReturnValueOnce(AbortSignal.abort());
+    mocks.sources.mockResolvedValue([
+      {
+        sourceSite: "test.example",
+        label: "Test",
+        isEnabled: () => true,
+        fetchOffers: async () => [],
+      },
+    ]);
+    const results = await runIngestion();
+    expect(results[0].ok).toBe(false);
+    expect(results[0].error).toContain("Budget de temps");
+  });
   it("avance sur les autres sources malgré une source lente, avec au plus quatre collectes", async () => {
     let release!: () => void;
     const slow = new Promise<void>((resolve) => {
