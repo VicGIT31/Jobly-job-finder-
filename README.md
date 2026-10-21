@@ -126,6 +126,32 @@ Le worker tourne toutes les **120 minutes** par défaut
 persiste dans un volume Docker. La purge à 60 jours et l’expiration après
 7 jours sans observation conservent leur comportement existant.
 
+La fraîcheur est contrôlée **au démarrage et toutes les 15 minutes**, même
+pendant une collecte longue. La date limite `validThrough` des annonces est
+conservée et respectée. Une annonce trop ancienne ou un ancien export ne peut
+pas redevenir active à chaque import ; un extrait d'alerte ne rafraîchit pas
+une fiche complète. Un catalogue employeur intégral permet d'expirer les
+annonces disparues dès la fin de sa collecte. Les résultats partiels et les
+chutes anormales de volume ne déclenchent pas ce retrait immédiat.
+
+Les sitemaps trop grands sont parcourus par rotation persistante, avec une
+part du budget réservée aux nouveautés. `INGEST_SOURCE_TIMEOUT_SECONDS`
+borne le temps réseau de chaque source (900 secondes par défaut). Les tâches
+Meilisearch sont suivies jusqu'à leur résultat ; un rapprochement horaire
+répare l'index et retire ses documents orphelins.
+
+```bash
+npm run specialty:backfill -- --dry-run # prévisualisation détaillée, sans écriture
+npm run specialty:backfill             # applique et réindexe les changements
+npm run offers:audit                   # vérifie le périmètre des fiches actives
+npm run offers:audit -- --apply        # corrections réversibles + rapport
+npm run offers:refresh                 # expiration et réparation de l'index, sans purge
+```
+
+Les migrations doivent être appliquées avant de relancer le worker :
+`npx prisma migrate deploy && npx prisma generate`. Voir
+[`SCRAPING_AUDIT.md`](SCRAPING_AUDIT.md) pour l'audit et les vérifications.
+
 ### Classement par spécialité
 
 Chaque offre est rangée dans une spécialité tech — **IA & Data, Cybersécurité,
@@ -136,7 +162,9 @@ par métier n'était possible.
 
 Le titre est décisif dès qu'il nomme un métier ; le corps ne sert qu'à
 départager. Sous le seuil de confiance, l'offre reste `AUTRE` plutôt que d'être
-mal rangée — sur le corpus réel, **83 % des offres sont classées**. La
+mal rangée. Les titres IA/AI, les rôles data, SOC/GRC, backend et systèmes
+sont reconnus explicitement. Les missions sont isolées de la présentation
+de l’entreprise et des avantages pour limiter les faux classements. La
 spécialité alimente le filtre de `/offres`, les facettes et les vignettes de la
 page d'accueil. Après modification des règles : `npm run specialty:backfill`.
 
