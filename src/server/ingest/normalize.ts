@@ -25,6 +25,7 @@ export const rawOfferSchema = z.object({
   // Date de publication réelle de l'annonce sur le site d'origine (pas la date
   // d'ingestion). Absente si la source ne l'expose pas.
   publishedAt: z.coerce.date().optional(),
+  validThrough: z.coerce.date().optional(),
   // Logo de l'entreprise tel qu'exposé par la source.
   companyLogoUrl: z.string().url().max(1000).optional(),
   // ISO 3166-1 alpha-2. Absent = source française historique ("FR").
@@ -56,6 +57,7 @@ export type NormalizedOffer = {
   sourceSite: string | null;
   scrapedAt: Date;
   publishedAt: Date | null;
+  validThrough: Date | null;
   companyLogoUrl: string | null;
   countryCode: string;
 };
@@ -226,6 +228,7 @@ export function normalizeOffer(raw: RawOffer, options: NormalizeOptions = {}): N
     sourceSite: raw.sourceSite ?? null,
     scrapedAt: raw.scrapedAt ?? new Date(),
     publishedAt: raw.publishedAt ?? null,
+    validThrough: raw.validThrough ?? null,
     companyLogoUrl: raw.companyLogoUrl ?? null,
     countryCode: (raw.countryCode ?? "FR").toUpperCase(),
   };
