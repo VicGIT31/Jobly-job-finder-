@@ -35,7 +35,7 @@ const CONTRACTS: Array<{ param: string; fallback: string }> = [
   { param: "Alternance", fallback: "alternance" },
 ];
 
-const QUERIES = TECH_KEYWORDS.slice(0, 12);
+const QUERIES = TECH_KEYWORDS;
 const DETAIL_CONCURRENCY = 4;
 const QUERY_BATCH = 3;
 const HTTP = { minIntervalMs: 350, retries: 2, timeoutMs: 15_000 };
@@ -97,6 +97,7 @@ async function toRawOffer(listing: Listing): Promise<RawOffer | null> {
     sourceUrl: url,
     scrapedAt: new Date(),
     ...(posting.datePosted ? { publishedAt: new Date(posting.datePosted) } : {}),
+    ...(posting.validThrough ? { validThrough: new Date(posting.validThrough) } : {}),
     ...(geo ? { latitude: geo.lat, longitude: geo.lng } : {}),
   };
 }
@@ -104,12 +105,14 @@ async function toRawOffer(listing: Listing): Promise<RawOffer | null> {
 export class HelloWorkConnector implements SourceConnector {
   readonly sourceSite = "hellowork.com";
   readonly label = "HelloWork";
+  readonly warnings: string[] = [];
 
   isEnabled(): boolean {
     return true; // Pages publiques : aucune clé requise.
   }
 
   async fetchOffers(): Promise<RawOffer[]> {
+    this.warnings.length = 0;
     const offers: RawOffer[] = [];
     const seen = new Set<string>();
 
@@ -138,7 +141,10 @@ export class HelloWorkConnector implements SourceConnector {
   }
 
   /** Recherche un lot de mots-clés × contrats et déduplique les identifiants. */
-  private async collectListings(keywords: string[], seen: Set<string>): Promise<Listing[]> {
+  private async collectListings(
+    keywords: readonly string[],
+    seen: Set<string>,
+  ): Promise<Listing[]> {
     const listings: Listing[] = [];
 
     for (const keyword of keywords) {
@@ -155,7 +161,17 @@ export class HelloWorkConnector implements SourceConnector {
           if (err instanceof RateLimitedError) return listings;
           throw err;
         }
-        if (!html) continue;
+        if (!html) {
+          this.warnings.push("Recherche HelloWork inaccessible");
+          continue;
+        }
+        if (
+          !parseListingIds(html).length &&
+          !/aucun[e]? (?:offre|resultat|résultat)|0 (?:offre|resultat|résultat)/i.test(html)
+        )
+          this.warnings.push(
+            "Recherche sans annonces lisibles : rendu dynamique ou format modifié",
+          );
 
         for (const id of parseListingIds(html)) {
           if (seen.has(id)) continue;
