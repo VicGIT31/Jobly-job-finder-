@@ -1,4 +1,5 @@
 import type { TechSpecialty } from "@prisma/client";
+import { offerMissionText } from "./offer-text";
 
 /**
  * Classement d'une offre dans une **spécialité tech**.
@@ -11,7 +12,7 @@ import type { TechSpecialty } from "@prisma/client";
  * Méthode : un score par spécialité, alimenté par des signaux **forts** (un
  * terme qui suffit presque à trancher : « pentest », « kubernetes ») et
  * **faibles** (un indice qui ne vaut que combiné : « cloud », « python »). Le
- * titre pèse le double du corps, car c'est là que le métier est nommé.
+ * titre prime sur les missions, car c'est là que le métier est nommé.
  *
  * Sous le seuil, on renvoie `AUTRE` plutôt que de deviner : une mauvaise
  * étiquette est plus coûteuse qu'une absence d'étiquette, car elle fait
@@ -26,20 +27,21 @@ function fold(value: string): string {
 }
 
 /**
- * Ordre = priorité en cas d'égalité de score : du plus spécifique au plus
- * générique. `SOFTWARE` ferme la marche, c'est le métier « développeur » par
- * défaut une fois les spécialités écartées.
+ * Signaux techniques par spécialité. Leur ordre ne donne aucune priorité
+ * implicite : les titres hybrides sont départagés par les missions.
  */
 const RULES: Array<{ specialty: TechSpecialty; rules: Rules }> = [
   {
     specialty: "CYBERSECURITE",
     rules: {
       strong: [
-        /cyber\s?securite/,
+        /cyber[ -]?(?:securite|security)/,
+        /\b(?:pentester|ciso|dpo|iam|grc|soc analyst)\b/,
+        /tests? d.intrusion/,
         /securite\s+(informatique|des\s+systemes|offensive|defensive|applicative|reseau)/,
         /\bpentest/,
         /penetration\s+test/,
-        /\bsoc\b/,
+        /\bsoc\b(?!\s+(?:amd|fpga|arm|system|design))/,
         /\bsiem\b/,
         /\brssi\b/,
         /ethical\s+hack/,
@@ -61,11 +63,16 @@ const RULES: Array<{ specialty: TechSpecialty; rules: Rules }> = [
     rules: {
       strong: [
         /intelligence\s+artificielle/,
+        /artificial\s+intelligence/,
+        /\b(?:ia|ai)\b(?!\s+engines?\b)/,
+        /data[ -]+(?:analyst|engineer|analytics|platform|management|gouvernance|governance)/,
+        /business intelligence|\bpower[ -]?bi\b/,
         /machine\s+learning/,
         /deep\s+learning/,
         /data\s+scien/,
         /\bnlp\b/,
-        /\bllm\b/,
+        /\bllms?\b/,
+        /reinforcement learning|apprentissage par renforcement/,
         /ia\s+generative/,
         /computer\s+vision/,
         /\bmlops\b/,
@@ -91,7 +98,8 @@ const RULES: Array<{ specialty: TechSpecialty; rules: Rules }> = [
     specialty: "DEVOPS",
     rules: {
       strong: [
-        /\bdevops\b/,
+        /\bdev(?:sec)?ops\b/,
+        /ingenieur\s+cloud/,
         /\bsre\b/,
         /site\s+reliability/,
         /kubernetes/,
@@ -114,7 +122,8 @@ const RULES: Array<{ specialty: TechSpecialty; rules: Rules }> = [
     specialty: "RESEAUX",
     rules: {
       strong: [
-        /(administrateur|ingenieur|technicien)\s+(systemes?\s+et\s+)?reseaux?/,
+        /(administrat(?:eur|rice)|ingenieur|technicien)\s+(?:systemes?|reseaux?)/,
+        /\b(?:sysadmin|system administrator|network engineer|support informatique|technicien(?:ne)? informatique)\b/,
         /reseaux?\s+et\s+telecom/,
         /\bcisco\b/,
         /\bccna\b/,
@@ -136,6 +145,7 @@ const RULES: Array<{ specialty: TechSpecialty; rules: Rules }> = [
     rules: {
       strong: [
         /developpeu(r|se)(\s+[\w'-]+){0,2}\s+web/,
+        /back[\s-]?end/,
         /front[\s-]?end/,
         /\bfrontend\b/,
         /full[\s-]?stack/,
@@ -170,7 +180,9 @@ const RULES: Array<{ specialty: TechSpecialty; rules: Rules }> = [
         /developpeu(r|se)(\s+[\w'-]+){0,2}\s+logiciel/,
         /architecte\s+logiciel/,
         /\bc\+\+/,
-        /\bc#\b/,
+        /\b(?:fpga|asic|ai engines|soc amd)\b/,
+        /developpement (?:de )?logiciel/,
+        /\bc#(?=\W|$)/,
         /\.net\b/,
         /\bgolang\b/,
         /\brust\b/,
@@ -190,67 +202,83 @@ const RULES: Array<{ specialty: TechSpecialty; rules: Rules }> = [
   },
 ];
 
-const STRONG_WEIGHT = 3;
-const WEAK_WEIGHT = 1;
-/** Le titre nomme le métier : ce qu'il contient compte double. */
-const TITLE_MULTIPLIER = 2;
-/** En dessous, le signal est trop faible pour étiqueter sans risque. */
-const MIN_SCORE = 3;
-/**
- * Score minimum, dans le **titre seul**, à partir duquel le titre tranche.
- *
- * Vaut un signal fort : « Développeur solution Web » nomme le métier. Sans
- * cette règle, une annonce web dont le corps détaille le contexte sécurité de
- * l'entreprise finissait classée en cybersécurité — le candidat ne la trouvait
- * plus dans le filtre « Web » où il l'attendait.
- */
-const TITLE_DECISIVE = STRONG_WEIGHT;
+/** Une seule voix par métier : accumuler ses synonymes ne doit pas gonfler le titre. */
+const ROLES: Partial<Record<TechSpecialty, RegExp>> = {
+  IA: /\b(?:ia|ai)(?!\s+engines?\b)\b|intelligence (?:artificielle|artificial)|artificial intelligence|machine learning|deep learning|data[ -]+(?:scien\w*|analyst\w*|engineer\w*|platform|analytics|management|manager|gouvernance|governance)|ingenieur(?:e)? data\b|business (?:intelligence|analytics)|reinforcement learning|computer vision/,
+  CYBERSECURITE:
+    /cyber[ -]?(?:securite|security)|\b(?:pentest\w*|rssi|ciso|siem|dpo|iam|grc)\b|(?:analyst\w*|ingenieur)\s+(?:soc|securite)|securite (?:informatique|offensive|applicative)|recherche de vulnerabilites|data protection officer|data privacy|cloud security|security engineer/,
+  DEVOPS: /\bdev(?:sec)?ops\b|\bsre\b|site reliability|(?:cloud|platform) engineer|ingenieur cloud/,
+  RESEAUX:
+    /(?:administrat(?:eur|rice)|ingenieur|technicien)\s+(?:systemes?(?!\s+(?:embarque|autonome))|reseaux?)|system administrator|network engineer|sysadmin|support informatique|technicien(?:ne)? informatique/,
+  WEB: /front[ -]?end|back[ -]?end|full[ -]?stack|developpeu(?:r|se)(?:\s+[\w'-]+){0,2}\s+web|integrateur web/,
+  SOFTWARE:
+    /ingenieur(?:\(e\))? logiciel|developpement (?:de )?logiciel|software (?:engineer|developer)|(?:test|qualite) logiciels?|developpeu(?:r|se)(?:\s+[\w'-]+){0,2}\s+(?:logiciel|mobile)|tests? logiciels?|tests? automatis|automatisation (?:de |des )?tests|\b(?:embedded|embarque|android|ios|flutter|fpga|asic|ai engines|soc amd)\b/,
+};
 
 function scoreText(text: string, rules: Rules): number {
-  let score = 0;
-  for (const pattern of rules.strong) if (pattern.test(text)) score += STRONG_WEIGHT;
-  for (const pattern of rules.weak) if (pattern.test(text)) score += WEAK_WEIGHT;
-  return score;
+  return (
+    rules.strong.filter((pattern) => pattern.test(text)).length * 3 +
+    rules.weak.filter((pattern) => pattern.test(text)).length
+  );
 }
 
-/**
- * Détermine la spécialité d'une offre. Renvoie `AUTRE` quand aucun signal
- * suffisant n'est trouvé.
- */
-export function classifySpecialty(title: string, description = ""): TechSpecialty {
-  const foldedTitle = fold(title);
-  // La description est tronquée : les missions sont en tête, le boilerplate
-  // RH (« rejoignez-nous », avantages) en fin, et il fausserait le score.
-  const foldedBody = fold(description.slice(0, 2500));
+export type SpecialtyClassification = {
+  specialty: TechSpecialty;
+  reason: "title-role" | "title-signal" | "missions" | "insufficient";
+  scores: Array<{ specialty: TechSpecialty; role: boolean; title: number; missions: number }>;
+};
 
-  const scored = RULES.map(({ specialty, rules }) => ({
+/** Le métier du titre prime sur les outils et sur le secteur de l'employeur. */
+export function explainSpecialty(title: string, description = ""): SpecialtyClassification {
+  const foldedTitle = fold(title).replace(/[’‘]/g, "'");
+  const missions = offerMissionText(description);
+  const scores = RULES.map(({ specialty, rules }) => ({
     specialty,
+    role: ROLES[specialty]?.test(foldedTitle) ?? false,
     title: scoreText(foldedTitle, rules),
-    body: scoreText(foldedBody, rules),
+    missions: scoreText(missions, rules),
   }));
-
-  const bestTitle = Math.max(...scored.map((s) => s.title));
-
-  // Le titre nomme explicitement un métier : il décide, le corps ne sert plus
-  // qu'à départager deux spécialités également nommées dans le titre.
-  if (bestTitle >= TITLE_DECISIVE) {
-    // `>` strict à chaque comparaison : à égalité, la spécialité déclarée en
-    // premier dans RULES (la plus spécifique) l'emporte.
-    const winner = scored.reduce((best, current) =>
-      current.title > best.title || (current.title === best.title && current.body > best.body)
-        ? current
-        : best,
-    );
-    return winner.specialty;
+  if (
+    !scores.some((score) => score.role) &&
+    !scores.some((score) => score.title >= 3) &&
+    /\b(?:developpeu\w*|developer|developpement informatique|genie logiciel)\b/.test(foldedTitle)
+  ) {
+    scores.find((score) => score.specialty === "SOFTWARE")!.role = true;
   }
+  const roles = scores.filter((score) => score.role);
+  // Pour les sujets hybrides (IA + cyber), les missions départagent les métiers,
+  // sans priorité implicite de la cyber par ordre de déclaration.
+  const candidates = roles.length ? roles : scores;
+  const titleMax = Math.max(...candidates.map((score) => score.title));
+  const titleCandidates = roles.length ? roles : candidates.filter((s) => s.title === titleMax);
+  const byMissions = (a: (typeof scores)[number], b: (typeof scores)[number]) =>
+    b.missions - a.missions || b.title - a.title || a.specialty.localeCompare(b.specialty);
+  if (roles.length || titleMax >= 3) {
+    const winner = [...titleCandidates].sort(byMissions)[0];
+    return {
+      specialty: winner.specialty,
+      reason: roles.length ? "title-role" : "title-signal",
+      scores,
+    };
+  }
+  const ranked = [...scores].sort(
+    (a, b) =>
+      b.missions + b.title * 2 - (a.missions + a.title * 2) ||
+      a.specialty.localeCompare(b.specialty),
+  );
+  const winner = ranked[0];
+  // Un simple « audit », « sécurité » ou « Python » ne suffit jamais à classer.
+  const rules = RULES.find((rule) => rule.specialty === winner.specialty)!.rules;
+  const sufficient =
+    winner.missions + winner.title * 2 >= 3 &&
+    rules.strong.some((pattern) => pattern.test(missions));
+  return {
+    specialty: sufficient ? winner.specialty : "AUTRE",
+    reason: sufficient ? "missions" : "insufficient",
+    scores,
+  };
+}
 
-  // Titre muet (« Alternance F/H », « Stage 6 mois ») : on s'appuie sur le corps.
-  const winner = scored.reduce((best, current) => {
-    const score = current.title * TITLE_MULTIPLIER + current.body;
-    const bestScore = best.title * TITLE_MULTIPLIER + best.body;
-    return score > bestScore ? current : best;
-  });
-  const winnerScore = winner.title * TITLE_MULTIPLIER + winner.body;
-
-  return winnerScore >= MIN_SCORE ? winner.specialty : "AUTRE";
+export function classifySpecialty(title: string, description = ""): TechSpecialty {
+  return explainSpecialty(title, description).specialty;
 }
