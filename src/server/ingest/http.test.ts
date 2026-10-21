@@ -6,6 +6,8 @@ import {
   isHostCircuitOpen,
   mapPool,
   resetHttpState,
+  withCollectionBudget,
+  CollectionDeadlineError,
 } from "./http";
 
 const FAST = { minIntervalMs: 0, backoffMs: 1 };
@@ -32,6 +34,21 @@ describe("fetchWithRetry", () => {
 
     expect(res?.status).toBe(200);
     expect(fetchMock).toHaveBeenCalledTimes(1);
+  });
+  it("arrête les requêtes d'une source hors budget sans bloquer une autre source", async () => {
+    vi.useFakeTimers();
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async () => response(200, "ok")),
+    );
+    // Un délai court réel d'AbortSignal, puis une horloge simulée pour la collecte.
+    const expired = AbortSignal.abort();
+    const signal = vi.spyOn(AbortSignal, "timeout").mockReturnValueOnce(expired);
+    await expect(
+      withCollectionBudget(100, () => fetchWithRetry("https://budget.test/a", FAST)),
+    ).rejects.toBeInstanceOf(CollectionDeadlineError);
+    signal.mockRestore();
+    expect((await fetchWithRetry("https://other.test/a", FAST))?.ok).toBe(true);
   });
 
   it("rejoue après une erreur serveur puis réussit", async () => {

@@ -25,6 +25,33 @@ export class RateLimitedError extends Error {
 }
 
 import { readCachedBody, writeCachedBody } from "./public-cache";
+import { AsyncLocalStorage } from "node:async_hooks";
+
+const requestBudget = new AsyncLocalStorage<AbortSignal>();
+export class CollectionDeadlineError extends RateLimitedError {
+  constructor() {
+    super("source");
+    this.name = "CollectionDeadlineError";
+    this.message = "Budget de temps de la source atteint ; couverture partielle";
+  }
+}
+export function withCollectionBudget<T>(
+  timeoutMs: number,
+  collect: () => Promise<T>,
+  onTimeout?: () => void,
+): Promise<T> {
+  const signal = AbortSignal.timeout(timeoutMs);
+  return requestBudget.run(signal, async () => {
+    try {
+      return await collect();
+    } finally {
+      if (signal.aborted) onTimeout?.();
+    }
+  });
+}
+export function assertCollectionBudget(): void {
+  if (requestBudget.getStore()?.aborted) throw new CollectionDeadlineError();
+}
 
 export class AccessDeniedError extends RateLimitedError {
   constructor(
@@ -143,7 +170,9 @@ export async function fetchWithRetry(
   if (isHostCircuitOpen(host)) throw new RateLimitedError(host);
 
   for (let attempt = 0; attempt <= config.retries; attempt++) {
+    assertCollectionBudget();
     await throttle(host, config.minIntervalMs);
+    assertCollectionBudget();
     if (isHostCircuitOpen(host)) throw new RateLimitedError(host);
 
     let response: Response | null = null;
@@ -156,10 +185,14 @@ export async function fetchWithRetry(
           "Accept-Language": "fr-FR,fr;q=0.9,en;q=0.8",
           ...config.headers,
         },
-        signal: AbortSignal.timeout(config.timeoutMs),
+        signal: AbortSignal.any([
+          AbortSignal.timeout(config.timeoutMs),
+          ...(requestBudget.getStore() ? [requestBudget.getStore()!] : []),
+        ]),
         cache: "no-store",
       });
     } catch {
+      assertCollectionBudget();
       // Réseau ou timeout : rejouable.
       response = null;
     }
@@ -213,6 +246,7 @@ export async function fetchText(
   url: string | URL,
   options: FetchOptions = {},
 ): Promise<string | null> {
+  assertCollectionBudget();
   const key = `${String(url)}|${options.headers?.Accept ?? "text"}`;
   const cacheable =
     (options.cacheTtlMs ?? 0) > 0 &&
