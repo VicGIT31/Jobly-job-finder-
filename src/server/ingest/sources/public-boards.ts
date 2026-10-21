@@ -12,6 +12,7 @@ import {
 import type { SourceConnector } from "./types";
 import type { SourceDefinition } from "./catalog";
 import { franceTravailPublicDetail } from "./france-travail-public";
+import { readCatalogCursor, saveCatalogCursor, selectCatalogDetails } from "../catalog-rotation";
 
 const HTTP = { minIntervalMs: 750, timeoutMs: 20_000, retries: 1 };
 const DETAIL = { ...HTTP, cacheTtlMs: 4 * 60 * 60 * 1000 };
@@ -80,11 +81,23 @@ export class PublicBoardConnector implements SourceConnector {
   coverage?: import("./types").CollectionCoverage;
   readonly rejectedPostings: Array<{ title: string; url: string; reason: string }> = [];
   readonly requestPrefixes: string[];
+  readonly snapshotUrlPrefixes: string[];
   constructor(readonly definition: SourceDefinition) {
     this.sourceSite = new URL(definition.url).hostname.replace(/^www\./, "");
     this.label = definition.label;
     this.requestPrefixes = [boardEndpoint(definition).split("?")[0]];
     if (definition.kind === "html") this.requestPrefixes[0] = new URL(definition.url).origin;
+    const url = new URL(definition.url);
+    const parts = url.pathname.split("/").filter(Boolean);
+    const board = parts.at(-1);
+    this.snapshotUrlPrefixes =
+      definition.kind === "html"
+        ? []
+        : definition.kind === "workday"
+          ? ["", "fr-FR/", "en-US/"].map((locale) => `${url.origin}/${locale}${board}/job/`)
+          : definition.kind === "smartrecruiters"
+            ? [`https://jobs.smartrecruiters.com/${parts[0]}/`]
+            : [`${url.origin}/${parts[0]}/`];
   }
   isEnabled(): boolean {
     return this.definition.enabled;
@@ -138,6 +151,10 @@ export class PublicBoardConnector implements SourceConnector {
       this.warnings.push("Budget d'offres atteint ; couverture partielle");
     if (this.coverage) {
       this.coverage.accepted = Math.min(count, this.definition.maxOffers);
+      if (this.coverage.listingsSeen < this.coverage.catalogTotal && !this.warnings.length)
+        this.warnings.push(
+          `${this.coverage.listingsSeen}/${this.coverage.catalogTotal} annonces parcourues ; catalogue mouvant ou couverture partielle`,
+        );
       this.coverage.complete =
         this.coverage.listingsSeen >= this.coverage.catalogTotal && !this.warnings.length;
     }
@@ -402,7 +419,6 @@ export class PublicBoardConnector implements SourceConnector {
           break;
         }
         const mapped = await this.mapDetails(candidates, async (job) => {
-          this.coverage!.detailsRead++;
           const detail = await requiredJson<{
             name?: string;
             company?: { name?: string };
@@ -412,6 +428,7 @@ export class PublicBoardConnector implements SourceConnector {
             applyUrl?: string;
             jobAd?: { sections?: Record<string, { text?: string }> };
           }>(`${endpoint}/${encodeURIComponent(job.id)}`, DETAIL);
+          this.coverage!.detailsRead++;
           return makeStudentOffer({
             title: detail.name ?? job.name ?? "",
             company: source.company ?? detail.company?.name ?? source.label,
@@ -523,9 +540,14 @@ export class PublicBoardConnector implements SourceConnector {
       this.warnings.push(
         `${candidates.length} annonces candidates ; budget ${source.maxOffers} détails`,
       );
+    const { selected, nextCursor } = selectCatalogDetails(
+      candidates,
+      source.maxOffers,
+      await readCatalogCursor(source.id),
+    );
     let parsed = 0;
-    for (let i = 0; i < Math.min(candidates.length, source.maxOffers); i += 20) {
-      const batch = candidates.slice(i, Math.min(i + 20, source.maxOffers));
+    for (let i = 0; i < selected.length; i += 20) {
+      const batch = selected.slice(i, i + 20);
       offers.push(
         ...(await this.mapDetails(batch, async ([url]) => {
           const html = await requiredText(url, DETAIL);
@@ -546,6 +568,7 @@ export class PublicBoardConnector implements SourceConnector {
         })),
       );
     }
+    await saveCatalogCursor(source.id, nextCursor);
     if (candidates.length && !parsed)
       this.warnings.push("Aucun JobPosting lisible dans les pages d'annonces");
     else if (parsed < this.coverage.detailsRead)

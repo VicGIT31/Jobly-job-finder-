@@ -27,6 +27,8 @@ export interface SourceConnector {
   readonly warnings?: readonly string[];
   readonly requestPrefixes?: readonly string[];
   readonly coverage?: CollectionCoverage;
+  /** Préfixes exclusifs du board employeur, pour rapprocher un catalogue complet. */
+  readonly snapshotUrlPrefixes?: readonly string[];
 }
 
 export type CollectionCoverage = {
