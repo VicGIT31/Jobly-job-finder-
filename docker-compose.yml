@@ -14,6 +14,7 @@ services:
       OFFER_FRESHNESS_DAYS: "7"
       OFFER_MAX_AGE_DAYS: "60"
       INGESTION_INTERVAL_MINUTES: ${INGESTION_INTERVAL_MINUTES:-120}
+      INGEST_SOURCE_TIMEOUT_SECONDS: ${INGEST_SOURCE_TIMEOUT_SECONDS:-900}
       # Collecte publique directe : aucune clé et aucun fournisseur payant.
       INGEST_SOURCES: ${INGEST_SOURCES:-}
       JOB_SOURCES_FILE: ${JOB_SOURCES_FILE:-}

@@ -26,6 +26,7 @@
     "sources:expand": "tsx scripts/expand-france-sources.ts",
     "alerts:import": "tsx scripts/import-job-alerts.ts",
     "offers:audit": "tsx scripts/audit-offer-scope.ts",
+    "offers:refresh": "tsx scripts/refresh-offers.ts",
     "search:sync": "tsx scripts/search-sync.ts",
     "geo:backfill": "tsx scripts/geocode-backfill.ts",
     "specialty:backfill": "tsx scripts/specialty-backfill.ts",

@@ -9,6 +9,7 @@ import { getSettings } from "@/lib/settings";
 import { expireStaleOffers, purgeOldOffers } from "@/server/ingest/freshness";
 import { IngestionAlreadyRunningError, runIngestion } from "@/server/ingest/run-ingestion";
 import { sendDailyAlerts } from "@/server/alerts/send";
+import { reconcileSearchIndex } from "@/server/search/reconcile";
 
 loadEnvConfig(process.cwd());
 
@@ -44,8 +45,10 @@ async function initialCollection(): Promise<void> {
 
 async function main(): Promise<void> {
   const queue = new Queue(QUEUE_NAME, { connection });
+  // Ancien scheduler sans gestionnaire dans ce worker : éviter les réveils inutiles.
+  await queue.removeJobScheduler("ingest-quick");
 
-  // Ingestion : intervalle configurable (2 h par défaut). Fraîcheur : horaire.
+  // Ingestion : intervalle configurable (2 h par défaut). Fraîcheur : toutes les 15 min.
   // Alertes : tous les jours à 8 h.
   const configuredMinutes = Number(process.env.INGESTION_INTERVAL_MINUTES ?? "120");
   const ingestionMinutes =
@@ -57,7 +60,7 @@ async function main(): Promise<void> {
   );
   await queue.upsertJobScheduler(
     "offer-freshness",
-    { pattern: "0 * * * *" },
+    { pattern: "*/15 * * * *" },
     { name: "offer-freshness" },
   );
   // Purge des offres de +2 mois : tous les jours à 3 h.
@@ -70,6 +73,11 @@ async function main(): Promise<void> {
     "daily-alerts",
     { pattern: "0 8 * * *" },
     { name: "daily-alerts" },
+  );
+  await queue.upsertJobScheduler(
+    "search-reconcile",
+    { pattern: "10 * * * *" },
+    { name: "search-reconcile" },
   );
 
   const worker = new Worker(
@@ -90,12 +98,14 @@ async function main(): Promise<void> {
       } else if (job.name === "purge-old-offers") {
         const purged = await purgeOldOffers();
         console.log(`[cron] purge-old-offers : ${purged} offre(s) de +2 mois supprimée(s)`);
+      } else if (job.name === "search-reconcile") {
+        console.log("[cron] search-reconcile :", await reconcileSearchIndex());
       } else if (job.name === "daily-alerts") {
         const { sent, matchedOffers } = await sendDailyAlerts();
         console.log(`[cron] daily-alerts : ${sent} email(s), ${matchedOffers} offre(s) matchée(s)`);
       }
     },
-    { connection },
+    { connection, concurrency: 3 },
   );
 
   worker.on("failed", (job, err) => {
@@ -104,10 +114,13 @@ async function main(): Promise<void> {
 
   console.log(
     `[worker] Démarré — crons ingest-offers (${ingestionMinutes} min), ` +
-      "offer-freshness (horaire), purge-old-offers (3h) et daily-alerts (8h).",
+      "offer-freshness (15 min), search-reconcile (horaire), purge-old-offers (3h) et daily-alerts (8h).",
   );
 
   // Ingestion immédiate au démarrage pour peupler le site sans attendre le cron.
+  // Nettoyer dès le démarrage : un arrêt du worker ne doit pas laisser les
+  // anciennes annonces actives jusqu'au prochain créneau horaire.
+  await expireStaleOffers();
   void initialCollection();
 }
 
