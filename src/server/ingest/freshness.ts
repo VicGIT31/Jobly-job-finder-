@@ -24,28 +24,37 @@ export async function expireStaleOffers(now = new Date()): Promise<number> {
   const threshold = new Date(now.getTime() - days * 86_400_000);
 
   const stale = await prisma.jobOffer.findMany({
-    where: { status: "ACTIVE", lastSeenAt: { lt: threshold } },
+    where: {
+      status: "ACTIVE",
+      OR: [{ lastSeenAt: { lt: threshold } }, { validThrough: { lte: now } }],
+    },
     select: { id: true },
   });
   if (stale.length === 0) return 0;
 
-  const ids = stale.map((o) => o.id);
-  await prisma.jobOffer.updateMany({
-    where: { id: { in: ids } },
-    data: { status: "EXPIRED" },
-  });
-
-  const updated = await prisma.jobOffer.findMany({
-    where: { id: { in: ids } },
-    include: { company: true },
-  });
-  try {
-    await syncOffersToSearch(updated);
-  } catch (err) {
-    console.error("[freshness] Sync Meilisearch échouée :", err);
+  let expired = 0;
+  for (let offset = 0; offset < stale.length; offset += 500) {
+    const ids = stale.slice(offset, offset + 500).map((offer) => offer.id);
+    const result = await prisma.jobOffer.updateMany({
+      where: {
+        id: { in: ids },
+        status: "ACTIVE",
+        OR: [{ lastSeenAt: { lt: threshold } }, { validThrough: { lte: now } }],
+      },
+      data: { status: "EXPIRED" },
+    });
+    expired += result.count;
+    const updated = await prisma.jobOffer.findMany({
+      where: { id: { in: ids } },
+      include: { company: true },
+    });
+    try {
+      await syncOffersToSearch(updated);
+    } catch (err) {
+      console.error("[freshness] Sync Meilisearch échouée, réparation horaire prévue :", err);
+    }
   }
-
-  return ids.length;
+  return expired;
 }
 
 /**
