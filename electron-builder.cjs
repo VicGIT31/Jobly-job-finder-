@@ -1,0 +1,20 @@
+module.exports = {
+  appId: "fr.jobly.desktop",
+  productName: "Jobly",
+  directories: { app: "build/desktop-app", output: "release", buildResources: "desktop/assets" },
+  files: ["main.cjs", "preload.cjs", "package.json", "!node_modules/**/*"],
+  extraResources: [{ from: "build/desktop-resources", to: ".", filter: ["**/*", "!**/.env*", "!**/*.map", "!**/.DS_Store"] }],
+  asar: true,
+  npmRebuild: false,
+  artifactName: "Jobly-${version}-${os}-${arch}.${ext}",
+  mac: {
+    target: ["dmg"], icon: "desktop/assets/icon.icns", category: "public.app-category.productivity",
+    hardenedRuntime: true, gatekeeperAssess: false,
+    entitlements: "desktop/entitlements.mac.plist", entitlementsInherit: "desktop/entitlements.mac.plist",
+    notarize: !!(process.env.APPLE_API_KEY || process.env.APPLE_ID),
+    binaries: ["Contents/Resources/postgres/bin/postgres", "Contents/Resources/postgres/bin/initdb", "Contents/Resources/postgres/bin/pg_ctl", "Contents/Resources/meilisearch"],
+  },
+  dmg: { title: "Installer Jobly", contents: [{ x: 150, y: 180, type: "file" }, { x: 450, y: 180, type: "link", path: "/Applications" }] },
+  win: { target: [{ target: "nsis", arch: ["x64"] }], icon: "desktop/assets/icon.ico", signAndEditExecutable: true, ...(process.env.WIN_CSC_LINK ? { signtoolOptions: { certificateFile: process.env.WIN_CSC_LINK, certificatePassword: process.env.WIN_CSC_KEY_PASSWORD, signingHashAlgorithms: ["sha256"] } } : {}) },
+  nsis: { oneClick: false, allowToChangeInstallationDirectory: true, perMachine: false, createDesktopShortcut: true, createStartMenuShortcut: true, shortcutName: "Jobly", deleteAppDataOnUninstall: false, installerLanguages: ["fr_FR", "en_US"] },
+};

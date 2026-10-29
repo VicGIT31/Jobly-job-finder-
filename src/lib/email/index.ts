@@ -54,5 +54,15 @@ export function getEmailProvider(): EmailProvider {
 }
 
 export async function sendEmail(message: EmailMessage): Promise<void> {
+  if (process.env.JOBLY_DESKTOP === "1") {
+    const { mkdir, writeFile } = await import("node:fs/promises");
+    const { join } = await import("node:path");
+    const { randomUUID } = await import("node:crypto");
+    const root = process.env.JOBLY_MAIL_DIR!;
+    await mkdir(root, { recursive: true });
+    // Local inbox only: no provider credentials are shipped to desktop clients.
+    await writeFile(join(root, `${Date.now()}-${randomUUID()}.json`), JSON.stringify({ ...message, at: new Date().toISOString() }), { mode: 0o600 });
+    return;
+  }
   await getEmailProvider().send(message);
 }

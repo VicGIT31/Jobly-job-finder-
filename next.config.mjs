@@ -1,5 +1,7 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+  output: "standalone",
+  outputFileTracingExcludes: { "/*": [".cache/**/*", "reports/**/*", ".env*", "data/**/*", "build/**/*", "release/**/*", "delivery/**/*"] },
   webpack(config, { isServer }) {
     if (!isServer) {
       // Le score de correspondance (calculé côté client sur les cartes) importe

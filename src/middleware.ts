@@ -12,6 +12,12 @@ import { NextResponse, type NextRequest } from "next/server";
  * tourne sur l'edge à chaque requête.
  */
 export function middleware(request: NextRequest) {
+  if (process.env.JOBLY_DESKTOP === "1") {
+    const token = process.env.JOBLY_DESKTOP_TOKEN;
+    if (!token || (request.cookies.get("jobly-desktop-access")?.value !== token && request.headers.get("x-jobly-desktop-token") !== token)) {
+      return NextResponse.json({ error: "Ouvrez Jobly depuis son icône." }, { status: 403 });
+    }
+  }
   const headers = new Headers(request.headers);
   headers.set("x-pathname", request.nextUrl.pathname);
   return NextResponse.next({ request: { headers } });

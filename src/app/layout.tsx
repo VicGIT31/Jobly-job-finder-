@@ -1,5 +1,5 @@
 import type { Metadata, Viewport } from "next";
-import { Geist, Geist_Mono, Instrument_Serif } from "next/font/google";
+import localFont from "next/font/local";
 import { headers } from "next/headers";
 import { NuqsAdapter } from "nuqs/adapters/next/app";
 import "./globals.css";
@@ -12,17 +12,18 @@ import { MaintenanceScreen } from "./maintenance-screen";
 
 // Geist pour l'interface, Geist Mono pour les métadonnées, Instrument Serif
 // (italique) pour les accents éditoriaux des titres.
-const geist = Geist({ subsets: ["latin"], variable: "--font-geist", display: "swap" });
+const geist = localFont({ src: "./fonts/Geist.ttf", weight: "100 900", variable: "--font-geist", display: "swap" });
 // Polices secondaires non préchargées : elles ne doivent pas concurrencer
 // Geist sur le chemin critique (LCP).
-const geistMono = Geist_Mono({
-  subsets: ["latin"],
+const geistMono = localFont({
+  src: "./fonts/GeistMono.ttf",
+  weight: "100 900",
   variable: "--font-geist-mono",
   display: "swap",
   preload: false,
 });
-const serif = Instrument_Serif({
-  subsets: ["latin"],
+const serif = localFont({
+  src: "./fonts/InstrumentSerif-Italic.ttf",
   weight: "400",
   style: "italic",
   variable: "--font-serif",

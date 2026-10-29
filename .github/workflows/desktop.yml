@@ -1,0 +1,92 @@
+name: Jobly desktop
+
+on:
+  workflow_dispatch:
+  push:
+    tags: ["desktop-v*"]
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: macos-15
+            target: mac-arm64
+          - os: macos-15-intel
+            target: mac-x64
+          - os: windows-2025
+            target: win-x64
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 45
+    env:
+      NEXT_TELEMETRY_DISABLED: "1"
+      DATABASE_URL: postgresql://build:build@127.0.0.1:65432/build
+      AUTH_SECRET: build-only-not-a-runtime-secret
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "24"
+          cache: npm
+      - run: npm ci
+      - run: npm test
+      - run: npm run lint
+      - name: Prepare optional macOS signing credentials
+        if: runner.os == 'macOS'
+        shell: bash
+        env:
+          MAC_CERT: ${{ secrets.MAC_CSC_LINK }}
+          MAC_PASSWORD: ${{ secrets.MAC_CSC_KEY_PASSWORD }}
+          APPLE_KEY: ${{ secrets.APPLE_API_KEY_BASE64 }}
+          APPLE_KEY_ID: ${{ secrets.APPLE_API_KEY_ID }}
+          APPLE_ISSUER: ${{ secrets.APPLE_API_ISSUER }}
+        run: |
+          if [ -n "$MAC_CERT" ]; then
+            echo "CSC_LINK=$MAC_CERT" >> "$GITHUB_ENV"
+            echo "CSC_KEY_PASSWORD=$MAC_PASSWORD" >> "$GITHUB_ENV"
+          fi
+          if [ -n "$APPLE_KEY" ]; then
+            echo "$APPLE_KEY" | base64 --decode > "$RUNNER_TEMP/AuthKey.p8"
+            chmod 600 "$RUNNER_TEMP/AuthKey.p8"
+            echo "APPLE_API_KEY=$RUNNER_TEMP/AuthKey.p8" >> "$GITHUB_ENV"
+            echo "APPLE_API_KEY_ID=$APPLE_KEY_ID" >> "$GITHUB_ENV"
+            echo "APPLE_API_ISSUER=$APPLE_ISSUER" >> "$GITHUB_ENV"
+          fi
+      - name: Prepare optional Windows signing credentials
+        if: runner.os == 'Windows'
+        shell: pwsh
+        env:
+          WINDOWS_CERT: ${{ secrets.WIN_CSC_LINK_BASE64 }}
+          WINDOWS_PASSWORD: ${{ secrets.WIN_CSC_KEY_PASSWORD }}
+        run: |
+          if ($env:WINDOWS_CERT) {
+            $certificate = Join-Path $env:RUNNER_TEMP 'jobly-signing.pfx'
+            [IO.File]::WriteAllBytes($certificate, [Convert]::FromBase64String($env:WINDOWS_CERT))
+            "WIN_CSC_LINK=$certificate" >> $env:GITHUB_ENV
+            "WIN_CSC_KEY_PASSWORD=$env:WINDOWS_PASSWORD" >> $env:GITHUB_ENV
+          }
+      - name: Build native installer
+        run: npm run desktop:dist -- --publish never
+      - name: Test packaged application
+        run: npm run desktop:smoke -- --fresh
+      - name: Assemble verified delivery
+        run: npm run desktop:delivery
+      - name: Upload installers, guides and verification
+        uses: actions/upload-artifact@v4
+        with:
+          name: Jobly-${{ matrix.target }}
+          path: delivery/Jobly-*.zip
+          if-no-files-found: error
+      - name: Upload diagnostic evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: evidence-${{ matrix.target }}
+          path: |
+            reports/desktop/*.png
+            reports/desktop/verification.json
+          if-no-files-found: ignore

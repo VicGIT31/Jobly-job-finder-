@@ -4,6 +4,12 @@
 >
 > **Particularité du modèle** : le site n'héberge aucune candidature. Les offres sont **collectées directement depuis les pages et flux publics**, sans fournisseur d’offres payant ni clé développeur ; le bouton « Postuler » redirige (302) vers le lien réel de l'annonce via `/go/:offerId`, en enregistrant le clic au passage.
 
+## Application de bureau
+
+Pour actualiser les offres dans l’application, consultez le [guide d’actualisation](desktop/ACTUALISATION.md).
+
+Une édition Electron installable est maintenant préparée dans ce dépôt. Les guides et les commandes de compilation native figurent dans [desktop/README.md](desktop/README.md). Les installateurs effectivement construits et le ZIP de livraison sont dans `release/` et `delivery/` (non versionnés). La matrice macOS Apple Silicon, macOS Intel et Windows x64 est définie dans `.github/workflows/desktop.yml`. Chaque plateforme doit être vérifiée séparément ; la présence du workflow ne signifie pas que ses builds ont été exécutés.
+
 ## Démarrage rapide
 
 ```bash

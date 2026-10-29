@@ -116,6 +116,8 @@ export function SearchClient({
     // affirmait explicitement un rendu SSR à cette fin.
     initialData: queryString === initialQueryStringRef.current ? initialResult : undefined,
     placeholderData: keepPreviousData,
+    refetchInterval: 60_000,
+    refetchOnWindowFocus: true,
   });
 
   const result = data ?? initialResult;

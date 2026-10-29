@@ -39,8 +39,9 @@ export function withCollectionBudget<T>(
   timeoutMs: number,
   collect: () => Promise<T>,
   onTimeout?: () => void,
+  cancelSignal?: AbortSignal,
 ): Promise<T> {
-  const signal = AbortSignal.timeout(timeoutMs);
+  const signal = AbortSignal.any([AbortSignal.timeout(timeoutMs), ...(cancelSignal ? [cancelSignal] : [])]);
   return requestBudget.run(signal, async () => {
     try {
       return await collect();

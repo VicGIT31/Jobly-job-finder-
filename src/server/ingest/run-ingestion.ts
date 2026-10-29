@@ -41,7 +41,7 @@ export class IngestionAlreadyRunningError extends Error {
  * Une source en échec n'interrompt pas les autres. Chaque passage est archivé
  * dans `ingest_runs` : c'est la base du suivi de santé du panneau admin.
  */
-export async function runIngestion(): Promise<IngestionRunResult[]> {
+export async function runIngestion(options: { signal?: AbortSignal } = {}): Promise<IngestionRunResult[]> {
   // Le cron, l'ingestion au démarrage et le bouton admin partagent ce verrou.
   const redis = getRedis();
   const lock = "jobly:ingestion:lock";
@@ -79,10 +79,10 @@ export async function runIngestion(): Promise<IngestionRunResult[]> {
     // Chaque créneau libéré prend la source suivante, sans attendre les sources lentes.
     let cursor = 0;
     const collect = async (): Promise<void> => {
-      while (!lostLock) {
+      while (!lostLock && !options.signal?.aborted) {
         const index = cursor++;
         if (index >= enabled.length) return;
-        results[index] = await runConnector(enabled[index]);
+        results[index] = await runConnector(enabled[index], options.signal);
       }
     };
     await Promise.all(
@@ -103,7 +103,7 @@ export async function runIngestion(): Promise<IngestionRunResult[]> {
   }
 }
 
-async function runConnector(connector: SourceConnector): Promise<IngestionRunResult> {
+async function runConnector(connector: SourceConnector, signal?: AbortSignal): Promise<IngestionRunResult> {
   const started = Date.now();
   const failureOffset = getHttpFailures().length;
   try {
@@ -119,6 +119,7 @@ async function runConnector(connector: SourceConnector): Promise<IngestionRunRes
       () => {
         budgetExpired = true;
       },
+      signal,
     );
     // Le périmètre courant est France + stage/alternance tech ; les anciens
     // connecteurs internationaux restent disponibles dans le dépôt, hors cycle.

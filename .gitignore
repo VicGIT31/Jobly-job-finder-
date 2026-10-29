@@ -15,6 +15,9 @@
 
 # production
 /build
+/release/
+/delivery/
+/desktop/assets/icon.*
 
 # misc
 .DS_Store

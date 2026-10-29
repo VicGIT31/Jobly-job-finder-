@@ -9,3 +9,6 @@ docker-compose.yml
 reports
 data/job-alerts
 coverage
+build
+release
+delivery

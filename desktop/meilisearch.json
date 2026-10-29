@@ -1,0 +1,8 @@
+{
+  "version": "v1.56.0",
+  "assets": {
+    "darwin-arm64": { "url": "https://github.com/meilisearch/meilisearch/releases/download/v1.56.0/meilisearch-macos-apple-silicon", "sha256": "8cf19d5d864fbd22c511c5ca420dd0403d70beb049a65a122861790f2d34f356" },
+    "darwin-x64": { "url": "https://github.com/meilisearch/meilisearch/releases/download/v1.56.0/meilisearch-macos-amd64", "sha256": "c35faea63e6c6210d38c882cec147d000238774c4a408850487aed10eed19e2f" },
+    "win32-x64": { "url": "https://github.com/meilisearch/meilisearch/releases/download/v1.56.0/meilisearch-windows-amd64.exe", "sha256": "916591c45ca5be5eeb6981f68d987032f90a557a182fc7bdfdb011b869b90578" }
+  }
+}

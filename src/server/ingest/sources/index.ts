@@ -9,7 +9,7 @@ import { PublicBoardConnector } from "./public-boards";
 import type { SourceConnector } from "./types";
 
 /** Aucun fournisseur avec clé ni intermédiaire payant dans le circuit de collecte. */
-export async function getSourceConnectors(): Promise<SourceConnector[]> {
+export async function getSourceConnectors(options: { ignoreSelection?: boolean } = {}): Promise<SourceConnector[]> {
   const legacy: SourceConnector[] = [
     new ApecConnector(),
     new HelloWorkConnector(),
@@ -19,9 +19,15 @@ export async function getSourceConnectors(): Promise<SourceConnector[]> {
     new LocalAlertsConnector(),
   ];
   const catalog = await loadSourceCatalog();
-  const allowed = process.env.INGEST_SOURCES?.split(",")
+  let allowed = process.env.INGEST_SOURCES?.split(",")
     .map((id) => id.trim())
     .filter(Boolean);
+  if (process.env.JOBLY_DESKTOP === "1" && !options.ignoreSelection) {
+    const { prisma } = await import("@/lib/prisma");
+    const setting = await prisma.siteSetting.findUnique({ where: { key: "desktopSources" } });
+    if (Array.isArray(setting?.value)) allowed = setting.value.filter((id): id is string => typeof id === "string");
+  }
+  if (options.ignoreSelection) allowed = undefined;
   const entries = [
     ...legacy.map((connector) => ({ id: connector.sourceSite, connector })),
     ...catalog.map((definition) => ({
