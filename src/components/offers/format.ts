@@ -11,11 +11,11 @@ export function formatSalary(min: number | null, max: number | null, period?: st
 
 /** Date de publication (site d'origine) au format court français : "17 juil. 2026". */
 export function formatDateFr(ts: number): string {
-  return new Date(ts).toLocaleDateString("fr-FR", {
-    day: "numeric",
-    month: "short",
-    year: "numeric",
-  });
+  // Avoid ICU-version differences between the Next.js server's Node runtime and
+  // Chromium (notably on Windows), which otherwise produce hydration mismatches.
+  const date = new Date(ts);
+  const months = ["janv.", "févr.", "mars", "avr.", "mai", "juin", "juil.", "août", "sept.", "oct.", "nov.", "déc."];
+  return `${date.getUTCDate()} ${months[date.getUTCMonth()]} ${date.getUTCFullYear()}`;
 }
 
 export function timeAgo(ts: number): string {
