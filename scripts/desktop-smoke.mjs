@@ -37,6 +37,9 @@ try {
   assert.equal(appVersion, JSON.parse(await readFile("package.json", "utf8")).version);
   timings.firstSearchWindowMs = Date.now() - start;
   await page.getByRole("heading", { name: "Le prochain bon poste." }).waitFor();
+  // Let client effects register global shortcuts before exercising them. The
+  // static heading can be visible one paint before React's passive effects.
+  await page.waitForTimeout(100);
   assert.equal(await page.locator('input[type="password"]').count(), 0);
   assert.equal((await fetch(origin + "/api/search")).status, 403);
   checks.push("Exécutable distribué démarré depuis /, PATH sans Node/npm/Docker ; recherche directe sans compte ; loopback protégé");
