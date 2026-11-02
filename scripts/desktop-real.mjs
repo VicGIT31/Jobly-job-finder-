@@ -14,7 +14,7 @@ try{
  const env=Object.fromEntries(Object.entries(process.env).filter(([key])=>["HOME","TMPDIR","LANG","USERPROFILE","APPDATA","LOCALAPPDATA","SystemRoot","TEMP","TMP"].includes(key)));
  Object.assign(env,{PATH:process.platform==="darwin"?"/usr/bin:/bin":`${process.env.SystemRoot}\\System32`,JOBLY_USER_DATA:profile,JOBLY_DEBUG_PORT:"0"});
  app=await _electron.launch({executablePath:resolve(executable),args:["--jobly-smoke"],cwd:process.platform==="darwin"?"/":process.env.SystemRoot,env});
- const page=await app.firstWindow();await page.waitForURL(/127\.0\.0\.1.*\/offres/,{timeout:90000});await page.waitForFunction(()=>!!window.joblyDesktop);
+ const page=await app.firstWindow();await page.waitForURL(/127\.0\.0\.1:\d+\//,{timeout:90000});await page.waitForFunction(()=>!!window.joblyDesktop);
  const origin=new URL(page.url()).origin;
  const windowMs=Date.now()-started;
  await page.evaluate(()=>window.joblyDesktop.collect({city:"Toulouse"}));
@@ -30,7 +30,7 @@ try{
    await row.getByRole("button",{name:"Sauvegarder",exact:true}).click();await row.getByRole("button",{name:"Sauvegardée",exact:true}).waitFor();firstSavedMs=Date.now()-started;
    await page.getByRole("button",{name:"Enregistrer la recherche",exact:true}).click();await page.getByText("Recherche enregistrée",{exact:true}).waitFor();
    await app.evaluate(({shell})=>{shell.openExternal=async(url)=>{globalThis.__realApplyUrl=url;};});
-   await row.getByRole("link",{name:"Postuler",exact:true}).click();await pause(500);applicationUrl=await app.evaluate(()=>globalThis.__realApplyUrl);
+   await row.getByRole("link",{name:/^Postuler/}).click();for(let attempt=0;attempt<50&&!applicationUrl;attempt++){await pause(100);applicationUrl=await app.evaluate(()=>globalThis.__realApplyUrl);}
    await page.screenshot({path:join(artifacts,"premieres-offres-reelles.png"),fullPage:true});
    console.log(JSON.stringify({firstLocalMs,firstSavedMs,title:firstUsefulOffer.title,applicationUrl}));
   }

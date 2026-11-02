@@ -76,3 +76,13 @@ Commande macOS exécutée localement sur un ZIP réel et application résultante
 - CI antérieure [41459620221](https://github.com/VicGIT31/Internship-finders/actions/runs/41459620221), commit `805eea5` : tests d’installation macOS ARM/Intel et Windows réussis. Les binaires de ces jobs ne sont pas inclus dans les artefacts accessibles de la dernière matrice.
 
 Conclusion : des exécutables 0.3.0 ont été installés et testés sur chaque cible au cours de la réalisation, mais les fichiers finaux macOS et Windows ne sont pas réunis, validés et publiés pour le même commit. Aucun tag, lien de téléchargement ou release n’est annoncé. Dernière étape nécessaire : stabiliser les assertions clavier et Postuler du harnais, faire téléverser les trois ZIPs dans une matrice verte, puis publier ces vrais fichiers.
+
+## Fusion des interfaces et des catalogues — vérifications du 2 novembre 2026
+
+Réalisées sur une pile locale isolée (PostgreSQL et Meilisearch embarqués, serveur Next.js de production en mode bureau, profil vierge), pas sur l’exécutable empaqueté.
+
+- 319 tests Vitest, `npm run lint` et `next build` réussis.
+- Collecte réelle sur le réseau : environ 1 480 offres actives (791 tech en stage ou alternance, 400+ commerce/marketing/communication, 150+ ASV et animalier). Les offres déjà en base ont été reclassées au démarrage puis réindexées.
+- Recherche réelle : **ASV autour de Toulouse à 30 km : 9 offres** (1 avant l’ajout des employeurs et des cabinets), dont une offre de la SPA de Haute-Garonne, un poste d’ASV IVC Evidensia à Quint-Fonsegrives, un poste Univet à Cornebarrieu et des postes d’animalier et de soigneur de l’ENVT. La requête « asv » à 50 km renvoie 3 postes d’ASV.
+- Interface pilotée dans Electron : filtres Domaine, Métier, ville et rayon, état vide avec élargissement, fiche d’offre, accueil. Aucun débordement horizontal à 390 et 768 px après correction ; aucune erreur console.
+- **Non exécuté** : la construction des paquets (`desktop:dist`), `desktop:smoke`, la migration réelle depuis une installation 0.2.x et la matrice CI Windows/Intel. Les scripts de test natifs ont été adaptés à la nouvelle interface (accueil, recherche en direct, erreur avec derniers résultats conservés, attente active de l’ouverture « Postuler ») mais n’ont pas été rejoués. Les conclusions du paragraphe « État final des derniers jobs natifs » ci-dessus restent valables : aucune publication tant qu’une matrice verte n’a pas produit les trois ZIP.

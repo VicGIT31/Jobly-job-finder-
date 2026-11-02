@@ -1,8 +1,8 @@
 # Jobly 0.3.0 — vision et périmètre
 
-Application personnelle locale, sans connexion ni configuration obligatoire. Deux univers : Commerce/Marketing et auxiliaires vétérinaires (ASV). Priorité à Toulouse et sa couronne, rayon initial 30 km ; recherche nationale explicitement accessible. Les premiers résultats doivent être utiles en moins de dix minutes dans les conditions mesurées, sans promesse d’exhaustivité.
+Application personnelle locale, sans connexion ni configuration obligatoire. Trois domaines réunis dans une seule recherche : la tech (stages et alternances), le commerce, le marketing et la communication, et les auxiliaires vétérinaires (ASV) avec les métiers voisins (accueil de clinique, refuges, soins animaliers). La collecte locale part de Toulouse ; la recherche est nationale par défaut, avec rayon exact au choix. Les premiers résultats doivent être utiles en moins de dix minutes dans les conditions mesurées, sans promesse d’exhaustivité.
 
-Conserver favoris, recherches sauvegardées, candidatures, CV et préférences ; migrer les anciens propriétaires vers un profil local unique après sauvegarde, avec conservation des données secondaires. Les anciennes offres tech restent des archives consultables via les favoris et le suivi, sans polluer les deux nouveaux univers.
+Conserver favoris, recherches sauvegardées, candidatures, CV et préférences ; migrer les anciens propriétaires vers un profil local unique après sauvegarde, avec conservation des données secondaires. Le catalogue tech reste un domaine à part entière, en stage et alternance ; les nouveaux domaines acceptent tous les contrats.
 
 Les données viennent de sources publiques vérifiées, avec provenance, dates distinctes, informations inconnues explicites et déduplication prudente. L’indisponibilité d’une source n’interrompt pas les autres. Aucun secret fournisseur n’est distribué. Internet sert à la collecte et aux candidatures, les données locales restent consultables hors connexion.
 

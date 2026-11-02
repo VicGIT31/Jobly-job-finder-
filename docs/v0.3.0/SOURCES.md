@@ -41,3 +41,24 @@ Les communes de Haute-Garonne et leurs centres sont embarqués depuis [l’API o
 Les agrégateurs et recruteurs spécialisés ASV (notamment VetoJob), les pages de cliniques et réseaux, les offres PDF et les réseaux sociaux peuvent compléter la recherche manuelle. Aucun accès structuré stable n’a été validé ici pour ces services : ils ne sont pas comptés comme intégrés. Une page « nous recrutons régulièrement » n’est pas transformée en offre active. Les flux ou sites sans accès public exploitable ne reçoivent pas de faux résultats de substitution.
 
 L’ancien catalogue tech est conservé dans le dépôt et peut être sélectionné explicitement pour compatibilité ; il n’est pas inclus dans le cycle personnel par défaut.
+
+## Employeurs de la santé animale ajoutés à la fusion
+
+Passage réel du 2 novembre 2026 (cache vide, réseau de la machine de développement). Offres acceptées dans ce passage, avant regroupement ; la couverture n’est jamais exhaustive.
+
+| Source | Format public réellement testé | Résultat | Limites |
+|---|---|---:|---|
+| IVC Evidensia France | [RSS Teamtailor](https://emploi.ivcevidensia.fr/jobs.rss) + sitemap | 58 lues, 30 nouvelles | Le RSS est plafonné à 100 offres : les fiches manquantes viennent du sitemap, 40 par cycle, métiers recherchés d’abord |
+| Fovéa | RSS Teamtailor | 4 | Petit groupe |
+| Univet | `job-sitemap.xml` + JSON-LD des fiches | 18 | 60 fiches par cycle ; le `robots.txt` interdit les URL à paramètres, pas de pagination d’API |
+| Argos Vétérinaire | API REST WordPress des offres + texte de la fiche | 8 | Fiches sans JSON-LD ; ville lue dans le texte quand elle est indiquée |
+| SPA | Liste JSON-LD | 2 | La date publiée vaut la date du jour : tenue pour inconnue. La plupart des postes ouverts sont vétérinaires (exclus) |
+| Fondation Brigitte Bardot | Liste + texte de la fiche | 9 | Pas de JSON-LD ; lieu lu sous la forme « Commune (code postal) » |
+| ENVT (Toulouse) | Liste JSON-LD (Beetween) | 2 | Seule la première page de la liste est lue |
+| ZooParc de Beauval | Liste JSON-LD | 5 | Postes de soigneur saisonniers |
+| Maxi Zoo | Liste dans un `<noscript>` + JSON-LD | 58 | 60 fiches par cycle ; dates peu fiables, tenues pour inconnues |
+| Cabinets autour de la zone | OpenStreetMap + page recrutement du site | 0 | 19 sites lus sur 23 : sur l’échantillon réel de 18 cabinets près de Toulouse, 2 avaient une page recrutement, en texte libre, sans offre d’ASV. Complément, pas couverture |
+
+Requêtes ajoutées : communication (France Travail, HelloWork), vente en magasin, soins animaliers.
+
+Étudiés et non retenus : VetoJob (conditions d’utilisation interdisant la reproduction), VetPartners et Vetoquinol (aucun poste d’ASV), choisirleservicepublic.gouv.fr (pages de 4,5 Mo, recherche par mot-clé indisponible), Jardiland et Royal Canin (accès refusé, non contourné), Animalis et Idexx (contenu chargé par JavaScript), Truffaut (lieu absent du flux).

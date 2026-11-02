@@ -1,6 +1,6 @@
 # Jobly 0.3.0
 
-Application personnelle de recherche d’emploi pour **Commerce & marketing** et **Auxiliaires vétérinaires (ASV)**. Recherche directe, sans compte ni clé API. Toulouse et 30 km par défaut ; communes voisines, rayon 10/30/50/100 km et France entière.
+Application personnelle de recherche d’emploi qui réunit, dans une seule recherche, **la tech (stages et alternances)**, **le commerce, le marketing et la communication**, et **les auxiliaires vétérinaires (ASV) et métiers animaliers** (tous contrats). Recherche directe, sans compte ni clé API. France entière par défaut ; commune et rayon (5 à 100 km) au choix, la zone de collecte locale étant Toulouse tant qu’une autre commune n’est pas choisie.
 
 ## Installer l’application
 
@@ -17,11 +17,11 @@ Sans certificat Developer ID et notarisation Apple ou certificat Authenticode Wi
 
 ## Utiliser Jobly
 
-1. Choisissez Commerce & marketing ou Auxiliaires vétérinaires.
-2. Gardez Toulouse ou saisissez une commune française ; ajustez le rayon. Cochez « Toute la France » pour une recherche nationale explicite.
-3. Recherchez un intitulé, une entreprise ou un synonyme. Les filtres interrogent le catalogue local, sans nouvelle collecte complète.
+1. Ouvrez l’accueil ou la recherche : tous les domaines sont mélangés. Affinez par **Domaine** (Tech, Commerce/marketing/communication, ASV et animalier) et par **Métier** (spécialités tech, familles de métiers, accueil de clinique, soins animaliers et refuges).
+2. Saisissez une commune française et ajustez le rayon, ou laissez vide pour une recherche nationale.
+3. Recherchez un intitulé, une entreprise ou un synonyme (« ASV », « auxiliaire vétérinaire », « veterinary nurse »). Les filtres interrogent le catalogue local, sans nouvelle collecte complète ; les « détails de l’annonce » (débutant accepté, urgences, équine, refuge…) sont déduits du texte et à vérifier.
 4. Enregistrez vos favoris et recherches ; « Postuler » ouvre le site d’origine dans votre navigateur. Un clic est ajouté au suivi personnel ; il ne prouve pas qu’une candidature a été envoyée.
-5. « Actualiser » complète le catalogue. Pour une nouvelle ville, cette action adapte les collecteurs locaux France Travail et HelloWork. Les collecteurs nationaux restent actifs. La collecte reprend à l’ouverture puis toutes les deux heures tant que Jobly est ouvert.
+5. « Actualiser » complète le catalogue. Pour une nouvelle ville, cette action adapte les collecteurs locaux France Travail et HelloWork et la découverte des cabinets vétérinaires voisins. Les collecteurs nationaux restent actifs. La collecte reprend à l’ouverture puis toutes les deux heures tant que Jobly est ouvert.
 
 **Internet est nécessaire pour collecter des offres, géolocaliser les communes hors référentiel embarqué, charger certains logos et candidater.** Le catalogue déjà collecté, les favoris, recherches, notes et CV restent locaux. Aucun backend distant Jobly n’est nécessaire. Une première collecte peut prendre plusieurs minutes ; les premiers lots sont affichés avant la fin du cycle. La couverture n’est jamais exhaustive.
 
@@ -59,7 +59,7 @@ Pour un développement web local : configurez les services de `.env.example`, mi
 - [Résultats de vérification](docs/v0.3.0/VERIFICATIONS.md), [historique](CHANGELOG.md).
 - [Architecture et signature](desktop/README.md), [actualisation et dépannage](desktop/ACTUALISATION.md).
 
-Les documents historiques `CONTEXTE_AI_WORK.md` et `SOURCES_*.md` décrivent les versions précédentes ; les documents 0.3.0 et le code courant font foi.
+Les documents historiques `CONTEXTE_AI_WORK.md` et `SOURCES_*.md` décrivent les versions précédentes ; les documents 0.3.0 et le code courant font foi. Le catalogue tech et les sources des versions 0.1 et 0.2 sont de nouveau actifs : la 0.3.0 fusionne leur interface avec les nouveaux métiers.
 
 <!-- COMMANDES-INSTALLATION -->
 ## Installation par une commande à copier-coller

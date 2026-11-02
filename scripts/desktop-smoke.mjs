@@ -21,7 +21,7 @@ async function launch() {
   app = await electron.launch({ executablePath: resolve(executable), args: ["--jobly-smoke"], cwd: process.platform === "win32" ? process.env.SystemRoot : "/", env, timeout: 90000 });
   const page = await app.firstWindow(); page.setDefaultTimeout(30000);
   page.on("pageerror", (error) => consoleErrors.push({ url: page.url(), message: error.message, stack: error.stack }));
-  await page.waitForURL(/127\.0\.0\.1:\d+\/offres/, { timeout: 90000 });
+  await page.waitForURL(/127\.0\.0\.1:\d+\//, { timeout: 90000 });
   await page.waitForFunction(() => !!window.joblyDesktop);
   return page;
 }
@@ -36,13 +36,13 @@ try {
   appVersion = await app.evaluate(({ app }) => app.getVersion());
   assert.equal(appVersion, JSON.parse(await readFile("package.json", "utf8")).version);
   timings.firstSearchWindowMs = Date.now() - start;
-  await page.getByRole("heading", { name: "Le prochain bon poste." }).waitFor();
+  await page.getByRole("heading", { name: /Tous les métiers/ }).waitFor();
   // Let client effects register global shortcuts before exercising them. The
   // static heading can be visible one paint before React's passive effects.
   await page.waitForTimeout(100);
   assert.equal(await page.locator('input[type="password"]').count(), 0);
   assert.equal((await fetch(origin + "/api/search")).status, 403);
-  checks.push("Exécutable distribué démarré depuis /, PATH sans Node/npm/Docker ; recherche directe sans compte ; loopback protégé");
+  checks.push("Exécutable distribué démarré sur l’accueil, PATH sans Node/npm/Docker ; recherche directe sans compte ; loopback protégé");
   const db = await database();
   const users = await db.query('SELECT id,"passwordHash" FROM users'); assert.equal(users.rowCount, 1); assert.equal(users.rows[0].passwordHash, null);
   const now = new Date();
@@ -58,7 +58,7 @@ try {
   await page.evaluate(() => window.joblyDesktop.repair());
   await page.goto(origin + "/offres?ville=Toulouse&rayon=30&tri=pertinence");
   await page.getByRole("link", { name: "Commercial CDI — vérification", exact: true }).waitFor();
-  const local = await page.evaluate(async () => (await fetch("/api/search?ville=Toulouse&rayon=30")).json());
+  const local = await page.evaluate(async () => (await fetch("/api/search?univers=COMMERCE&ville=Toulouse&rayon=30")).json());
   assert.equal(local.engine, "meilisearch"); assert.equal(local.totalHits, 2); assert.ok(local.hits.every((offer) => offer.universe === "COMMERCE"));
   const asv = await page.evaluate(async () => (await fetch("/api/search?univers=ASV&ville=Toulouse&rayon=30")).json()); assert.equal(asv.totalHits, 1);
   const national = await page.evaluate(async () => (await fetch("/api/search?univers=ASV&national=1")).json()); assert.equal(national.totalHits, 2);
@@ -75,7 +75,7 @@ try {
   await page.screenshot({ path: join(artifacts, "fiche-offre.png"), fullPage: true });
   await app.evaluate(({ shell }) => { shell.openExternal = async (url) => { globalThis.__joblyLastExternal = url; }; });
   await page.evaluate(() => window.open("/go/desktop-qa-commerce", "_blank"));
-  await page.waitForTimeout(700); assert.equal(await app.evaluate(() => globalThis.__joblyLastExternal), "https://example.com/careers");
+  let external; for (let attempt = 0; attempt < 50 && !external; attempt++) { await pause(100); external = await app.evaluate(() => globalThis.__joblyLastExternal); } assert.equal(external, "https://example.com/careers");
   checks.push("Fiche et Postuler : suivi de candidature et ouverture dans le navigateur système");
   const pdfPath = join(artifacts, "test-cv.pdf");
   const objects = ["<< /Type /Catalog /Pages 2 0 R >>", "<< /Type /Pages /Kids [3 0 R] /Count 1 >>", "<< /Type /Page /Parent 2 0 R /MediaBox [0 0 300 200] /Resources << /Font << /F1 5 0 R >> >> /Contents 4 0 R >>", "<< /Length 100 >>\nstream\nBT /F1 12 Tf 30 100 Td (Marketing commercial relation client CV de verification.) Tj ET\nendstream", "<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>"];
@@ -88,8 +88,8 @@ try {
   checks.push("Anciens écrans redirigés vers la recherche ; API d’authentification retirée");
   await page.goto(origin + "/offres?univers=ASV&national=1&contrat=CDI"); await page.getByRole("link", { name: "ASV nationale — vérification", exact: true }).waitFor();
   await page.route("**/api/search?**", (route) => route.fulfill({ status: 503, body: "indisponible" }));
-  await page.locator("#recherche-q").fill("verification panne"); await page.getByRole("button", { name: "Rechercher", exact: true }).click();
-  await page.getByRole("alert").filter({ hasText: "La recherche ne répond plus" }).waitFor();
+  await page.locator("#recherche-q").fill("verification panne");
+  await page.getByRole("alert").filter({ hasText: /La recherche n.a pas pu être actualisée/ }).waitFor();
   await page.getByRole("link", { name: "ASV nationale — vérification", exact: true }).waitFor();
   await page.screenshot({ path: join(artifacts,"erreur-recherche.png"),fullPage:true });
   await page.unroute("**/api/search?**");

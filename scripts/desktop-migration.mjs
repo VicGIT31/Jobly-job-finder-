@@ -28,7 +28,7 @@ try{
  await old.query('INSERT INTO site_settings(key,value,"updatedAt") VALUES (\'desktopSources\',\'["free-work.com"]\'::jsonb,$1)',[now]);
  const countsBefore={users:2,favorites:3,distinctFavorites:2,searches:2,applications:2,histories:2,cvFiles:2};
  await old.end();await app.close();app=undefined;
- page=await launch(current);await page.waitForURL(/\/offres/);await page.getByRole("heading",{name:"Le prochain bon poste."}).waitFor();
+ page=await launch(current);await page.waitForURL(/127\.0\.0\.1:\d+\//);await page.getByRole("heading",{name:/Tous les métiers/}).waitFor();
  const migrated=await db();const counts=(await migrated.query('SELECT (SELECT count(*)::int FROM users) AS users,(SELECT count(*)::int FROM saved_offers) AS favorites,(SELECT count(*)::int FROM saved_searches) AS searches,(SELECT count(*)::int FROM applications) AS applications,(SELECT count(*)::int FROM application_status_history) AS histories,(SELECT count(*)::int FROM users WHERE "passwordHash" IS NOT NULL) AS passwords')).rows[0];
  assert.deepEqual(counts,{users:1,favorites:2,searches:2,applications:2,histories:2,passwords:0});
  assert.equal((await migrated.query('SELECT count(*)::int AS n FROM applications WHERE "offerId" IS NULL')).rows[0].n,1);
