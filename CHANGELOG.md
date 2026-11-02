@@ -1,8 +1,8 @@
 # Historique des versions
 
-## 0.3.0 — validation et distribution en cours
+## 0.3.0 — candidate, publication en attente
 
-Application personnelle sans compte, univers Commerce/Marketing et ASV, priorité Toulouse et rayon réglable, nouvelles sources publiques, amélioration du classement et de la provenance. La liste des fonctions effectivement livrées et les contrôles seront finalisés après validation.
+Application personnelle sans compte, univers Commerce/Marketing et ASV, priorité Toulouse et rayon réglable, nouvelles sources publiques, amélioration du classement et de la provenance. Les commandes d’installation macOS et Windows avec contrôle SHA-256 sont incluses dans les guides. La publication des deux installateurs attend une dernière matrice Windows verte et les artefacts CI associés.
 
 ## 0.2.0 — 29 octobre 2026
 

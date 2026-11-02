@@ -12,7 +12,7 @@
 | P1 | Classement, doublons et liens | Explications, regroupement prudent et statuts vérifiables | Réalisé et vérifié |
 | P1 | Interface personnelle | Favoris/recherches/suivi sans compte, états lisibles, responsive revu | Réalisé et vérifié |
 | P1 | Vérifications réelles | Six scénarios, délais, volumes, échantillon et liens consignés | Réalisé et vérifié |
-| P1 | Paquets natifs et mise à jour | DMG/EXE correspondants au code, persistance après mise à jour | Installations natives des trois cibles réussies ; commandes en validation |
-| P1 | Documentation et release | Version, notes, ZIP, commit, tag, publication et liens réels | Guides et commandes créés ; publication après validation PowerShell |
+| P1 | Paquets natifs et mise à jour | DMG/EXE correspondant au même commit, persistance après mise à jour, ZIP vérifié par cible | Builds et tests réussis sur plusieurs commits ; artefact Windows final non disponible, matrices récentes incomplètes |
+| P1 | Documentation et release | Version, notes, ZIP, commit, tag, publication et liens réels | Guides et commandes poussés ; aucun tag/release créé tant que le ZIP Windows n’est pas validé |
 
 Les résultats et blocages sont suivis dans VERIFICATIONS.md ; les choix dans DECISIONS.md et les sources dans SOURCES.md. Ne cocher une tâche qu’après le contrôle indiqué.

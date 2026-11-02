@@ -1,6 +1,6 @@
 # Vérifications — 0.3.0
 
-État au 2 novembre 2026 : les trois installateurs natifs sont construits et testés ; validation des commandes copiables et publication en cours. Ne pas interpréter une compilation configurée comme un installateur testé.
+État au 2 novembre 2026 : le code 0.3.0 et les guides sont poussés sur `main`. Les installateurs ont été construits dans plusieurs jobs natifs ; la dernière matrice n’a pas produit de ZIP Windows publiable. Aucun tag ni release 0.3.0 n’a été créé. Ne pas considérer cette candidate comme une livraison complète.
 
 ## État initial mesuré
 
@@ -66,4 +66,13 @@ CI native [41459620221](https://github.com/VicGIT31/Internship-finders/actions/r
 
 Ajoutées au README, INSTALLER.md et DEMARRER.html, avec boutons de copie et scripts de livraison. Téléchargement préalable du ZIP via le navigateur autorisé nécessaire, car le dépôt est privé. Aucun lien public inventé, jeton demandé, `ExecutionPolicy Bypass`, suppression de quarantaine ou désactivation de protection.
 
-Commande macOS exécutée sur le ZIP réel et application résultante testée avec les mêmes parcours. Contrôle SHA-256 et version du bundle avant installation. Les deux boutons HTML copient exactement leur commande dans Chromium, avec autorisation du presse-papiers ; le bloc reste sélectionnable en cas de refus. PowerShell est en cours de validation native dans la dernière matrice de livraison.
+Commande macOS exécutée localement sur un ZIP réel et application résultante testée avec les mêmes parcours. Contrôle SHA-256 et version du bundle avant installation. Les deux boutons HTML copient exactement leur commande dans Chromium, avec autorisation du presse-papiers ; le bloc reste sélectionnable en cas de refus. La nouvelle commande Windows utilise SHA-256 via .NET ; son exécution complète dans le dernier runner n’a pas été atteinte.
+
+## État final des derniers jobs natifs
+
+- Commit `99cd277` : macOS arm64 et Intel ont réussi les parcours et commandes copiables dans la CI. Le job Windows a construit l’installateur et réussi son test d’installation avant les problèmes de vérification qui ont suivi.
+- Commit `63fec99`, matrice [41473891440](https://github.com/VicGIT31/Internship-finders/actions/runs/41473891440) : macOS Intel a terminé avec succès. Mac ARM a échoué dans l’assertion clavier du harnais. Windows a échoué à l’assertion automatisée d’ouverture de la destination Postuler (`window.__joblyLastExternal` absent), après plusieurs parcours fonctionnels ; le job n’a donc pas téléversé d’installateur Windows.
+- La commande macOS et son application installée ont réussi localement sur le ZIP réel, avec profil isolé. Ce DMG local précède le dernier correctif d’affichage de date.
+- CI antérieure [41459620221](https://github.com/VicGIT31/Internship-finders/actions/runs/41459620221), commit `805eea5` : tests d’installation macOS ARM/Intel et Windows réussis. Les binaires de ces jobs ne sont pas inclus dans les artefacts accessibles de la dernière matrice.
+
+Conclusion : des exécutables 0.3.0 ont été installés et testés sur chaque cible au cours de la réalisation, mais les fichiers finaux macOS et Windows ne sont pas réunis, validés et publiés pour le même commit. Aucun tag, lien de téléchargement ou release n’est annoncé. Dernière étape nécessaire : stabiliser les assertions clavier et Postuler du harnais, faire téléverser les trois ZIPs dans une matrice verte, puis publier ces vrais fichiers.
