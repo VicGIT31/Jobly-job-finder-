@@ -13,7 +13,7 @@ const started=Date.now();let app;
 try{
  const env=Object.fromEntries(Object.entries(process.env).filter(([key])=>["HOME","TMPDIR","LANG","USERPROFILE","APPDATA","LOCALAPPDATA","SystemRoot","TEMP","TMP"].includes(key)));
  Object.assign(env,{PATH:process.platform==="darwin"?"/usr/bin:/bin":`${process.env.SystemRoot}\\System32`,JOBLY_USER_DATA:profile,JOBLY_DEBUG_PORT:"0"});
- app=await _electron.launch({executablePath:executable,args:["--jobly-smoke"],cwd:process.platform==="darwin"?"/":process.env.SystemRoot,env});
+ app=await _electron.launch({executablePath:resolve(executable),args:["--jobly-smoke"],cwd:process.platform==="darwin"?"/":process.env.SystemRoot,env});
  const page=await app.firstWindow();await page.waitForURL(/127\.0\.0\.1.*\/offres/,{timeout:90000});await page.waitForFunction(()=>!!window.joblyDesktop);
  const origin=new URL(page.url()).origin;
  const windowMs=Date.now()-started;

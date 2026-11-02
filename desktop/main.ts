@@ -82,7 +82,7 @@ function menu() {
       { label: "Mon espace", accelerator: "CmdOrCtrl+2", click: () => go("/mon-espace") },
       { label: "Bureau et messages locaux", accelerator: "CmdOrCtrl+3", click: () => go("/bureau") },
       { type: "separator" },
-      { label: "Actualiser les offres", accelerator: "CmdOrCtrl+Shift+R", click: () => { void api("collect", { manual: true }).then(() => go("/bureau")).catch(handleError); } },
+      { label: "Actualiser les offres", accelerator: "CmdOrCtrl+Shift+R", click: () => { const current = new URL(window?.webContents.getURL() || origin); const city = current.pathname === "/offres" && current.searchParams.get("national") !== "1" ? current.searchParams.get("ville") || "Toulouse" : undefined; void api("collect", { manual: true, ...(city ? { city } : {}) }).then(() => go("/bureau")).catch(handleError); } },
       { label: "Sauvegarder…", click: () => { void backupDialog().catch(handleError); } },
       { label: "Importer une sauvegarde…", click: () => { void restoreDialog().then((file) => { if (file) app.relaunch(); if (file) app.quit(); }).catch(handleError); } },
       { type: "separator" }, { role: "quit" },

@@ -28,6 +28,7 @@ export function execute(file: string, args: string[], log: (line: string) => voi
 export class LocalDatabase {
   process?: ChildProcess;
   port = 0;
+  private running = false;
   constructor(public root: string, private binaries: string, public password: string, private log: (line: string) => void) {}
   binary(name: string) { return join(this.binaries, "bin", name + (process.platform === "win32" ? ".exe" : "")); }
   get url() { return `postgresql://jobly:${this.password}@127.0.0.1:${this.port}/jobly`; }
@@ -42,15 +43,22 @@ export class LocalDatabase {
       finally { await unlink(passwordFile).catch(() => {}); }
     }
     this.port = await freePort();
-    this.process = spawn(this.binary("postgres"), ["-D", data, "-p", String(this.port), "-h", "127.0.0.1", "-k", ""], { windowsHide: true });
     let error: Error | undefined;
-    this.process.on("error", (e) => { error = e; });
-    this.process.stderr?.on("data", (data) => this.log(String(data)));
-    this.process.stdout?.on("data", (data) => this.log(String(data)));
+    if (process.platform === "win32") {
+      // pg_ctl launches PostgreSQL with a restricted Windows token. Directly
+      // spawning postgres.exe fails from an elevated parent (including CI).
+      await execute(this.binary("pg_ctl"), ["-D", data, "-l", join(this.root, "postgresql.log"), "-o", `-p ${this.port} -h 127.0.0.1`, "-w", "-t", "30", "start"], this.log);
+    } else {
+      this.process = spawn(this.binary("postgres"), ["-D", data, "-p", String(this.port), "-h", "127.0.0.1", "-k", ""], { windowsHide: true });
+      this.process.on("error", (e) => { error = e; });
+      this.process.stderr?.on("data", (data) => this.log(String(data)));
+      this.process.stdout?.on("data", (data) => this.log(String(data)));
+    }
+    this.running = true;
     let connected = false;
     for (let attempt = 0; attempt < 150; attempt++) {
       if (error) throw error;
-      if (this.process.exitCode !== null) throw new Error("La base locale ne démarre pas. Consultez le journal depuis le menu Aide.");
+      if (this.process && this.process.exitCode !== null) throw new Error("La base locale ne démarre pas. Consultez le journal depuis le menu Aide.");
       const client = this.client("postgres");
       try {
         await client.connect();
@@ -78,8 +86,9 @@ export class LocalDatabase {
     } finally { await client.end(); }
   }
   async stop() {
-    if (!this.process || this.process.exitCode !== null) return;
+    if (!this.running) return;
     await execute(this.binary("pg_ctl"), ["-D", join(this.root, "postgres"), "-m", "fast", "-w", "-t", "20", "stop"], this.log);
     this.process = undefined;
+    this.running = false;
   }
 }

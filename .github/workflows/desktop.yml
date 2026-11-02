@@ -25,7 +25,6 @@ jobs:
     env:
       NEXT_TELEMETRY_DISABLED: "1"
       DATABASE_URL: postgresql://build:build@127.0.0.1:65432/build
-      AUTH_SECRET: build-only-not-a-runtime-secret
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4

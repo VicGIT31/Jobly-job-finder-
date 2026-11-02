@@ -11,7 +11,7 @@ const current = process.env.JOBLY_TEST_EXECUTABLE ?? resolve("release/mac-arm64/
 const artifacts = resolve("reports/v0.3.0/migration"), profile = join(artifacts,"profile");
 await mkdir(artifacts,{recursive:true});await rm(profile,{recursive:true,force:true});
 let app;
-async function launch(executable){app=await _electron.launch({executablePath:executable,args:["--jobly-smoke"],cwd:"/",env:{...process.env,JOBLY_USER_DATA:profile,JOBLY_DEBUG_PORT:"0"}});const page=await app.firstWindow();await page.waitForURL(/127\.0\.0\.1:\d+\//,{timeout:90000});await page.waitForFunction(()=>!!window.joblyDesktop);return page;}
+async function launch(executable){app=await _electron.launch({executablePath:resolve(executable),args:["--jobly-smoke"],cwd:"/",env:{...process.env,JOBLY_USER_DATA:profile,JOBLY_DEBUG_PORT:"0"}});const page=await app.firstWindow();await page.waitForURL(/127\.0\.0\.1:\d+\//,{timeout:90000});await page.waitForFunction(()=>!!window.joblyDesktop);return page;}
 async function db(){const runtime=JSON.parse(await readFile(join(profile,"smoke-runtime.json"),"utf8")),config=JSON.parse(await readFile(join(profile,"local-config.json"),"utf8"));const db=new pg.Client({host:"127.0.0.1",port:runtime.databasePort,user:"jobly",database:"jobly",password:config.password});await db.connect();return db;}
 try{
  let page=await launch(previous);assert.equal(await app.evaluate(({app})=>app.getVersion()),"0.2.0");

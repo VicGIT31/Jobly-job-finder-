@@ -8,3 +8,5 @@
 - Déduplication par URL canonique puis identité de poste et empreinte de contenu, avec conservation de la provenance. Même employeur seul ne suffit jamais à fusionner deux postes.
 - Rayon calculé par distance géodésique, pas seulement une boîte rectangulaire. Localisation inconnue exclue d’un rayon strict et signalée dans la recherche nationale.
 - Mesures et tests simulés séparés des collectes réelles. CI native pour Windows et les deux architectures Mac, sans prétendre à une exécution avant retour des jobs.
+
+- Windows : démarrage via `pg_ctl`, qui crée le processus PostgreSQL avec un jeton Windows restreint. Le démarrage direct de `postgres.exe` refusait le parent administrateur de la CI ; aucune élévation, création de compte Windows ou désactivation de protection n’est nécessaire. Arrêt explicite du cluster à la fermeture, vérifié par refus de connexion au port précédent. Voir [pg_ctl officiel](https://www.postgresql.org/docs/18/app-pg-ctl.html) et [son implémentation Windows](https://github.com/postgres/postgres/blob/master/src/bin/pg_ctl/pg_ctl.c).

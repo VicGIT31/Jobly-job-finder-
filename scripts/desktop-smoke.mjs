@@ -18,7 +18,7 @@ let appVersion;
 async function launch() {
   const env = Object.fromEntries(Object.entries(process.env).filter(([key]) => ["HOME", "USERPROFILE", "APPDATA", "LOCALAPPDATA", "SystemRoot", "SYSTEMROOT", "WINDIR", "TEMP", "TMP", "TMPDIR", "DISPLAY", "XDG_RUNTIME_DIR", "LANG"].includes(key)));
   Object.assign(env, { PATH: process.platform === "win32" ? `${process.env.SystemRoot}\\System32` : "/usr/bin:/bin", JOBLY_USER_DATA: profile, JOBLY_DEBUG_PORT: "0" });
-  app = await electron.launch({ executablePath: executable, args: ["--jobly-smoke"], cwd: process.platform === "win32" ? process.env.SystemRoot : "/", env, timeout: 90000 });
+  app = await electron.launch({ executablePath: resolve(executable), args: ["--jobly-smoke"], cwd: process.platform === "win32" ? process.env.SystemRoot : "/", env, timeout: 90000 });
   const page = await app.firstWindow(); page.setDefaultTimeout(30000);
   await page.waitForURL(/127\.0\.0\.1:\d+\/offres/, { timeout: 90000 });
   await page.waitForFunction(() => !!window.joblyDesktop);
@@ -104,6 +104,10 @@ try {
   checks.push("État hors connexion visible");
   await app.close(); app = undefined;
   let stopped=false; for(let i=0;i<50;i++){try{await fetch(origin + "/api/search");}catch{stopped=true;break;}await pause(100);}assert.ok(stopped);
+  const oldRuntime = JSON.parse(await readFile(join(profile,"smoke-runtime.json"),"utf8"));
+  const oldConfig = JSON.parse(await readFile(join(profile,"local-config.json"),"utf8"));
+  const oldDb = new pg.Client({host:"127.0.0.1",port:oldRuntime.databasePort,user:"jobly",database:"jobly",password:oldConfig.password,connectionTimeoutMillis:1000});
+  await assert.rejects(() => oldDb.connect()); await oldDb.end().catch(()=>{});
   page = await launch();
   assert.equal(new URL(page.url()).searchParams.get("univers"),"ASV"); assert.equal(new URL(page.url()).searchParams.get("national"),"1");
   assert.deepEqual((await page.evaluate(() => window.joblyDesktop.status())).selectedSources,["anicura-asv"]);

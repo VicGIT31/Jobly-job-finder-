@@ -1,3 +1,4 @@
+import { sourceLabel } from "@/lib/source-label";
 import { STUDENT_OFFER_WHERE } from "@/server/offers/public-scope";
 import type { Metadata } from "next";
 import Link from "next/link";
@@ -58,7 +59,7 @@ export async function generateMetadata({
   if (!offer) return { title: "Offre introuvable" };
   return {
     title: `${offer.title} — ${offer.company.name}, ${offer.city}`,
-    description: `${CONTRACT_LABELS[offer.contractType]} chez ${offer.company.name} à ${offer.city}. Postulez directement à la source (${offer.sourceSite}).`,
+    description: `${CONTRACT_LABELS[offer.contractType]} chez ${offer.company.name} à ${offer.city}. Postulez directement à la source (${sourceLabel(offer.sourceSite)}).`,
   };
 }
 
@@ -231,7 +232,7 @@ export default async function OffrePage({
           <div>
             <p className="font-semibold">Cette offre a expiré</p>
             <p className="mt-0.5 text-ink/70">
-              Elle n&apos;a plus été vue sur {offer.sourceSite} depuis le{" "}
+              Elle n&apos;a plus été vue sur {sourceLabel(offer.sourceSite)} depuis le{" "}
               {offer.lastSeenAt.toLocaleDateString("fr-FR")}. Jetez un œil aux offres similaires
               ci-dessous.
             </p>
@@ -305,7 +306,7 @@ export default async function OffrePage({
           <div className="mt-10">
             <h2 className="eyebrow">Description du poste</h2>
             <div className="mt-2 max-w-[70ch] text-[15.5px] leading-[1.75] text-ink/85">
-              {offer.universe !== "TECH" && <div className="mb-6 border-y border-line py-4 text-sm text-ink/75"><p>Première détection : {formatDateFr(offer.createdAt.getTime())} · Dernière observation : {formatDateFr(offer.lastSeenAt.getTime())}</p>{offer.qualificationText && <p className="mt-2">Qualification mentionnée : {offer.qualificationText}</p>}<p className="mt-2">Sources : {(offer.origins.length ? offer.origins : [{ sourceSite: offer.sourceSite, sourceUrl: offer.sourceUrl }]).map((origin, index) => <span key={origin.sourceUrl}>{index > 0 && " · "}<a className="link break-all" href={origin.sourceUrl} target="_blank" rel="noreferrer">{origin.sourceSite}</a></span>)}</p></div>}
+              {offer.universe !== "TECH" && <div className="mb-6 border-y border-line py-4 text-sm text-ink/75"><p>Première détection : {formatDateFr(offer.createdAt.getTime())} · Dernière observation : {formatDateFr(offer.lastSeenAt.getTime())}</p>{offer.qualificationText && <p className="mt-2">Qualification mentionnée : {offer.qualificationText}</p>}<p className="mt-2">Sources : {(offer.origins.length ? offer.origins : [{ sourceSite: offer.sourceSite, sourceUrl: offer.sourceUrl }]).map((origin, index) => <span key={origin.sourceUrl}>{index > 0 && " · "}<a className="link break-all" href={origin.sourceUrl} target="_blank" rel="noreferrer">{sourceLabel(origin.sourceSite)}</a></span>)}</p></div>}
             <Markdown content={offer.description} />
             </div>
           </div>
@@ -370,7 +371,7 @@ export default async function OffrePage({
               </div>
               <div className="flex justify-between gap-3">
                 <dt className="text-ink/60">Source</dt>
-                <dd className="truncate text-right font-mono text-xs">{offer.sourceSite}</dd>
+                <dd className="truncate text-right font-mono text-xs">{sourceLabel(offer.sourceSite)}</dd>
               </div>
               <div className="flex justify-between gap-3">
                 <dt className="text-ink/60">Collectée le</dt>
@@ -453,7 +454,7 @@ export default async function OffrePage({
             >
               Postuler
               <ArrowUpRight aria-hidden="true" size={16} />
-              <span className="sr-only">(sur {offer.sourceSite}, nouvel onglet)</span>
+              <span className="sr-only">(sur {sourceLabel(offer.sourceSite)}, nouvel onglet)</span>
             </a>
           </div>
         </div>
