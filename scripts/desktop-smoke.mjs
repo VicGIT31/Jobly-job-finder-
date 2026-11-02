@@ -20,9 +20,9 @@ async function launch() {
   Object.assign(env, { PATH: process.platform === "win32" ? `${process.env.SystemRoot}\\System32` : "/usr/bin:/bin", JOBLY_USER_DATA: profile, JOBLY_DEBUG_PORT: "0" });
   app = await electron.launch({ executablePath: resolve(executable), args: ["--jobly-smoke"], cwd: process.platform === "win32" ? process.env.SystemRoot : "/", env, timeout: 90000 });
   const page = await app.firstWindow(); page.setDefaultTimeout(30000);
+  page.on("pageerror", (error) => consoleErrors.push({ url: page.url(), message: error.message, stack: error.stack }));
   await page.waitForURL(/127\.0\.0\.1:\d+\/offres/, { timeout: 90000 });
   await page.waitForFunction(() => !!window.joblyDesktop);
-  page.on("pageerror", (error) => consoleErrors.push(error.message));
   return page;
 }
 async function database() {
