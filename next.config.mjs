@@ -1,6 +1,8 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   output: "standalone",
+  // Keep the actual 127.0.0.1 origin in native-window redirects.
+  skipMiddlewareUrlNormalize: true,
   outputFileTracingExcludes: { "/*": [".cache/**/*", "reports/**/*", ".env*", "data/**/*", "build/**/*", "release/**/*", "delivery/**/*"] },
   webpack(config, { isServer }) {
     if (!isServer) {
