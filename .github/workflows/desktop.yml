@@ -90,4 +90,5 @@ jobs:
             reports/desktop/*.png
             reports/desktop/verification.json
             reports/installer/installation.json
+            reports/desktop/runtime-diagnostic.log
           if-no-files-found: ignore
