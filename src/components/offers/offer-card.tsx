@@ -3,6 +3,14 @@ import { ArrowUpRight, Clock, Laptop, MapPin, Wallet } from "lucide-react";
 import type { EducationLevel, RemotePolicy, TechSpecialty } from "@prisma/client";
 import type { OfferDocument } from "@/server/search/sync";
 import { COUNTRY_FLAGS, REMOTE_LABELS } from "@/lib/search-params";
+import {
+  FAMILY_LABELS,
+  TAG_LABELS,
+  UNIVERSE_SHORT_LABELS,
+  type JobUniverse,
+} from "@/lib/job-taxonomy";
+import { sourceLabel } from "@/lib/source-label";
+import { SaveOfferButton } from "./save-offer-button";
 import { computeMatchScore, scoreTier, type MatchCandidate } from "@/server/match/score";
 import { ContractBadge } from "@/components/ui/contract-badge";
 import { CompanyLogo } from "./company-logo";
@@ -33,19 +41,35 @@ export function OfferCard({
   actions?: React.ReactNode;
 }) {
   const salary = formatSalary(offer.salaryMin, offer.salaryMax, offer.salaryPeriod);
-  const isNew = offer.publicationKnown && Date.now() - offer.publishedAtTs < 3 * 86_400_000;
+  const now = Date.now();
+  // Une publication inconnue se date par la première détection : on le dit.
+  const isNew = offer.publicationKnown
+    ? now - offer.publishedAtTs < 3 * 86_400_000
+    : now - (offer.firstSeenAtTs ?? 0) < 86_400_000;
+  const publishedLabel = offer.publicationKnown
+    ? timeAgo(offer.publishedAtTs)
+    : offer.firstSeenAtTs
+      ? `Détectée ${timeAgo(offer.firstSeenAtTs)}`
+      : "Publication non précisée";
+  const sources = offer.sources?.length
+    ? offer.sources
+    : offer.sourceUrl
+      ? [{ sourceSite: offer.sourceSite, sourceUrl: offer.sourceUrl }]
+      : [];
+  const universe = offer.universe as JobUniverse | undefined;
   const isExpired = offer.status === "EXPIRED";
   const remote =
     REMOTE_LABELS[offer.remotePolicy as keyof typeof REMOTE_LABELS] ?? offer.remotePolicy;
 
-  const matchResult = candidateProfile && offer.universe === "TECH"
-    ? computeMatchScore(candidateProfile, {
-        educationLevel: offer.educationLevel as EducationLevel,
-        specialty: offer.specialty as TechSpecialty,
-        city: offer.city,
-        remotePolicy: offer.remotePolicy as RemotePolicy,
-      })
-    : null;
+  const matchResult =
+    candidateProfile && offer.universe === "TECH"
+      ? computeMatchScore(candidateProfile, {
+          educationLevel: offer.educationLevel as EducationLevel,
+          specialty: offer.specialty as TechSpecialty,
+          city: offer.city,
+          remotePolicy: offer.remotePolicy as RemotePolicy,
+        })
+      : null;
 
   const isRow = layout === "row";
 
@@ -59,6 +83,9 @@ export function OfferCard({
             <span aria-hidden="true">{COUNTRY_FLAGS[offer.countryCode] ?? "🌍"}</span>
           )}
           {offer.city}
+          {offer.distanceKm != null && (
+            <span className="text-ink/50"> · ≈ {Math.round(offer.distanceKm)} km</span>
+          )}
         </dd>
       </div>
       <div className="flex items-center gap-1.5">
@@ -79,9 +106,13 @@ export function OfferCard({
         <dd>
           <time
             dateTime={new Date(offer.publishedAtTs).toISOString()}
-            title={formatDateFr(offer.publishedAtTs)}
+            title={`${offer.publicationKnown ? "Publiée" : "Détectée"} le ${formatDateFr(
+              offer.publicationKnown
+                ? offer.publishedAtTs
+                : (offer.firstSeenAtTs ?? offer.publishedAtTs),
+            )}`}
           >
-            {offer.publicationKnown ? timeAgo(offer.publishedAtTs) : "Publication non précisée"}
+            {publishedLabel}
           </time>
         </dd>
       </div>
@@ -119,6 +150,7 @@ export function OfferCard({
 
   return (
     <article
+      data-offer-id={offer.id}
       className={`group relative flex rounded-xl border border-line bg-paper shadow-card transition-[border-color,box-shadow,transform] duration-base ease-out hover:border-ink/20 hover:shadow-lift ${
         isRow
           ? "flex-col gap-4 p-4 sm:flex-row sm:items-center sm:gap-5 sm:p-5"
@@ -167,17 +199,66 @@ export function OfferCard({
             </Link>
           </h3>
           <div className={isRow ? "mt-2" : "mt-3"}>{meta}</div>
+          {universe && (
+            <ul className="mt-2.5 flex flex-wrap gap-1.5" aria-label="Domaine et détails">
+              <li className="rounded-full border border-line bg-surface/60 px-2 py-0.5 text-2xs font-medium text-ink/70">
+                {universe === "TECH"
+                  ? UNIVERSE_SHORT_LABELS.TECH
+                  : (FAMILY_LABELS[offer.jobFamily ?? ""] ?? UNIVERSE_SHORT_LABELS[universe])}
+              </li>
+              {isRow &&
+                (offer.tags ?? [])
+                  .filter((tag) => TAG_LABELS[tag] && tag !== "UNIVERS_ANIMALIER")
+                  .slice(0, 3)
+                  .map((tag) => (
+                    <li
+                      key={tag}
+                      className="rounded-full border border-line px-2 py-0.5 text-2xs text-ink/60"
+                    >
+                      {TAG_LABELS[tag]}
+                    </li>
+                  ))}
+            </ul>
+          )}
+          {isRow && offer.qualificationText && (
+            <p className="mt-2 line-clamp-2 text-xs text-ink/70">
+              Qualification : {offer.qualificationText}
+            </p>
+          )}
+          {isRow && (offer.reasons?.length || sources.length > 0) && (
+            <details className="relative z-10 mt-2 text-xs text-ink/70">
+              <summary className="cursor-pointer">
+                Pourquoi cette offre ? · {sources.length || 1} source{sources.length > 1 ? "s" : ""}
+              </summary>
+              {offer.reasons?.length ? <p className="mt-2">{offer.reasons.join(" · ")}</p> : null}
+              <ul className="mt-1">
+                {sources.map((source) => (
+                  <li key={source.sourceUrl}>
+                    <a
+                      className="underline"
+                      href={source.sourceUrl}
+                      target="_blank"
+                      rel="noreferrer nofollow"
+                    >
+                      {sourceLabel(source.sourceSite)}
+                    </a>
+                  </li>
+                ))}
+              </ul>
+            </details>
+          )}
         </div>
       </div>
 
       {isRow ? (
-        <div className="flex shrink-0 items-center justify-between gap-3 border-t border-line pt-3 sm:flex-col sm:items-end sm:justify-center sm:border-0 sm:pt-0">
+        <div className="flex shrink-0 flex-wrap items-center justify-between gap-3 border-t border-line pt-3 sm:flex-col sm:items-end sm:justify-center sm:border-0 sm:pt-0">
           <div className="flex items-center gap-2">
             {matchBadge}
             <ContractBadge type={offer.contractType} />
           </div>
-          <div className="relative z-10 flex items-center gap-2">
+          <div className="relative z-10 flex flex-wrap items-center gap-2">
             {actions}
+            <SaveOfferButton offerId={offer.id} initialSaved={!!offer.saved} isLoggedIn />
             {applyLink}
           </div>
         </div>

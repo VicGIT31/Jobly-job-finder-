@@ -4,6 +4,15 @@ import { useState } from "react";
 import { Check, ChevronDown } from "lucide-react";
 import type { FacetCounts } from "@/server/search/query";
 import {
+  EXPERIENCE_LABELS,
+  FAMILY_LABELS,
+  TAG_LABELS,
+  UNIVERSE_FAMILIES,
+  UNIVERSE_LABELS,
+  UNIVERSES,
+  type JobUniverse,
+} from "@/lib/job-taxonomy";
+import {
   COLLECTION_ICONS,
   COLLECTION_KEYS,
   COLLECTION_LABELS,
@@ -147,6 +156,19 @@ function ChipToggle({
   );
 }
 
+export type FacetKey =
+  | "contrat"
+  | "remote"
+  | "niveau"
+  | "specialite"
+  | "pays"
+  | "secteur"
+  | "categorie"
+  | "univers"
+  | "metier"
+  | "experience"
+  | "tag";
+
 export type FacetSelection = {
   contrat: string[];
   remote: string[];
@@ -155,10 +177,20 @@ export type FacetSelection = {
   pays: string[];
   secteur: string[];
   categorie: string[];
+  univers: string[];
+  metier: string[];
+  experience: string[];
+  tag: string[];
   datePub?: string;
   rayon?: number;
   ville: string;
+  qualification: string;
+  salaire: number | null;
+  incertaines: boolean;
 };
+
+/** Ordre d'affichage des tags : celui de la déclaration, du plus général au plus spécialisé. */
+const TAG_ORDER = Object.keys(TAG_LABELS);
 
 export function FacetPanel({
   facets,
@@ -167,16 +199,15 @@ export function FacetPanel({
   onDatePub,
   onRayon,
   onCity,
+  onField,
 }: {
   facets: FacetCounts;
   selection: FacetSelection;
-  onToggle: (
-    facet: "contrat" | "remote" | "niveau" | "specialite" | "pays" | "secteur" | "categorie",
-    value: string,
-  ) => void;
+  onToggle: (facet: FacetKey, value: string) => void;
   onDatePub: (value?: string) => void;
   onRayon: (value?: number) => void;
   onCity: (city?: string) => void;
+  onField: (field: "qualification" | "salaire" | "incertaines", value: string | boolean) => void;
 }) {
   // "FR" n'est pas proposé ici : c'est le défaut implicite de tout le monde,
   // le filtrer par pays sert à trouver les offres *internationales*.
@@ -197,42 +228,69 @@ export function FacetPanel({
     (e) => (facets.educationLevel?.[e] ?? 0) > 0 || selection.niveau.includes(e),
   ).map((e) => ({ value: e, label: EDUCATION_LABELS[e], count: facets.educationLevel?.[e] ?? 0 }));
 
+  const experienceOptions = Object.keys(EXPERIENCE_LABELS)
+    .filter((e) => (facets.experienceLevel?.[e] ?? 0) > 0 || selection.experience.includes(e))
+    .map((e) => ({
+      value: e,
+      label: EXPERIENCE_LABELS[e],
+      count: facets.experienceLevel?.[e] ?? 0,
+    }));
+
   const sectorOptions = Object.entries(facets.sector ?? {})
     .sort((a, b) => b[1] - a[1])
     .slice(0, 12)
     .map(([value, count]) => ({ value, label: value, count }));
 
+  const tagOptions = TAG_ORDER.filter(
+    (tag) => (facets.tags?.[tag] ?? 0) > 0 || selection.tag.includes(tag),
+  ).map((tag) => ({ value: tag, label: TAG_LABELS[tag], count: facets.tags?.[tag] ?? 0 }));
+
+  // Un seul filtre « Métier » : spécialités tech et familles de métiers côte à côte.
+  const specialtyRows = SPECIALTIES.map((value) => ({
+    kind: "specialite" as const,
+    value,
+    label: SPECIALTY_LABELS[value],
+    count: facets.specialty?.[value] ?? 0,
+    active: selection.specialite.includes(value),
+  }));
+  const familyRows = (universe: Exclude<JobUniverse, "TECH">) =>
+    UNIVERSE_FAMILIES[universe].map((value) => ({
+      kind: "metier" as const,
+      value,
+      label: FAMILY_LABELS[value],
+      count: facets.jobFamily?.[value] ?? 0,
+      active: selection.metier.includes(value),
+    }));
+  const jobGroups = [
+    { universe: "TECH" as const, rows: specialtyRows },
+    { universe: "COMMERCE" as const, rows: familyRows("COMMERCE") },
+    { universe: "ASV" as const, rows: familyRows("ASV") },
+  ]
+    // Une ligne sans résultat reste affichée si elle est sélectionnée, sinon on évite le cul-de-sac.
+    .map((group) => ({ ...group, rows: group.rows.filter((row) => row.count > 0 || row.active) }))
+    .filter((group) => group.rows.length > 0);
+
   const activeCity = TOP_CITIES.find((c) => c.toLowerCase() === selection.ville.toLowerCase());
 
   return (
     <aside aria-label="Filtres" className="flex flex-col">
-      {/* Spécialité en tête : c'est le premier tri qu'un dev fait mentalement. */}
-      <Section title="Spécialité" selectedCount={selection.specialite.length}>
+      <Section title="Domaine" selectedCount={selection.univers.length}>
         <div className="flex flex-col gap-0.5">
-          {SPECIALTIES.map((specialty) => {
-            const count = facets.specialty?.[specialty] ?? 0;
-            const active = selection.specialite.includes(specialty);
-            // Une spécialité sans résultat reste affichée si elle est
-            // sélectionnée, sinon on la masque pour ne pas proposer un cul-de-sac.
+          {UNIVERSES.map((universe) => {
+            const count = facets.universe?.[universe] ?? 0;
+            const active = selection.univers.includes(universe);
             if (count === 0 && !active) return null;
             return (
               <button
-                key={specialty}
+                key={universe}
                 type="button"
                 aria-pressed={active}
-                onClick={() => onToggle("specialite", specialty)}
+                onClick={() => onToggle("univers", universe)}
                 className={`flex min-h-[38px] items-center justify-between gap-2 rounded-lg px-2 text-left text-sm transition-colors duration-fast ${
                   active ? "bg-ink text-canvas" : "text-ink/75 hover:bg-ink/[0.04] hover:text-ink"
                 }`}
               >
-                <span className="flex items-center gap-2.5">
-                  <SpecialtyIcon
-                    specialty={specialty}
-                    size={16}
-                    className={active ? "text-volt" : "text-ink/45"}
-                  />
-                  {SPECIALTY_LABELS[specialty]}
-                </span>
+                <span>{UNIVERSE_LABELS[universe]}</span>
                 <span
                   className={`font-mono text-2xs tabular-nums ${active ? "text-canvas/60" : "text-ink/60"}`}
                 >
@@ -241,6 +299,52 @@ export function FacetPanel({
               </button>
             );
           })}
+        </div>
+      </Section>
+
+      <Section title="Métier" selectedCount={selection.metier.length + selection.specialite.length}>
+        <div className="flex flex-col gap-3">
+          {jobGroups.map((group) => (
+            <div key={group.universe} className="flex flex-col gap-0.5">
+              {jobGroups.length > 1 && (
+                <p className="px-2 pb-1 font-mono text-2xs uppercase tracking-[0.1em] text-ink/50">
+                  {UNIVERSE_LABELS[group.universe]}
+                </p>
+              )}
+              {group.rows.map((row) => (
+                <button
+                  key={`${row.kind}-${row.value}`}
+                  type="button"
+                  aria-pressed={row.active}
+                  onClick={() => onToggle(row.kind, row.value)}
+                  className={`flex min-h-[38px] items-center justify-between gap-2 rounded-lg px-2 text-left text-sm transition-colors duration-fast ${
+                    row.active
+                      ? "bg-ink text-canvas"
+                      : "text-ink/75 hover:bg-ink/[0.04] hover:text-ink"
+                  }`}
+                >
+                  <span className="flex min-w-0 items-center gap-2.5">
+                    {row.kind === "specialite" && (
+                      <SpecialtyIcon
+                        specialty={row.value as (typeof SPECIALTIES)[number]}
+                        size={16}
+                        className={row.active ? "text-volt" : "text-ink/45"}
+                      />
+                    )}
+                    <span className="truncate">{row.label}</span>
+                  </span>
+                  <span
+                    className={`font-mono text-2xs tabular-nums ${row.active ? "text-canvas/60" : "text-ink/60"}`}
+                  >
+                    {row.count}
+                  </span>
+                </button>
+              ))}
+            </div>
+          ))}
+          {jobGroups.length === 0 && (
+            <p className="px-2 text-sm text-ink/60">Aucun métier à affiner.</p>
+          )}
         </div>
       </Section>
 
@@ -280,6 +384,19 @@ export function FacetPanel({
               </option>
             ))}
           </select>
+          <p className="mt-2 text-xs text-ink/60">
+            Distance à vol d&apos;oiseau, depuis le centre de la commune.
+          </p>
+        </Section>
+      )}
+
+      {experienceOptions.length > 0 && (
+        <Section title="Expérience" selectedCount={selection.experience.length}>
+          <CheckList
+            options={experienceOptions}
+            selected={selection.experience}
+            onToggle={(v) => onToggle("experience", v)}
+          />
         </Section>
       )}
 
@@ -311,7 +428,30 @@ export function FacetPanel({
             );
           })}
         </div>
+        <p className="mt-2 text-xs text-ink/60">
+          Une publication non précisée est datée par sa première détection.
+        </p>
       </Section>
+
+      {tagOptions.length > 0 && (
+        <Section title="Détails de l'annonce" selectedCount={selection.tag.length}>
+          <div className="flex flex-wrap gap-1.5">
+            {tagOptions.map((tag) => (
+              <ChipToggle
+                key={tag.value}
+                active={selection.tag.includes(tag.value)}
+                onClick={() => onToggle("tag", tag.value)}
+              >
+                {tag.label}
+                <span className="font-mono text-2xs text-ink/55">{tag.count}</span>
+              </ChipToggle>
+            ))}
+          </div>
+          <p className="mt-2 text-xs text-ink/60">
+            Déduits du texte de l&apos;annonce, à vérifier.
+          </p>
+        </Section>
+      )}
 
       <Section title="Catégorie" selectedCount={selection.categorie.length}>
         <div className="flex flex-wrap gap-1.5">
@@ -366,6 +506,56 @@ export function FacetPanel({
           />
         </Section>
       )}
+
+      <Section
+        title="Plus de critères"
+        selectedCount={
+          (selection.qualification ? 1 : 0) +
+          (selection.salaire ? 1 : 0) +
+          (selection.incertaines ? 1 : 0)
+        }
+        defaultOpen={false}
+      >
+        <div className="flex flex-col gap-3">
+          <label className="text-sm">
+            <span className="text-ink/70">Qualification mentionnée</span>
+            <input
+              key={`qualification-${selection.qualification}`}
+              className="input-ink mt-1 !min-h-[40px] w-full text-sm"
+              placeholder="APFORM, AVQ, BTS, master…"
+              defaultValue={selection.qualification}
+              onBlur={(e) => onField("qualification", e.target.value.trim())}
+              onKeyDown={(e) => e.key === "Enter" && e.currentTarget.blur()}
+            />
+          </label>
+          <label className="text-sm">
+            <span className="text-ink/70">Salaire annuel brut minimum (€)</span>
+            <input
+              key={`salaire-${selection.salaire ?? ""}`}
+              className="input-ink mt-1 !min-h-[40px] w-full text-sm"
+              type="number"
+              min={0}
+              max={500000}
+              placeholder="Ex. 28000"
+              defaultValue={selection.salaire ?? ""}
+              onBlur={(e) => onField("salaire", e.target.value)}
+              onKeyDown={(e) => e.key === "Enter" && e.currentTarget.blur()}
+            />
+          </label>
+          <p className="text-xs text-ink/60">
+            Un salaire ou une qualification non précisés restent visibles : seuls les montants
+            annuels connus sont comparés.
+          </p>
+          <label className="flex min-h-[36px] cursor-pointer items-center gap-2.5 text-sm">
+            <input
+              type="checkbox"
+              checked={selection.incertaines}
+              onChange={(e) => onField("incertaines", e.target.checked)}
+            />
+            Inclure les offres à revérifier
+          </label>
+        </div>
+      </Section>
     </aside>
   );
 }

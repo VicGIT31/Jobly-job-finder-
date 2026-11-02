@@ -27,23 +27,42 @@ import {
   DATE_RANGE_LABELS,
   EDUCATION_LABELS,
   REMOTE_LABELS,
+  resolveSort,
   SORTS,
   SPECIALTY_LABELS,
   TOP_CITY_RADIUS_KM,
 } from "@/lib/search-params";
+import {
+  EXPERIENCE_LABELS,
+  FAMILY_LABELS,
+  TAG_LABELS,
+  UNIVERSE_SHORT_LABELS,
+  type JobUniverse,
+} from "@/lib/job-taxonomy";
 import { DURATION, SPRING } from "@/components/motion/tokens";
 import { Segmented } from "@/components/ui/segmented";
 import { OfferCard } from "./offer-card";
 import { ResultsSkeleton } from "./skeletons";
-import { FacetPanel } from "./facet-panel";
+import { FacetPanel, type FacetKey } from "./facet-panel";
+import { CollectionBar } from "./collection-bar";
 import { CityAutocomplete } from "./city-autocomplete";
 import { SaveSearchButton } from "./save-search-button";
 import { MotionProvider } from "@/components/motion/motion-provider";
+
+/** Rayon appliqué dès qu'une commune est choisie : distance exacte plutôt que nom de ville. */
+const DEFAULT_RADIUS_KM = 30;
 
 const searchStateParsers = {
   q: parseAsString.withDefault(""),
   ville: parseAsString.withDefault(""),
   rayon: parseAsInteger,
+  univers: parseAsString.withDefault(""),
+  metier: parseAsString.withDefault(""),
+  experience: parseAsString.withDefault(""),
+  tag: parseAsString.withDefault(""),
+  qualification: parseAsString.withDefault(""),
+  salaire: parseAsInteger,
+  incertaines: parseAsString.withDefault(""),
   contrat: parseAsString.withDefault(""),
   remote: parseAsString.withDefault(""),
   niveau: parseAsString.withDefault(""),
@@ -52,7 +71,7 @@ const searchStateParsers = {
   secteur: parseAsString.withDefault(""),
   categorie: parseAsString.withDefault(""),
   datePub: parseAsString,
-  tri: parseAsStringLiteral(SORTS).withDefault("date"),
+  tri: parseAsStringLiteral(SORTS),
   page: parseAsInteger.withDefault(1),
 };
 
@@ -82,6 +101,13 @@ export function SearchClient({
     if (state.q) params.set("q", state.q);
     if (state.ville) params.set("ville", state.ville);
     if (state.rayon) params.set("rayon", String(state.rayon));
+    if (state.univers) params.set("univers", state.univers);
+    if (state.metier) params.set("metier", state.metier);
+    if (state.experience) params.set("experience", state.experience);
+    if (state.tag) params.set("tag", state.tag);
+    if (state.qualification) params.set("qualification", state.qualification);
+    if (state.salaire) params.set("salaire", String(state.salaire));
+    if (state.incertaines) params.set("incertaines", state.incertaines);
     if (state.contrat) params.set("contrat", state.contrat);
     if (state.remote) params.set("remote", state.remote);
     if (state.niveau) params.set("niveau", state.niveau);
@@ -90,7 +116,7 @@ export function SearchClient({
     if (state.secteur) params.set("secteur", state.secteur);
     if (state.categorie) params.set("categorie", state.categorie);
     if (state.datePub) params.set("datePub", state.datePub);
-    if (state.tri !== "date") params.set("tri", state.tri);
+    if (state.tri) params.set("tri", state.tri);
     if (state.page > 1) params.set("page", String(state.page));
     return params.toString();
   }, [state]);
@@ -120,13 +146,13 @@ export function SearchClient({
     refetchOnWindowFocus: true,
   });
 
-  const result = data ?? initialResult;
+  // En cas d'erreur, les derniers résultats restent affichés plutôt qu'un écran vide.
+  const lastResult = useRef(initialResult);
+  if (data) lastResult.current = data;
+  const result = data ?? lastResult.current;
 
   const toggleFacet = useCallback(
-    (
-      facet: "contrat" | "remote" | "niveau" | "specialite" | "pays" | "secteur" | "categorie",
-      value: string,
-    ) => {
+    (facet: FacetKey, value: string) => {
       const current = csv(state[facet]);
       const next = current.includes(value)
         ? current.filter((v) => v !== value)
@@ -138,6 +164,55 @@ export function SearchClient({
 
   const activeTickets = useMemo(() => {
     const tickets: Array<{ key: string; label: string; remove: () => void }> = [];
+    for (const u of csv(state.univers)) {
+      tickets.push({
+        key: `univers-${u}`,
+        label: UNIVERSE_SHORT_LABELS[u as JobUniverse] ?? u,
+        remove: () => toggleFacet("univers", u),
+      });
+    }
+    for (const m of csv(state.metier)) {
+      tickets.push({
+        key: `metier-${m}`,
+        label: FAMILY_LABELS[m] ?? m,
+        remove: () => toggleFacet("metier", m),
+      });
+    }
+    for (const e of csv(state.experience)) {
+      tickets.push({
+        key: `experience-${e}`,
+        label: EXPERIENCE_LABELS[e] ?? e,
+        remove: () => toggleFacet("experience", e),
+      });
+    }
+    for (const t of csv(state.tag)) {
+      tickets.push({
+        key: `tag-${t}`,
+        label: TAG_LABELS[t] ?? t,
+        remove: () => toggleFacet("tag", t),
+      });
+    }
+    if (state.qualification) {
+      tickets.push({
+        key: "qualification",
+        label: `Qualification : ${state.qualification}`,
+        remove: () => void setState({ qualification: null, page: 1 }),
+      });
+    }
+    if (state.salaire) {
+      tickets.push({
+        key: "salaire",
+        label: `≥ ${state.salaire.toLocaleString("fr-FR")} € / an`,
+        remove: () => void setState({ salaire: null, page: 1 }),
+      });
+    }
+    if (state.incertaines === "1") {
+      tickets.push({
+        key: "incertaines",
+        label: "Offres à revérifier incluses",
+        remove: () => void setState({ incertaines: null, page: 1 }),
+      });
+    }
     for (const c of csv(state.contrat)) {
       tickets.push({
         key: `contrat-${c}`,
@@ -206,6 +281,7 @@ export function SearchClient({
   );
 
   const showSkeleton = isFetching && !isPlaceholderData && !data;
+  const sort = resolveSort({ tri: state.tri ?? undefined, q: state.q, ville: state.ville });
 
   // Contrat : contrôle segmenté (Tous / Stage / Alternance) au-dessus des
   // résultats — c'est le critère le plus discriminant du catalogue.
@@ -260,6 +336,13 @@ export function SearchClient({
     <FacetPanel
       facets={result.facets}
       selection={{
+        univers: csv(state.univers),
+        metier: csv(state.metier),
+        experience: csv(state.experience),
+        tag: csv(state.tag),
+        qualification: state.qualification,
+        salaire: state.salaire,
+        incertaines: state.incertaines === "1",
         contrat: csv(state.contrat),
         remote: csv(state.remote),
         niveau: csv(state.niveau),
@@ -278,6 +361,14 @@ export function SearchClient({
         void setState({
           ville: city ?? null,
           rayon: city ? TOP_CITY_RADIUS_KM : null,
+          page: 1,
+        })
+      }
+      onField={(field, value) =>
+        void setState({
+          ...(field === "incertaines" ? { incertaines: value ? "1" : null } : {}),
+          ...(field === "qualification" ? { qualification: String(value) || null } : {}),
+          ...(field === "salaire" ? { salaire: Number(value) > 0 ? Number(value) : null } : {}),
           page: 1,
         })
       }
@@ -305,7 +396,7 @@ export function SearchClient({
                   id="recherche-q"
                   type="search"
                   className="h-full min-h-[48px] w-full rounded-xl bg-transparent pl-10 pr-10 text-[15px] text-ink placeholder:text-ink/50 focus:outline-none"
-                  placeholder="Métier, techno, entreprise…"
+                  placeholder="Métier, intitulé, entreprise…"
                   value={state.q}
                   onChange={(e) => void setState({ q: e.target.value || null, page: 1 })}
                 />
@@ -317,7 +408,13 @@ export function SearchClient({
                 <CityAutocomplete
                   variant="bare"
                   value={state.ville}
-                  onChange={(city) => void setState({ ville: city || null, rayon: null, page: 1 })}
+                  onChange={(city) =>
+                    void setState({
+                      ville: city || null,
+                      rayon: city ? (state.rayon ?? DEFAULT_RADIUS_KM) : null,
+                      page: 1,
+                    })
+                  }
                 />
               </div>
             </div>
@@ -349,51 +446,66 @@ export function SearchClient({
 
           <div ref={resultsTopRef} className="scroll-mt-[calc(var(--header-h)+88px)]">
             <div className="flex flex-wrap items-center justify-between gap-3">
-              <Segmented
-                label="Type de contrat"
-                value={contractValue}
-                onChange={(v) => void setState({ contrat: v === "ALL" ? null : v, page: 1 })}
-                options={[
-                  { value: "ALL", label: "Tous" },
-                  {
-                    value: "STAGE",
-                    label: (
-                      <>
-                        <span aria-hidden="true" className="h-1.5 w-1.5 rounded-full bg-stage" />
-                        Stage
-                        {contractCount("STAGE") !== null && (
-                          <span className="font-mono text-2xs text-ink/60">
-                            {contractCount("STAGE")}
-                          </span>
-                        )}
-                      </>
-                    ),
-                  },
-                  {
-                    value: "ALTERNANCE",
-                    label: (
-                      <>
-                        <span
-                          aria-hidden="true"
-                          className="h-1.5 w-1.5 rounded-full bg-alternance"
-                        />
-                        Alternance
-                        {contractCount("ALTERNANCE") !== null && (
-                          <span className="font-mono text-2xs text-ink/60">
-                            {contractCount("ALTERNANCE")}
-                          </span>
-                        )}
-                      </>
-                    ),
-                  },
-                ]}
-              />
+              <div className="scrollbar-none -mx-1 max-w-full overflow-x-auto px-1">
+                <Segmented
+                  label="Type de contrat"
+                  value={contractValue}
+                  onChange={(v) => void setState({ contrat: v === "ALL" ? null : v, page: 1 })}
+                  options={[
+                    { value: "ALL", label: "Tous" },
+                    {
+                      value: "STAGE",
+                      label: (
+                        <>
+                          <span aria-hidden="true" className="h-1.5 w-1.5 rounded-full bg-stage" />
+                          Stage
+                          {contractCount("STAGE") !== null && (
+                            <span className="font-mono text-2xs text-ink/60">
+                              {contractCount("STAGE")}
+                            </span>
+                          )}
+                        </>
+                      ),
+                    },
+                    {
+                      value: "ALTERNANCE",
+                      label: (
+                        <>
+                          <span
+                            aria-hidden="true"
+                            className="h-1.5 w-1.5 rounded-full bg-alternance"
+                          />
+                          Alternance
+                          {contractCount("ALTERNANCE") !== null && (
+                            <span className="font-mono text-2xs text-ink/60">
+                              {contractCount("ALTERNANCE")}
+                            </span>
+                          )}
+                        </>
+                      ),
+                    },
+                    ...(["CDI", "CDD"] as const).map((type) => ({
+                      value: type,
+                      label: (
+                        <>
+                          {type}
+                          {contractCount(type) !== null && (
+                            <span className="font-mono text-2xs text-ink/60">
+                              {contractCount(type)}
+                            </span>
+                          )}
+                        </>
+                      ),
+                    })),
+                  ]}
+                />
+              </div>
               <div className="flex items-center gap-2">
                 {isLoggedIn && <SaveSearchButton queryString={queryString} />}
                 <Segmented
                   label="Trier les résultats"
                   size="sm"
-                  value={state.tri}
+                  value={sort}
                   onChange={(v) => void setState({ tri: v, page: 1 })}
                   options={[
                     { value: "date", label: "Récentes" },
@@ -402,6 +514,8 @@ export function SearchClient({
                 />
               </div>
             </div>
+
+            <CollectionBar city={state.ville || undefined} onRefresh={() => void refetch()} />
 
             <div className="mt-5 flex min-h-[32px] flex-wrap items-center gap-x-4 gap-y-2">
               <p className="flex items-baseline gap-2 text-sm text-ink/60" aria-live="polite">
@@ -457,18 +571,31 @@ export function SearchClient({
               )}
             </div>
 
+            {result.location?.resolved === false && (
+              <p className="mt-3 text-sm text-warning">
+                Cette ville n’a pas pu être géolocalisée : seules les offres portant exactement ce
+                nom de commune sont affichées.
+              </p>
+            )}
+            {result.limited && (
+              <p className="mt-3 text-sm text-warning">
+                Plus de 5 000 résultats : précisez un métier ou une ville pour parcourir une
+                sélection complète.
+              </p>
+            )}
+
             <div className="mt-4">
               <h2 className="sr-only">Résultats de la recherche</h2>
-              {isError ? (
-                <div className="panel flex flex-col items-start gap-3" role="alert">
+              {isError && (
+                <div className="panel mb-4 flex flex-col items-start gap-3" role="alert">
                   <span className="grid h-10 w-10 place-items-center rounded-full bg-warning-soft text-warning">
                     <TriangleAlert aria-hidden="true" size={18} />
                   </span>
                   <div>
                     <p className="font-semibold">La recherche n&apos;a pas pu être actualisée.</p>
                     <p className="mt-1 text-sm text-ink/65">
-                      Vos filtres sont conservés. Réessayez pour afficher les résultats
-                      correspondants.
+                      Vos filtres et les derniers résultats sont conservés. Réessayez pour afficher
+                      les résultats correspondants.
                     </p>
                   </div>
                   <button
@@ -485,10 +612,26 @@ export function SearchClient({
                     {isFetching ? "Nouvelle tentative…" : "Réessayer la recherche"}
                   </button>
                 </div>
-              ) : showSkeleton ? (
+              )}
+              {showSkeleton ? (
                 <ResultsSkeleton />
               ) : result.hits.length === 0 ? (
-                <EmptyState hasFilters={activeTickets.length > 0 || !!state.q} onReset={resetAll} />
+                isError ? null : (
+                  <EmptyState
+                    hasFilters={activeTickets.length > 0 || !!state.q}
+                    onReset={resetAll}
+                    onWiden={
+                      state.ville && state.rayon && state.rayon < 100
+                        ? () => void setState({ rayon: 100, page: 1 })
+                        : undefined
+                    }
+                    onNational={
+                      state.ville
+                        ? () => void setState({ ville: null, rayon: null, page: 1 })
+                        : undefined
+                    }
+                  />
+                )
               ) : (
                 <div
                   key={listKey}
@@ -659,7 +802,17 @@ function Pagination({
   );
 }
 
-function EmptyState({ hasFilters, onReset }: { hasFilters: boolean; onReset: () => void }) {
+function EmptyState({
+  hasFilters,
+  onReset,
+  onWiden,
+  onNational,
+}: {
+  hasFilters: boolean;
+  onReset: () => void;
+  onWiden?: () => void;
+  onNational?: () => void;
+}) {
   return (
     <div className="empty-state">
       <span className="grid h-14 w-14 place-items-center rounded-2xl border border-line bg-paper shadow-card">
@@ -670,12 +823,24 @@ function EmptyState({ hasFilters, onReset }: { hasFilters: boolean; onReset: () 
         Essayez d&apos;élargir votre recherche : moins de filtres, un rayon plus grand, ou un
         mot-clé plus général.
       </p>
-      {hasFilters && (
-        <button type="button" className="btn-outline mt-6" onClick={onReset}>
-          <RotateCcw aria-hidden="true" size={15} />
-          Réinitialiser les filtres
-        </button>
-      )}
+      <div className="mt-6 flex flex-wrap justify-center gap-3">
+        {onWiden && (
+          <button type="button" className="btn-outline" onClick={onWiden}>
+            Élargir à 100 km
+          </button>
+        )}
+        {onNational && (
+          <button type="button" className="btn-outline" onClick={onNational}>
+            Chercher dans toute la France
+          </button>
+        )}
+        {hasFilters && (
+          <button type="button" className="btn-outline" onClick={onReset}>
+            <RotateCcw aria-hidden="true" size={15} />
+            Réinitialiser les filtres
+          </button>
+        )}
+      </div>
     </div>
   );
 }

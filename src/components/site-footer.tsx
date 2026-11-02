@@ -2,14 +2,37 @@ import Link from "next/link";
 import { JoblyLogo } from "@/components/brand/jobly-logo";
 
 const COLUMNS = [
- { title: "Explorer", links: [{ href: "/offres?univers=COMMERCE", label: "Commerce & marketing" }, { href: "/offres?univers=ASV", label: "Auxiliaires vétérinaires" }, { href: "/offres?univers=ASV&national=1", label: "ASV · France entière" }] },
- { title: "Personnel", links: [{ href: "/mon-espace/sauvegardees", label: "Favoris" }, { href: "/mon-espace/alertes", label: "Recherches sauvegardées" }, { href: "/mon-espace/candidatures", label: "Candidatures" }] },
- { title: "Jobly 0.3.0", links: [{ href: "/bureau", label: "Actualisation & données" }, { href: "/mon-espace", label: "Profil & CV" }, { href: "/mon-espace/confidentialite", label: "Confidentialité" }] },
+  {
+    title: "Explorer",
+    links: [
+      { href: "/offres", label: "Toutes les offres" },
+      { href: "/offres?univers=TECH", label: "Tech · stages & alternances" },
+      { href: "/offres?univers=COMMERCE", label: "Commerce, marketing & com" },
+      { href: "/offres?univers=ASV", label: "ASV & métiers animaliers" },
+    ],
+  },
+  {
+    title: "Personnel",
+    links: [
+      { href: "/mon-espace/sauvegardees", label: "Favoris" },
+      { href: "/mon-espace/alertes", label: "Recherches sauvegardées" },
+      { href: "/mon-espace/candidatures", label: "Candidatures" },
+    ],
+  },
+  {
+    title: "Jobly 0.3.0",
+    links: [
+      { href: "/bureau", label: "Actualisation & données" },
+      { href: "/mon-espace", label: "Profil & CV" },
+      { href: "/mon-espace/confidentialite", label: "Confidentialité" },
+    ],
+  },
 ] as const;
 
 export async function SiteFooter() {
   // Accroche modifiable depuis `/admin/parametres`.
-  const tagline = "Votre recherche personnelle d’emploi. Commerce, marketing et auxiliaires vétérinaires.";
+  const tagline =
+    "Votre recherche personnelle d’emploi : tech, commerce, marketing, communication et auxiliaires vétérinaires.";
 
   return (
     <footer className="relative mt-24 overflow-hidden border-t border-line bg-paper">

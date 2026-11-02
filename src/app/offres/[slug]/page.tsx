@@ -278,9 +278,9 @@ export default async function OffrePage({
               <ContractBadge type={offer.contractType} className="!px-3 !py-1.5 !text-[13px]" />
               <span className="flex items-center gap-1.5 text-[13px] text-ink/60">
                 <CalendarDays aria-hidden="true" size={14} />
-                Publiée{" "}
-                <time dateTime={offer.publishedAt.toISOString()}>
-                  {offer.publicationKnown ? timeAgo(offer.publishedAt.getTime()) : "Publication non précisée"}
+                {offer.publicationKnown ? "Publiée " : "Publication non précisée · détectée "}
+                <time dateTime={(offer.publicationKnown ? offer.publishedAt : offer.createdAt).toISOString()}>
+                  {timeAgo((offer.publicationKnown ? offer.publishedAt : offer.createdAt).getTime())}
                 </time>
               </span>
             </div>

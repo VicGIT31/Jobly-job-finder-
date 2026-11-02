@@ -41,7 +41,7 @@ export function HomeSearch() {
           id="home-q"
           type="search"
           className="h-full min-h-[52px] w-full rounded-xl bg-transparent pl-11 pr-3 text-base text-ink placeholder:text-ink/50 focus:outline-none"
-          placeholder="Data, React, cybersécurité, Thales…"
+          placeholder="ASV, marketing, data, vendeur, Thales…"
           value={q}
           onChange={(e) => setQ(e.target.value)}
         />

@@ -187,7 +187,7 @@ async function start() {
     ipcMain.handle(`jobly:${name}`, (event, data) => { validate(event); return handler(data); });
   }
   ready = true;
-  await window.loadURL(origin + (config.lastPath?.startsWith("/offres") ? config.lastPath : "/offres?ville=Toulouse&rayon=30&tri=pertinence"));
+  await window.loadURL(origin + (config.lastPath?.startsWith("/offres") ? config.lastPath : "/"));
   let configWrites = Promise.resolve();
   const saveLocation = () => { const url = window?.webContents.getURL(); if (url && isLocal(url)) { const current = new URL(url); if (current.pathname === "/offres") { config.lastPath = current.pathname + current.search; const serialized = JSON.stringify(config); configWrites = configWrites.then(() => writeFile(configPath + ".tmp", serialized, { mode: 0o600 })).then(() => rename(configPath + ".tmp", configPath)).catch((error) => log(String(error))); } } };
   window.webContents.on("did-navigate", saveLocation); window.webContents.on("did-navigate-in-page", saveLocation);
