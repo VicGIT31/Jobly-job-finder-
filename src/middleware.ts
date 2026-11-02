@@ -1,3 +1,4 @@
+import { localAppUrl } from "@/lib/local-url";
 import { NextResponse, type NextRequest } from "next/server";
 
 /**
@@ -18,7 +19,7 @@ export function middleware(request: NextRequest) {
       return NextResponse.json({ error: "Ouvrez Jobly depuis son icône." }, { status: 403 });
     }
   }
-  if (/^\/(connexion|inscription|mot-de-passe-oublie|reinitialiser)(?:\/|$)/.test(request.nextUrl.pathname)) return NextResponse.redirect(new URL("/offres", request.url));
+  if (/^\/(connexion|inscription|mot-de-passe-oublie|reinitialiser)(?:\/|$)/.test(request.nextUrl.pathname)) return NextResponse.redirect(localAppUrl("/offres", request.url));
   if (request.nextUrl.pathname.startsWith("/api/auth") || request.nextUrl.pathname === "/api/verifier-email" || request.nextUrl.pathname === "/admin/utilisateurs") return new NextResponse(null, { status: 410 });
   const headers = new Headers(request.headers);
   headers.set("x-pathname", request.nextUrl.pathname);

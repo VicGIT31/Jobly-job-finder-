@@ -11,7 +11,7 @@ await rm(destination, { recursive: true, force: true });
 await mkdir(join(destination, "installateurs"), { recursive: true });
 await cp("desktop/delivery", destination, { recursive: true });
 await cp("desktop/AUDIT.md", join(destination, "ANALYSE.md"));
-const files = (await readdir("release")).filter((name) => name.startsWith(`Jobly-${pkg.version}-`) && new RegExp(`-${process.platform === "darwin" ? "mac" : "win"}-${process.arch}\\.(dmg|exe|msi)$`).test(name));
+const files = (await readdir("release")).filter((name) => ["dmg", "exe", "msi"].some((extension) => name === `Jobly-${pkg.version}-${process.platform === "darwin" ? "mac" : "win"}-${process.arch}.${extension}`));
 if (!files.length) throw new Error("Aucun installateur réel dans release/ ; livraison interrompue.");
 const hashes = [];
 const installed = [];

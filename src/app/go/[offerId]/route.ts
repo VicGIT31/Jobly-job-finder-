@@ -1,3 +1,4 @@
+import { localAppUrl } from "@/lib/local-url";
 import { STUDENT_OFFER_WHERE } from "@/server/offers/public-scope";
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
@@ -70,10 +71,10 @@ export async function GET(
       return NextResponse.redirect(resolution.url, 302);
     case "expired":
       return NextResponse.redirect(
-        new URL(`/offres/${resolution.slug}/expiree`, request.nextUrl.origin),
+        localAppUrl(`/offres/${resolution.slug}/expiree`, request.nextUrl.origin),
         302,
       );
     case "not_found":
-      return NextResponse.redirect(new URL("/offre-introuvable", request.nextUrl.origin), 302);
+      return NextResponse.redirect(localAppUrl("/offre-introuvable", request.nextUrl.origin), 302);
   }
 }

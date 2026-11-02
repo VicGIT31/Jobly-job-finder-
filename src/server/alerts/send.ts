@@ -2,7 +2,7 @@ import { prisma } from "@/lib/prisma";
 import { sendEmail } from "@/lib/email";
 import { offerMatchesSearch, parseSearchParams } from "./match";
 
-const APP_URL = () => process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000";
+const APP_URL = () => process.env.JOBLY_LOCAL_ORIGIN ?? process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000";
 
 /**
  * Cron d'alertes : pour chaque recherche sauvegardée (fréquence DAILY, pas

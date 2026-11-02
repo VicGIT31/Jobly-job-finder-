@@ -161,7 +161,7 @@ async function start() {
   // Deliberate allowlist: never inherit the developer's .env, API keys or DB URL.
   const env: Record<string, string> = {};
   for (const key of ["PATH", "HOME", "USERPROFILE", "APPDATA", "LOCALAPPDATA", "SystemRoot", "SYSTEMROOT", "WINDIR", "TEMP", "TMP", "TMPDIR", "LANG", "LC_ALL"]) if (process.env[key]) env[key] = process.env[key]!;
-  Object.assign(env, { NODE_ENV: "production", HOSTNAME: "127.0.0.1", PORT: String(port), NEXT_TELEMETRY_DISABLED: "1", JOBLY_DESKTOP: "1", JOBLY_DESKTOP_TOKEN: token, JOBLY_FILES_DIR: join(userData, "files"), JOBLY_MAIL_DIR: join(userData, "mail"), INGEST_CACHE_DIR: join(userData, "cache"), JOB_ALERTS_DIR: join(userData, "job-alerts"), DATABASE_URL: database.url, AUTH_SECRET: config.authSecret, AUTH_URL: origin, AUTH_TRUST_HOST: "true", NEXT_PUBLIC_APP_URL: origin });
+  Object.assign(env, { NODE_ENV: "production", HOSTNAME: "127.0.0.1", PORT: String(port), NEXT_TELEMETRY_DISABLED: "1", JOBLY_DESKTOP: "1", JOBLY_DESKTOP_TOKEN: token, JOBLY_LOCAL_ORIGIN: origin, JOBLY_FILES_DIR: join(userData, "files"), JOBLY_MAIL_DIR: join(userData, "mail"), INGEST_CACHE_DIR: join(userData, "cache"), JOB_ALERTS_DIR: join(userData, "job-alerts"), DATABASE_URL: database.url, AUTH_SECRET: config.authSecret, AUTH_URL: origin, AUTH_TRUST_HOST: "true", NEXT_PUBLIC_APP_URL: origin });
   const searchPort = await freePort();
   env.MEILISEARCH_HOST = `http://127.0.0.1:${searchPort}`;
   env.MEILISEARCH_API_KEY = config.searchKey;
