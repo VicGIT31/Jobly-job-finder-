@@ -20,6 +20,7 @@ export const VOCABULARY: Record<string, string[]> = {
 const phrase = (text: string, term: string) => (` ${text} `).includes(` ${term} `);
 export function classifyJob(title: string, description = ""): { universe: JobUniverse | "TECH" | "OTHER"; family: string; confidence: number; reason: string } {
   const text = fold(title);
+  if (/\b(testeur|testeuse|testeur fonctionnel|qa engineer|software engineer|ingenieur logiciel)\b/.test(text) || /\b(developpeur|developpeuse)\b/.test(text) && !/\b(commercial|commerciale|business|affaires)\b/.test(text)) return { universe: "OTHER", family: "OTHER", confidence: 1, reason: "Poste informatique, distinct du métier marketing/commercial" };
   if (/\b(professeur|enseignant|enseignante|formateur|formatrice)\b/.test(text)) return { universe: "OTHER", family: "OTHER", confidence: 1, reason: "Poste de formation, distinct du métier recherché" };
   // A veterinarian vacancy mentioning ASVs in its team is never an ASV vacancy.
   if (/^(veterinaire|docteur veterinaire|chirurgien veterinaire|praticien|veterinarian)\b/.test(text)) return { universe: "OTHER", family: "OTHER", confidence: 1, reason: "Poste vétérinaire, distinct d’un ASV" };
@@ -27,6 +28,7 @@ export function classifyJob(title: string, description = ""): { universe: JobUni
   if (asv) return { universe: "ASV", family: "ASV", confidence: 1, reason: "Intitulé d’auxiliaire vétérinaire" };
   if (/\b(veterinaire|veterinary|veterinarian|chirurgien|praticien)\b/.test(text)) return { universe: "OTHER", family: "OTHER", confidence: 1, reason: "Poste vétérinaire, distinct d’un ASV" };
   if (/\b(toiletteur|soigneur animalier|animalier|agent de sterilisation)\b/.test(text)) return { universe: "OTHER", family: "ANIMAL_CARE", confidence: 0.7, reason: "Métier voisin, pas une offre ASV certaine" };
+  if (/\b(acheteur|achats)\b.*\bcategory manager\b/.test(text)) return { universe: "COMMERCE", family: "RETAIL", confidence: 0.95, reason: "Achats et gestion de catégorie en distribution" };
   for (const family of ["MARKETING", "COMMUNICATION", "BUSINESS_DEVELOPMENT", "CUSTOMER_SERVICE", "RETAIL", "SALES"]) {
     if (VOCABULARY[family].some((term) => phrase(text, term))) return { universe: "COMMERCE", family, confidence: 0.95, reason: FAMILY_LABELS[family] };
   }

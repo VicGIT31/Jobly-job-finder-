@@ -225,8 +225,8 @@ model JobOffer {
   latitude       Float?
   longitude      Float?
   remotePolicy   RemotePolicy   @default(ONSITE)
-  salaryMin      Int?
-  salaryMax      Int?
+  salaryMin      Float?
+  salaryMax      Float?
   educationLevel EducationLevel @default(INDIFFERENT)
   sector         String
   specialty      TechSpecialty  @default(AUTRE)

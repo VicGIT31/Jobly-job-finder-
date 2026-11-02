@@ -44,7 +44,7 @@ export const dynamic = "force-dynamic";
 async function getOffer(slug: string) {
   return prisma.jobOffer.findFirst({
     where: { slug, ...STUDENT_OFFER_WHERE },
-    include: { company: true },
+    include: { company: true, origins: true },
   });
 }
 
@@ -166,7 +166,7 @@ export default async function OffrePage({
   const isExpired = offer.status === "EXPIRED";
   const salary = formatSalary(offer.salaryMin, offer.salaryMax, offer.salaryPeriod);
   const isLoggedIn = Boolean(session?.user);
-  const specialtyLabel = SPECIALTY_LABELS[offer.specialty as keyof typeof SPECIALTY_LABELS];
+  const specialtyLabel = offer.universe === "TECH" ? SPECIALTY_LABELS[offer.specialty as keyof typeof SPECIALTY_LABELS] : null;
 
   const facts = [
     {
@@ -182,7 +182,7 @@ export default async function OffrePage({
       ),
     },
     { icon: Laptop, label: "Télétravail", value: REMOTE_LABELS[offer.remotePolicy] },
-    { icon: GraduationCap, label: "Niveau", value: EDUCATION_LABELS[offer.educationLevel] },
+    { icon: GraduationCap, label: "Niveau", value: offer.universe !== "TECH" && offer.educationLevel === "INDIFFERENT" ? "Non précisé" : EDUCATION_LABELS[offer.educationLevel] },
     {
       icon: Wallet,
       label: "Rémunération",
@@ -197,6 +197,7 @@ export default async function OffrePage({
         dangerouslySetInnerHTML={{ __html: JSON.stringify(jobPostingJsonLd(offer)) }}
       />
 
+      {offer.status === "UNCERTAIN" && <p role="status" className="mb-5 rounded-lg border border-warning/30 bg-warning-soft p-4 text-sm text-warning">Disponibilité à confirmer : cette annonce n’a pas pu être revérifiée récemment. Consultez la source avant de candidater.</p>}
       <nav aria-label="Fil d'Ariane" className="text-[13px] text-ink/60">
         <ol className="flex min-w-0 items-center gap-1.5">
           <li>
@@ -304,7 +305,8 @@ export default async function OffrePage({
           <div className="mt-10">
             <h2 className="eyebrow">Description du poste</h2>
             <div className="mt-2 max-w-[70ch] text-[15.5px] leading-[1.75] text-ink/85">
-              <Markdown content={offer.description} />
+              {offer.universe !== "TECH" && <div className="mb-6 border-y border-line py-4 text-sm text-ink/75"><p>Première détection : {formatDateFr(offer.createdAt.getTime())} · Dernière observation : {formatDateFr(offer.lastSeenAt.getTime())}</p>{offer.qualificationText && <p className="mt-2">Qualification mentionnée : {offer.qualificationText}</p>}<p className="mt-2">Sources : {(offer.origins.length ? offer.origins : [{ sourceSite: offer.sourceSite, sourceUrl: offer.sourceUrl }]).map((origin, index) => <span key={origin.sourceUrl}>{index > 0 && " · "}<a className="link break-all" href={origin.sourceUrl} target="_blank" rel="noreferrer">{origin.sourceSite}</a></span>)}</p></div>}
+            <Markdown content={offer.description} />
             </div>
           </div>
         </article>

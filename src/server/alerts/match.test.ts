@@ -90,3 +90,12 @@ describe("parseSearchParams", () => {
     expect(parseSearchParams(null)).toEqual({});
   });
 });
+
+// Personal saved searches retain their full URL semantics, including the radius.
+it("sépare les univers et utilise le rayon des recherches personnelles sauvegardées", () => {
+  const personal = { title: "ASV", description: "Auxiliaire vétérinaire diplômé recherché.", city: "Colomiers", contractType: "CDI" as const, remotePolicy: "UNKNOWN" as const, educationLevel: "INDIFFERENT" as const, sector: "Santé animale", salaryMin: null, salaryMax: null, universe: "ASV", jobFamily: "ASV", latitude: 43.61, longitude: 1.335 };
+  expect(offerMatchesSearch({ queryString: "univers=ASV&ville=Toulouse&rayon=30" }, personal)).toBe(true);
+  expect(offerMatchesSearch({ queryString: "univers=COMMERCE&national=1" }, personal)).toBe(false);
+  expect(offerMatchesSearch({ queryString: "univers=ASV&ville=Paris&rayon=30" }, personal)).toBe(false);
+  expect(offerMatchesSearch({ queryString: "univers=ASV&national=1&salaire=30000" }, personal)).toBe(true);
+});

@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { geocodeCityFull } from "@/server/ingest/sources/geocode";
 import { parseOfferSearchParams, CONTRACT_LABELS } from "@/lib/search-params";
 
 export const dynamic = "force-dynamic";
@@ -31,6 +32,7 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
   // Params persistés au format SearchParams (cf. alerts/match.ts)
   const params = {
     queryString: parsed.data.queryString,
+    center: input.national === "1" ? undefined : await geocodeCityFull(input.ville || "Toulouse") ?? undefined,
     universe: input.univers,
     q: input.q || undefined,
     city: input.ville || undefined,

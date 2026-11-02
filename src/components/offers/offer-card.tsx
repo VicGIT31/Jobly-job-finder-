@@ -38,7 +38,7 @@ export function OfferCard({
   const remote =
     REMOTE_LABELS[offer.remotePolicy as keyof typeof REMOTE_LABELS] ?? offer.remotePolicy;
 
-  const matchResult = candidateProfile
+  const matchResult = candidateProfile && offer.universe === "TECH"
     ? computeMatchScore(candidateProfile, {
         educationLevel: offer.educationLevel as EducationLevel,
         specialty: offer.specialty as TechSpecialty,

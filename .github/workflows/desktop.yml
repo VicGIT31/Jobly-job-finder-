@@ -71,8 +71,8 @@ jobs:
           }
       - name: Build native installer
         run: npm run desktop:dist -- --publish never
-      - name: Test packaged application
-        run: npm run desktop:smoke -- --fresh
+      - name: Install and test the distributed application
+        run: npm run desktop:install-test
       - name: Assemble verified delivery
         run: npm run desktop:delivery
       - name: Upload installers, guides and verification
@@ -89,4 +89,5 @@ jobs:
           path: |
             reports/desktop/*.png
             reports/desktop/verification.json
+            reports/installer/installation.json
           if-no-files-found: ignore

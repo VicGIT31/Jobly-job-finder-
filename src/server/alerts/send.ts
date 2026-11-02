@@ -24,7 +24,7 @@ export async function sendDailyAlerts(
       include: { user: true },
     }),
     prisma.jobOffer.findMany({
-      where: { status: "ACTIVE", publishedAt: { gte: since } },
+      where: { status: "ACTIVE", createdAt: { gte: since } },
       include: { company: true },
     }),
   ]);
