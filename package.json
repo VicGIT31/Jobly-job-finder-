@@ -37,7 +37,8 @@
     "desktop:delivery": "node scripts/desktop-delivery.mjs",
     "desktop:smoke": "node scripts/desktop-smoke.mjs",
     "desktop:export-web": "tsx scripts/desktop-export-web.ts",
-    "desktop:install-test": "node scripts/desktop-install.mjs"
+    "desktop:install-test": "node scripts/desktop-install.mjs",
+    "desktop:command-test": "node scripts/desktop-command-test.mjs"
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.1088.0",

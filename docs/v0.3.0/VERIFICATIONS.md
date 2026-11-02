@@ -1,6 +1,6 @@
 # Vérifications — 0.3.0
 
-État au 2 novembre 2026, validation des exécutables et publication encore en cours. Ne pas interpréter une compilation configurée comme un installateur testé.
+État au 2 novembre 2026 : les trois installateurs natifs sont construits et testés ; validation des commandes copiables et publication en cours. Ne pas interpréter une compilation configurée comme un installateur testé.
 
 ## État initial mesuré
 
@@ -51,3 +51,19 @@ Les rapports de travail et données personnelles restent dans `reports/` et `.ca
 21 annonces publiques issues de six scénarios, sélection déterministe parmi les dix premières de chaque export, recouvrements supprimés : intitulé, entreprise, localisation, contrat, qualification et extrait de missions examinés. 17 correspondances directes ; trois postes voisins à examiner (études de marché des talents, alternance publiée par un organisme de formation, achats/category management). Un testeur de logiciels Marketing/CRM était un faux positif et a été exclu par correction du référentiel. Le category management orienté achats est désormais classé en distribution. Cet échantillon restreint n’est pas une estimation statistique de précision globale.
 
 La déduplication retire les recouvrements d’URL et regroupe les répliques très proches entre hôtes distincts, sans fusionner deux réquisitions d’un même site. Un regroupement intersite a été réellement obtenu. Des doublons résiduels restent possibles : 18 groupes à intitulé/employeur/commune identiques dans l’export initial, qui ne suffisent pas à prouver l’identité d’un poste. La conservation prudente des postes distincts prime sur l’annonce d’un taux nul artificiel.
+
+## Validation finale du paquet et mise à jour réelle
+
+Dernier paquet installé testé sur macOS 26.6.2 arm64 : ouverture en 4,59 s, favori synthétique en 5,29 s, parcours complets réussis et refus de connexion au port PostgreSQL après fermeture. Le DMG a été vérifié, monté en lecture seule, copié puis éjecté avant lancement.
+
+Rejeu des sources dans le paquet installé définitif avec profil personnel neuf et cache public réutilisé : fenêtre en 2,27 s, premier résultat local en 8,37 s et premier favori en 8,79 s ; cycle de 38,09 s. 466 offres actives (378 Commerce/Marketing, 88 ASV), une offre regroupant deux sources. Six recherches : commerce Toulouse 83 ; marketing Toulouse 43 ; ASV Toulouse 1 ; ASV France 88 ; commerce Lyon 7 ; marketing Paris 12. Durées des requêtes 3,6–10,9 ms. Le cache est explicitement différent de l’essai à froid : ces deux délais ne prouvent pas à eux seuls un gain algorithmique causal.
+
+Mise à jour réelle dans `/Applications/Jobly.app` effectuée, avec copie privée préalable de l’ancien programme et des données, puis sauvegarde automatique `avant-0.3.0.jobly`. Les cinq anciens profils sont devenus un profil sans mot de passe. Les 8 317 identifiants d’offres préexistants sont tous conservés, ainsi que les recherches, candidatures, notes et historiques présents avant migration. De nouvelles offres et actions personnelles peuvent s’y ajouter ; aucune donnée privée n’est intégrée aux livraisons.
+
+CI native [41459620221](https://github.com/VicGIT31/Internship-finders/actions/runs/41459620221), commit `805eea5` : macOS 15 arm64, macOS 15 Intel x64 et Windows Server 2025 x64 ont tous réussi compilation, exécution de l’installateur puis tests de l’exécutable installé. Le refus PostgreSQL du parent Windows administrateur a été corrigé par `pg_ctl` ; arrêt et relancement du cluster testés. Windows 10/11 n’ont pas fait l’objet d’un essai manuel sur poste vierge.
+
+## Commandes d’installation copiables
+
+Ajoutées au README, INSTALLER.md et DEMARRER.html, avec boutons de copie et scripts de livraison. Téléchargement préalable du ZIP via le navigateur autorisé nécessaire, car le dépôt est privé. Aucun lien public inventé, jeton demandé, `ExecutionPolicy Bypass`, suppression de quarantaine ou désactivation de protection.
+
+Commande macOS exécutée sur le ZIP réel et application résultante testée avec les mêmes parcours. Contrôle SHA-256 et version du bundle avant installation. Les deux boutons HTML copient exactement leur commande dans Chromium, avec autorisation du presse-papiers ; le bloc reste sélectionnable en cas de refus. PowerShell est en cours de validation native dans la dernière matrice de livraison.

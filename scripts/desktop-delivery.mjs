@@ -10,6 +10,8 @@ const destination = resolve("delivery", folder);
 await rm(destination, { recursive: true, force: true });
 await mkdir(join(destination, "installateurs"), { recursive: true });
 await cp("desktop/delivery", destination, { recursive: true });
+await writeFile(join(destination,"VERSION.txt"),pkg.version+"\n");
+try { const command=JSON.parse(await readFile("reports/command-install/command-verification.json","utf8")); if(command.passed && command.version===pkg.version && command.platform===process.platform && command.arch===process.arch) await writeFile(join(destination,"commande-verification.json"),JSON.stringify(command,null,2)); } catch {}
 await cp("desktop/AUDIT.md", join(destination, "ANALYSE.md"));
 const files = (await readdir("release")).filter((name) => ["dmg", "exe", "msi"].some((extension) => name === `Jobly-${pkg.version}-${process.platform === "darwin" ? "mac" : "win"}-${process.arch}.${extension}`));
 if (!files.length) throw new Error("Aucun installateur réel dans release/ ; livraison interrompue.");

@@ -74,6 +74,10 @@ jobs:
         run: npm run desktop:install-test
       - name: Assemble verified delivery
         run: npm run desktop:delivery
+      - name: Test the documented copy and paste installation command
+        run: npm run desktop:command-test
+      - name: Include command verification in delivery
+        run: npm run desktop:delivery
       - name: Upload installers, guides and verification
         uses: actions/upload-artifact@v4
         with:
@@ -90,4 +94,6 @@ jobs:
             reports/desktop/verification.json
             reports/installer/installation.json
             reports/desktop/runtime-diagnostic.log
+            reports/command-install/command-verification.json
+            reports/command-install/verification.json
           if-no-files-found: ignore
