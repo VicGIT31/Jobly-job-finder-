@@ -2,9 +2,9 @@ import { NextRequest, NextResponse } from "next/server";
 import { timingSafeEqual } from "node:crypto";
 import { readdir, readFile } from "node:fs/promises";
 import { join } from "node:path";
-import { getSearchArea, saveSearchArea } from "@/server/personal/search-area";
+import { saveSearchArea } from "@/server/personal/search-area";
 import { getPersonalProfile, resetPersonalProfile } from "@/server/personal/profile";
-import { personalConnectors } from "@/server/ingest/sources/personal";
+import { getSourceEntries } from "@/server/ingest/sources";
 import { z } from "zod";
 import { prisma } from "@/lib/prisma";
 import { getSettings } from "@/lib/settings";
@@ -27,7 +27,7 @@ export async function GET(request: NextRequest) {
   if (!authorized(request)) return new NextResponse(null, { status: 404 });
   await getPersonalProfile();
   const [offers, runs, settings] = await Promise.all([
-    prisma.jobOffer.count({ where: { status: "ACTIVE", universe: { in: ["COMMERCE", "ASV"] } } }),
+    prisma.jobOffer.count({ where: { status: "ACTIVE" } }),
     prisma.ingestRun.findMany({ orderBy: { startedAt: "desc" }, take: 20 }),
     getSettings("ingestion"),
   ]);
@@ -37,7 +37,7 @@ export async function GET(request: NextRequest) {
     try { const mail = JSON.parse(await readFile(join(mailDir, name), "utf8")); return { to: mail.to, subject: mail.subject, text: mail.text, at: mail.at }; }
     catch { return null; }
   }));
-  const sources = personalConnectors(await getSearchArea()).map(({ id, connector }) => ({ id, label: connector.label }));
+  const sources = (await getSourceEntries()).map(({ id, connector }) => ({ id, label: connector.label, group: connector.group ?? "TECH" }));
   const selected = await prisma.siteSetting.findUnique({ where: { key: "desktopSources" } });
   return NextResponse.json({ ready: true, configured: true, offers, runs, settings, sources, selectedSources: selected?.value ?? [], collecting: !!state.desktopCollecting, error: state.desktopError ?? null, messages: messages.filter(Boolean) });
 }
@@ -65,7 +65,7 @@ export async function POST(request: NextRequest) {
     if (state.desktopCollecting) return NextResponse.json({ error: "Attendez la fin de la collecte avant de changer les sources." }, { status: 409 });
     const parsed = z.array(z.string().max(120)).max(200).safeParse(body.ids);
     if (!parsed.success) return NextResponse.json({ error: "Sélection de sources invalide." }, { status: 400 });
-    const ids = new Set(personalConnectors().map(({ id }) => id));
+    const ids = new Set((await getSourceEntries()).map(({ id }) => id));
     if (parsed.data.some((id) => !ids.has(id))) return NextResponse.json({ error: "Une source n’existe plus dans le catalogue." }, { status: 400 });
     await prisma.siteSetting.upsert({ where: { key: "desktopSources" }, create: { key: "desktopSources", value: parsed.data }, update: { value: parsed.data } });
     return NextResponse.json({ ok: true });

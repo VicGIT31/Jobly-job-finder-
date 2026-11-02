@@ -101,6 +101,27 @@ function findJobPosting(node: unknown): JsonLdJobPosting | null {
   return graph ? findJobPosting(graph) : null;
 }
 
+/** Parcourt tableaux et `@graph` et collecte chaque `JobPosting`. */
+function collectJobPostings(node: unknown, into: JsonLdJobPosting[]): void {
+  if (Array.isArray(node)) {
+    for (const item of node) collectJobPostings(item, into);
+    return;
+  }
+  if (typeof node !== "object" || node === null) return;
+  if (isJobPosting(node)) into.push(node);
+  const graph = (node as { "@graph"?: unknown })["@graph"];
+  if (graph) collectJobPostings(graph, into);
+}
+
+/** Toutes les annonces `JobPosting` d'une page (page carrières listant plusieurs postes). */
+export function extractJobPostings(html: string): JsonLdJobPosting[] {
+  SCRIPT_RE.lastIndex = 0;
+  const postings: JsonLdJobPosting[] = [];
+  let match: RegExpExecArray | null;
+  while ((match = SCRIPT_RE.exec(html)) !== null) collectJobPostings(parseLenient(match[1].trim()), postings);
+  return postings;
+}
+
 /** Renvoie le premier `JobPosting` trouvé dans la page, ou `null`. */
 export function extractJobPosting(html: string): JsonLdJobPosting | null {
   SCRIPT_RE.lastIndex = 0;

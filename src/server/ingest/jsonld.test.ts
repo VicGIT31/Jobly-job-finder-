@@ -110,3 +110,12 @@ describe("jsonLdText", () => {
     expect(jsonLdText("R&amp;D chez L&#39;Or&eacute;al")).toContain("R&D");
   });
 });
+
+describe("plusieurs annonces sur une page", () => {
+  it("collecte chaque JobPosting, y compris dans un @graph", async () => {
+    const { extractJobPostings } = await import("./jsonld");
+    const page = `<script type="application/ld+json">{"@graph":[{"@type":"Organization","name":"Clinique"},{"@type":"JobPosting","title":"ASV"},{"@type":"JobPosting","title":"Réceptionniste"}]}</script><script type="application/ld+json">{"@type":"JobPosting","title":"Vétérinaire"}</script>`;
+    expect(extractJobPostings(page).map((posting) => posting.title)).toEqual(["ASV", "Réceptionniste", "Vétérinaire"]);
+    expect(extractJobPostings("<p>Aucune annonce</p>")).toEqual([]);
+  });
+});

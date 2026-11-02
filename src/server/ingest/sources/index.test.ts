@@ -9,7 +9,15 @@ describe("sélection des sources gratuites", () => {
     const connectors = await getSourceConnectors();
     expect(connectors.some((connector) => /JSearch|OAuth/.test(connector.label))).toBe(false);
     expect(connectors.some((connector) => connector.label === "AniCura France")).toBe(true);
-    expect(connectors.every((connector) => connector.personal)).toBe(true);
+    // Tout le catalogue tourne par défaut : tech (stage/alternance) et nouveaux métiers.
+    expect(connectors.some((connector) => connector.personal)).toBe(true);
+    expect(connectors.some((connector) => !connector.personal)).toBe(true);
+    expect(connectors.some((connector) => connector.label === "Airbus")).toBe(true);
+  });
+  it("regroupe les sources par domaine pour le Bureau", async () => {
+    vi.stubEnv("INGEST_SOURCES", "");
+    const groups = new Set((await getSourceConnectors()).map((connector) => connector.group ?? "TECH"));
+    expect([...groups]).toEqual(expect.arrayContaining(["TECH", "COMMERCE", "ASV"]));
   });
   it("limite réellement les cycles aux entreprises sélectionnées", async () => {
     vi.stubEnv("INGEST_SOURCES", "airbus,thales");

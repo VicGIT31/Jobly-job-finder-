@@ -3,7 +3,8 @@ import { mkdir, writeFile } from "node:fs/promises";
 import { personalConnectors } from "../src/server/ingest/sources/personal";
 import { withCollectionBudget, resetHttpState, mapPool, fetchWithRetry } from "../src/server/ingest/http";
 import { normalizeOffer, rawOfferSchema, type RawOffer } from "../src/server/ingest/normalize";
-import { classifyJob, fold } from "../src/lib/job-taxonomy";
+import { fold } from "../src/lib/job-taxonomy";
+import { classifyJob } from "../src/server/ingest/job-classifier";
 import { distanceKm, TOULOUSE } from "../src/lib/geo";
 
 async function main() {

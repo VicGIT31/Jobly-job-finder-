@@ -8,9 +8,17 @@ import { loadSourceCatalog } from "./catalog";
 import { PublicBoardConnector } from "./public-boards";
 import type { SourceConnector } from "./types";
 import { personalConnectors } from "./personal";
+import { recruiterConnectors } from "./recruiter-pages";
 
-/** Aucun fournisseur avec clé ni intermédiaire payant dans le circuit de collecte. */
-export async function getSourceConnectors(options: { ignoreSelection?: boolean } = {}): Promise<SourceConnector[]> {
+export type SourceEntry = { id: string; connector: SourceConnector };
+
+/**
+ * Toutes les sources connues, dans l'ordre de collecte : d'abord les sources
+ * rapides pour commerce, communication et ASV (premiers résultats), puis les
+ * pages recruteurs, puis les sources tech en stage et alternance. Aucun
+ * fournisseur avec clé ni intermédiaire payant dans le circuit de collecte.
+ */
+export async function getSourceEntries(): Promise<SourceEntry[]> {
   const legacy: SourceConnector[] = [
     new ApecConnector(),
     new HelloWorkConnector(),
@@ -20,29 +28,45 @@ export async function getSourceConnectors(options: { ignoreSelection?: boolean }
     new LocalAlertsConnector(),
   ];
   const catalog = await loadSourceCatalog();
-  let allowed = process.env.INGEST_SOURCES?.split(",")
-    .map((id) => id.trim())
-    .filter(Boolean);
-  if (process.env.JOBLY_DESKTOP === "1" && !options.ignoreSelection) {
-    const { prisma } = await import("@/lib/prisma");
-    const setting = await prisma.siteSetting.findUnique({ where: { key: "desktopSources" } });
-    if (Array.isArray(setting?.value)) allowed = setting.value.filter((id): id is string => typeof id === "string");
-  }
-  if (options.ignoreSelection) allowed = undefined;
-  const area = process.env.JOBLY_DESKTOP === "1" ? await (await import("@/server/personal/search-area")).getSearchArea() : undefined;
-  const entries: Array<{ id: string; connector: SourceConnector }> = [
+  const area =
+    process.env.JOBLY_DESKTOP === "1"
+      ? await (await import("@/server/personal/search-area")).getSearchArea()
+      : undefined;
+  return [
     ...personalConnectors(area),
+    ...recruiterConnectors(area),
     ...legacy.map((connector) => ({ id: connector.sourceSite, connector })),
     ...catalog.map((definition) => ({
       id: definition.id,
       connector: new PublicBoardConnector(definition),
     })),
   ];
+}
+
+export async function getSourceConnectors(
+  options: { ignoreSelection?: boolean } = {},
+): Promise<SourceConnector[]> {
+  const entries = await getSourceEntries();
+  const known = new Set(entries.map((entry) => entry.id));
+  let allowed = process.env.INGEST_SOURCES?.split(",")
+    .map((id) => id.trim())
+    .filter(Boolean);
   if (allowed?.length) {
-    const unknown = allowed.filter((id) => !entries.some((entry) => entry.id === id));
+    const unknown = allowed.filter((id) => !known.has(id));
     if (unknown.length) throw new Error(`Sources inconnues : ${unknown.join(", ")}`);
   }
-  return entries
-    .filter((entry) => options.ignoreSelection || (allowed?.length ? allowed.includes(entry.id) : !!entry.connector.personal))
-    .map((entry) => entry.connector);
+  if (process.env.JOBLY_DESKTOP === "1" && !options.ignoreSelection) {
+    const { prisma } = await import("@/lib/prisma");
+    const setting = await prisma.siteSetting.findUnique({ where: { key: "desktopSources" } });
+    // Un identifiant disparu du catalogue (mise à jour) ne doit pas faire échouer la collecte.
+    if (Array.isArray(setting?.value))
+      allowed = setting.value.filter((id): id is string => typeof id === "string" && known.has(id));
+  }
+  if (options.ignoreSelection) allowed = undefined;
+  return (
+    entries
+      // Par défaut tout le catalogue tourne ; une sélection explicite du Bureau la restreint.
+      .filter((entry) => !allowed?.length || allowed.includes(entry.id))
+      .map((entry) => entry.connector)
+  );
 }

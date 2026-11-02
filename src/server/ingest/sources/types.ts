@@ -7,8 +7,12 @@ import type { RawOffer } from "@/server/ingest/normalize";
  * charge de la normalisation, de la déduplication et du rejet hors périmètre
  * (seuls stage et alternance sont conservés).
  */
+export type SourceGroup = "TECH" | "COMMERCE" | "ASV" | "RECRUITERS";
+
 export interface SourceConnector {
   readonly personal?: boolean;
+  /** Domaine affiché au Bureau pour regrouper les sources. Absent = tech. */
+  readonly group?: SourceGroup;
   /** Domaine identifiant la source (ex. "francetravail.fr"), stocké sur l'offre. */
   readonly sourceSite: string;
   /** Nom lisible pour les logs. */
