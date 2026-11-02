@@ -11,7 +11,7 @@ await rm(destination, { recursive: true, force: true });
 await mkdir(join(destination, "installateurs"), { recursive: true });
 await cp("desktop/delivery", destination, { recursive: true });
 await cp("desktop/AUDIT.md", join(destination, "ANALYSE.md"));
-const files = (await readdir("release")).filter((name) => /^Jobly-.*\.(dmg|exe|msi)$/.test(name));
+const files = (await readdir("release")).filter((name) => name.startsWith(`Jobly-${pkg.version}-`) && new RegExp(`-${process.platform === "darwin" ? "mac" : "win"}-${process.arch}\\.(dmg|exe|msi)$`).test(name));
 if (!files.length) throw new Error("Aucun installateur réel dans release/ ; livraison interrompue.");
 const hashes = [];
 const installed = [];
@@ -26,7 +26,7 @@ for (const name of files) {
 await writeFile(join(destination, "SHA256SUMS.txt"), hashes.join("\n") + "\n");
 let verification;
 try { verification = JSON.parse(await readFile("reports/desktop/verification.json", "utf8")); } catch {}
-const passed = verification?.passed === true && verification.platform === process.platform && verification.arch === process.arch;
+const passed = verification?.passed === true && verification.appVersion === pkg.version && verification.platform === process.platform && verification.arch === process.arch;
 const content = `# Vérification de la livraison\n\nGénérée le ${new Date().toISOString()}.\n\n## Installateurs réellement présents\n\n${installed.join("\n")}\n\n## Contrôles effectués\n\n${passed ? `Exécutable empaqueté testé sur ${verification.platform}/${verification.arch}, le ${verification.at}.\n\n${verification.checks.map((check) => `- ${check}`).join("\n")}` : "Aucun test d’exécutable réussi et correspondant à cette plateforme n’est enregistré. Ne pas considérer cette livraison comme validée."}\n\n## Limites de publication\n\n- Windows x64 et macOS Intel sont configurés dans la CI mais ne sont pas validés par un test sur macOS Apple Silicon. Seuls les résultats propres à chaque plateforme font foi.\n- Sans secrets de signature configurés, les fichiers sont non signés et le DMG non notarisé. Le build macOS local de cette livraison ne dispose pas de certificat Developer ID.\n- La machine de vérification possède des outils de développement ; leur PATH a été retiré pour le lancement du paquet. Une machine vierge n’a pas été utilisée.\n- Les captures automatisées ne constituent une revue visuelle que lorsqu’elles ont été effectivement ouvertes et examinées. La revue locale est documentée dans le rapport du projet.\n- La disponibilité et l’exhaustivité des sites d’offres restent externes à Jobly.\n\nLes données et sauvegardes privées de développement sont exclues de cette livraison. Les preuves automatisées sont dans verification.json.\n`;
 await writeFile(join(destination, "VERIFICATION.md"), content);
 if (verification) {

@@ -14,14 +14,13 @@ services:
       OFFER_FRESHNESS_DAYS: "7"
       OFFER_MAX_AGE_DAYS: "60"
       INGESTION_INTERVAL_MINUTES: ${INGESTION_INTERVAL_MINUTES:-120}
-      INGEST_SOURCE_TIMEOUT_SECONDS: ${INGEST_SOURCE_TIMEOUT_SECONDS:-900}
+      INGEST_SOURCE_TIMEOUT_SECONDS: ${INGEST_SOURCE_TIMEOUT_SECONDS:-180}
       # Collecte publique directe : aucune clé et aucun fournisseur payant.
       INGEST_SOURCES: ${INGEST_SOURCES:-}
       JOB_SOURCES_FILE: ${JOB_SOURCES_FILE:-}
       INGEST_CACHE_DIR: /app/.cache/jobly
       JOB_ALERTS_DIR: /app/data/job-alerts
-      AUTH_SECRET: ${AUTH_SECRET:-docker-dev-secret-change-in-prod}
-      AUTH_URL: http://localhost:3000
+      JOBLY_BIND_HOST: 0.0.0.0
       NEXT_PUBLIC_APP_URL: http://localhost:3000
       S3_ENDPOINT: http://minio:9000
       S3_REGION: us-east-1
@@ -30,12 +29,6 @@ services:
       S3_BUCKET_CV: nextstep-cv
       EMAIL_PROVIDER: console
       EMAIL_FROM: Jobly <no-reply@jobly.example>
-      # Compte administrateur : valeurs reprises du `.env` local (non versionné),
-      # utilisées uniquement par `npm run admin:create`.
-      ADMIN_USERNAME: ${ADMIN_USERNAME:-}
-      ADMIN_EMAIL: ${ADMIN_EMAIL:-}
-      ADMIN_PASSWORD: ${ADMIN_PASSWORD:-}
-      ADMIN_NAME: ${ADMIN_NAME:-}
     depends_on:
       postgres:
         condition: service_healthy
@@ -48,7 +41,7 @@ services:
     volumes:
       - ingestcache:/app/.cache/jobly
       - ./data/job-alerts:/app/data/job-alerts:ro
-    command: sh -c "npx prisma migrate deploy && npm run db:seed && npm run admin:ensure && npm run search:sync && npm run start:all"
+    command: sh -c "npx prisma migrate deploy && npm run db:seed && npm run search:sync && npm run start:all"
 
   postgres:
     image: postgres:16-alpine

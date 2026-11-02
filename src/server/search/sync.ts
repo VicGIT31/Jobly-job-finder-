@@ -24,6 +24,22 @@ export type OfferDocument = {
   sourceSite: string;
   status: string;
   publishedAtTs: number;
+  universe?: string;
+  jobFamily?: string;
+  experienceLevel?: string;
+  qualificationText?: string | null;
+  salaryPeriod?: string;
+  publicationKnown?: boolean;
+  verifiedAtTs?: number;
+  firstSeenAtTs?: number;
+  locationPrecise?: boolean;
+  remoteKnown?: boolean;
+  sourceUrl?: string;
+  distanceKm?: number | null;
+  reasons?: string[];
+  score?: number;
+  sources?: { sourceSite: string; sourceUrl: string; status?: string }[];
+  saved?: boolean;
   _geo?: { lat: number; lng: number };
 };
 
@@ -59,6 +75,12 @@ export function offerToDocument(offer: OfferWithCompany): OfferDocument {
     sourceSite: offer.sourceSite,
     status: offer.status,
     publishedAtTs: offer.publishedAt.getTime(),
+    universe: offer.universe ?? "TECH", jobFamily: offer.jobFamily ?? "OTHER",
+    experienceLevel: offer.experienceLevel ?? "UNKNOWN", qualificationText: offer.qualificationText,
+    salaryPeriod: offer.salaryPeriod ?? "UNKNOWN", publicationKnown: offer.publicationKnown ?? false,
+    verifiedAtTs: offer.lastSeenAt.getTime(), firstSeenAtTs: offer.createdAt?.getTime() ?? offer.scrapedAt.getTime(),
+    locationPrecise: offer.locationPrecise ?? false, remoteKnown: offer.remoteKnown ?? false,
+    sourceUrl: offer.sourceUrl,
     ...(offer.latitude != null && offer.longitude != null
       ? { _geo: { lat: offer.latitude, lng: offer.longitude } }
       : {}),

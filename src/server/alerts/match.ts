@@ -3,6 +3,8 @@ import { normalizeForDedup } from "@/server/ingest/dedup";
 
 /** Paramètres d'une recherche sauvegardée (sérialisés depuis l'URL /offres). */
 export type SearchParams = {
+  queryString?: string;
+  universe?: string;
   q?: string;
   city?: string;
   contractType?: string[];
@@ -73,6 +75,8 @@ export function parseSearchParams(json: unknown): SearchParams {
   const asStringArray = (v: unknown): string[] | undefined =>
     Array.isArray(v) ? v.filter((x): x is string => typeof x === "string") : undefined;
   return {
+    queryString: typeof obj.queryString === "string" ? obj.queryString : undefined,
+    universe: typeof obj.universe === "string" ? obj.universe : undefined,
     q: typeof obj.q === "string" ? obj.q : undefined,
     city: typeof obj.city === "string" ? obj.city : undefined,
     contractType: asStringArray(obj.contractType),

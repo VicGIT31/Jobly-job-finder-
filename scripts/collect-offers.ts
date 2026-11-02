@@ -3,6 +3,7 @@ import "./load-env";
 import { mkdir, writeFile } from "node:fs/promises";
 import { dirname, resolve } from "node:path";
 import { getSourceConnectors } from "../src/server/ingest/sources";
+import type { SourceConnector } from "../src/server/ingest/sources/types";
 import { PublicBoardConnector } from "../src/server/ingest/sources/public-boards";
 import { getHttpFailures, resetHttpState } from "../src/server/ingest/http";
 import { isTechOffer } from "../src/server/ingest/scope";
@@ -31,7 +32,7 @@ async function main(): Promise<void> {
   const results = [];
   resetHttpState();
   for (const original of connectors) {
-    const connector =
+    const connector: SourceConnector =
       original instanceof PublicBoardConnector
         ? new PublicBoardConnector({ ...original.definition, maxOffers: limit, maxPages: pages })
         : original;
@@ -42,9 +43,9 @@ async function main(): Promise<void> {
       let accepted = 0;
       for (const raw of fetched) {
         const parsed = rawOfferSchema.safeParse(raw);
-        if (!parsed.success || !isTechOffer(parsed.data.title, parsed.data.description)) continue;
+        if (!parsed.success || (!connector.personal && !isTechOffer(parsed.data.title, parsed.data.description))) continue;
         try {
-          const normalized = normalizeOffer(parsed.data);
+          const normalized = normalizeOffer(parsed.data, { personal: connector.personal, acceptedContracts: connector.acceptedContracts });
           if (normalized.countryCode !== "FR") continue;
           const hash = computeDedupHash(
             normalized.title,
@@ -99,7 +100,7 @@ async function main(): Promise<void> {
     JSON.stringify(
       {
         collectedAt: new Date().toISOString(),
-        scope: "France / tech / stages et alternances",
+        scope: "France / Commerce, Marketing, ASV (ou sources historiques sélectionnées)",
         results,
         offers: [...offers.values()],
       },

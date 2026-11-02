@@ -1,8 +1,7 @@
 const { contextBridge, ipcRenderer } = require("electron");
 contextBridge.exposeInMainWorld("joblyDesktop", Object.freeze({
   status: () => ipcRenderer.invoke("jobly:status"),
-  setup: (data) => ipcRenderer.invoke("jobly:setup", data),
-  collect: () => ipcRenderer.invoke("jobly:collect"),
+  collect: (data) => ipcRenderer.invoke("jobly:collect", data),
   cancel: () => ipcRenderer.invoke("jobly:cancel"),
   sources: (ids) => ipcRenderer.invoke("jobly:sources", ids),
   repair: () => ipcRenderer.invoke("jobly:repair"),

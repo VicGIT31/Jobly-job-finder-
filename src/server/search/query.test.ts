@@ -1,56 +1,20 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { parseOfferSearchParams } from "@/lib/search-params";
-
-const mocks = vi.hoisted(() => ({
-  search: vi.fn(),
-  findMany: vi.fn(),
-  count: vi.fn(),
-  groupBy: vi.fn(),
-}));
-vi.mock("@/lib/meilisearch", () => ({
-  OFFERS_INDEX: "job_offers",
-  getMeili: () => ({ index: () => ({ search: mocks.search }) }),
-}));
-vi.mock("@/lib/prisma", () => ({
-  prisma: { jobOffer: { findMany: mocks.findMany, count: mocks.count, groupBy: mocks.groupBy } },
-}));
+const mocks = vi.hoisted(() => ({ search: vi.fn(), findMany: vi.fn(), origins: vi.fn() }));
+vi.mock("@/lib/meilisearch", () => ({ OFFERS_INDEX: "job_offers", getMeili: () => ({ index: () => ({ search: mocks.search }) }) }));
+vi.mock("@/lib/prisma", () => ({ prisma: { jobOffer: { findMany: mocks.findMany }, hiddenOffer: { findMany: async () => [] }, savedOffer: { findMany: async () => [] }, offerOrigin: { findMany: mocks.origins } } }));
+vi.mock("@/server/personal/profile", () => ({ getPersonalProfile: async () => ({ id: "local" }) }));
 vi.mock("@/server/search/sync", () => ({ offerToDocument: (offer: unknown) => offer }));
-vi.mock("@/server/ingest/sources/geocode", () => ({ geocodeCityFull: vi.fn() }));
+vi.mock("@/server/ingest/sources/geocode", () => ({ geocodeCityFull: async () => ({ lat: 43.6045, lng: 1.444 }) }));
 vi.mock("@/server/companies/collections", () => ({ companySlugsForCollection: vi.fn() }));
 import { searchOffers } from "./query";
-
-beforeEach(() => {
-  vi.clearAllMocks();
-  mocks.search.mockResolvedValue({ hits: [], totalHits: 0 });
-  mocks.findMany.mockResolvedValue([]);
-  mocks.count.mockResolvedValue(0);
-  mocks.groupBy.mockResolvedValue([]);
-});
-
-describe("recherche limitée aux stages et alternances", () => {
-  it("ignore les anciens filtres CDI et temps plein, et impose le périmètre Meilisearch", async () => {
-    const input = parseOfferSearchParams({ contrat: "CDI,FULL_TIME,STAGE" });
-    expect(input.contrat).toEqual(["STAGE"]);
-    await searchOffers(input);
-    const filter = mocks.search.mock.calls[0][1].filter;
-    expect(filter).toContain('contractType IN ["STAGE", "ALTERNANCE"]');
-    expect(filter).toContain('contractType IN ["STAGE"]');
-    expect(filter).not.toContain("FULL_TIME");
-  });
-  it("conserve le périmètre dans les résultats et facettes PostgreSQL en cas de panne", async () => {
-    mocks.search.mockRejectedValue(new Error("Meili indisponible"));
-    const error = vi.spyOn(console, "error").mockImplementation(() => {});
-    try {
-      const result = await searchOffers(parseOfferSearchParams({ contrat: "CDI,FULL_TIME" }));
-      expect(result.engine).toBe("postgres");
-      for (const fn of [mocks.findMany, mocks.count, mocks.groupBy]) {
-        for (const [args] of fn.mock.calls) {
-          expect(args.where.contractType.in).toEqual(["STAGE", "ALTERNANCE"]);
-          expect(args.where.status).toBe("ACTIVE");
-        }
-      }
-    } finally {
-      error.mockRestore();
-    }
-  });
+const offer = { id: "one", title: "Vendeur", jobFamily: "RETAIL", city: "Toulouse", status: "ACTIVE", contractType: "CDI", salaryMin: null, salaryMax: null, salaryPeriod: "UNKNOWN", publishedAtTs: Date.now(), verifiedAtTs: Date.now(), _geo: { lat: 43.6045, lng: 1.444 } };
+beforeEach(() => { vi.clearAllMocks(); mocks.search.mockResolvedValue({ hits: [offer], estimatedTotalHits: 1 }); mocks.findMany.mockResolvedValue([offer]); mocks.origins.mockResolvedValue([]); });
+describe("Recherche personnelle", () => {
+  it("ouvre Commerce à Toulouse sur 30 km et accepte tous les contrats", async () => { const input = parseOfferSearchParams({ contrat: "CDI,FULL_TIME,STAGE" }); expect(input.contrat).toEqual(["CDI","FULL_TIME","STAGE"]); await searchOffers(input); const filter = mocks.search.mock.calls[0][1].filter; expect(filter).toContain('universe = "COMMERCE"'); expect(filter).toContain('_geoRadius(43.6045,1.444,30000)'); expect(filter).toContain('"CDI"'); });
+  it("cherche les synonymes par métier et explique le classement", async () => { const result = await searchOffers(parseOfferSearchParams({ q: "commercial", tri: "pertinence" })); expect(mocks.search.mock.calls[0][0]).toBe(""); expect(mocks.search.mock.calls[0][1].filter).toContain('"RETAIL"'); expect(result.hits[0].reasons?.length).toBeGreaterThan(0); });
+  it("ne mélange pas les résultats nationaux avec un rayon local", async () => { await searchOffers(parseOfferSearchParams({ univers: "ASV", national: "1" })); expect(mocks.search.mock.calls[0][1].filter).not.toContain("_geoRadius"); expect(mocks.search.mock.calls[0][1].filter).toContain('universe = "ASV"'); });
+  it("préserve les salaires inconnus et écarte seulement une incompatibilité annuelle connue", async () => { mocks.search.mockResolvedValue({ hits: [offer, { ...offer, id: "two", salaryPeriod: "YEAR", salaryMax: 20000 }], estimatedTotalHits: 2 }); const result = await searchOffers(parseOfferSearchParams({ salaire: "30000" })); expect(result.hits.map((row) => row.id)).toEqual(["one"]); });
+  it("sert les données PostgreSQL si le moteur de recherche tombe, avec distance exacte", async () => { mocks.search.mockRejectedValue(new Error("Meili indisponible")); mocks.findMany.mockResolvedValue([offer, { ...offer, id: "far", _geo: { lat: 44, lng: 1.44 } }]); const result = await searchOffers(parseOfferSearchParams({})); expect(result.engine).toBe("postgres"); expect(result.hits).toHaveLength(1); expect(mocks.findMany.mock.calls[0][0].where.universe).toBe("COMMERCE"); });
+  it("un filtre de publication ne confond pas les dates de collecte", async () => { await searchOffers(parseOfferSearchParams({ datePub: "7j" })); expect(mocks.search.mock.calls[0][1].filter).toContain("publicationKnown = true"); });
 });

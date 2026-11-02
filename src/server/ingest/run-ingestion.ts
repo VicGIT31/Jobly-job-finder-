@@ -89,6 +89,7 @@ export async function runIngestion(options: { signal?: AbortSignal } = {}): Prom
       Array.from({ length: Math.min(SOURCE_CONCURRENCY, enabled.length) }, collect),
     );
     if (lostLock) throw new Error("Verrou d'ingestion perdu ; cycle interrompu.");
+    if (!options.signal?.aborted) { const { verifyKnownOfferLinks } = await import("./verify-links"); await verifyKnownOfferLinks().catch((error) => console.error("[links] Vérification partielle", error)); }
     return results;
   } finally {
     clearInterval(heartbeat);
@@ -107,7 +108,7 @@ async function runConnector(connector: SourceConnector, signal?: AbortSignal): P
   const started = Date.now();
   const failureOffset = getHttpFailures().length;
   try {
-    const configuredBudget = Number(process.env.INGEST_SOURCE_TIMEOUT_SECONDS ?? 900);
+    const configuredBudget = Number(process.env.INGEST_SOURCE_TIMEOUT_SECONDS ?? (connector.personal ? 180 : 900));
     const seconds =
       Number.isFinite(configuredBudget) && configuredBudget >= 30
         ? Math.min(configuredBudget, 3600)
@@ -126,7 +127,7 @@ async function runConnector(connector: SourceConnector, signal?: AbortSignal): P
     const offers = fetched.filter(
       (offer) =>
         (offer.countryCode ?? "FR").toUpperCase() === "FR" &&
-        isTechOffer(offer.title, offer.description),
+        (connector.personal || isTechOffer(offer.title, offer.description)),
     );
     const prefixes = connector.requestPrefixes ?? [
       `https://www.${connector.sourceSite}/`,
@@ -143,6 +144,7 @@ async function runConnector(connector: SourceConnector, signal?: AbortSignal): P
       );
     const summary = await processIngest(connector.sourceSite, offers, {
       acceptedContracts: connector.acceptedContracts,
+      personal: connector.personal,
     });
     if (summary.indexingErrors)
       warnings.push(`${summary.indexingErrors} lot(s) non indexé(s) ; réparation programmée`);

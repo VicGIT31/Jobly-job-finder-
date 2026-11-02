@@ -9,7 +9,7 @@ import { CONTRACT_LABELS, EDUCATION_LABELS, REMOTE_LABELS } from "@/lib/search-p
 import { ArrowRight, Bell, Trash2 } from "lucide-react";
 import { AccountEmptyState, SectionHeader } from "@/components/account/section-header";
 
-export const metadata: Metadata = { title: "Mes alertes" };
+export const metadata: Metadata = { title: "Mes recherches sauvegardées" };
 
 const FREQUENCY_LABELS: Record<string, string> = {
   DAILY: "Quotidienne",
@@ -18,7 +18,10 @@ const FREQUENCY_LABELS: Record<string, string> = {
 };
 
 function alertQueryString(params: ReturnType<typeof parseSearchParams>): string {
+  if (params.queryString !== undefined) return params.queryString;
   const qs = new URLSearchParams();
+  qs.set("univers", "TECH");
+  qs.set("national", "1");
   if (params.q) qs.set("q", params.q);
   if (params.city) qs.set("ville", params.city);
   if (params.contractType?.length) qs.set("contrat", params.contractType.join(","));
@@ -72,16 +75,16 @@ export default async function AlertesPage() {
         id="alertes-titre"
         title={
           <>
-            {alerts.length} alerte{alerts.length > 1 ? "s" : ""}
+            {alerts.length} recherche{alerts.length > 1 ? "s" : ""}
           </>
         }
         description={
           <>
-            Créez une alerte en un clic depuis n&apos;importe quelle{" "}
+            Enregistrez une recherche en un clic depuis n&apos;importe quelle{" "}
             <Link href="/offres" className="link">
               recherche filtrée
             </Link>
-            . Vous recevrez les nouvelles offres par email.
+            . Les critères sont conservés sur cet ordinateur. Les alertes activées apparaissent dans les messages locaux.
           </>
         }
       />
@@ -96,7 +99,7 @@ export default async function AlertesPage() {
             </Link>
           }
         >
-          Filtrez les offres puis cliquez « Créer une alerte » pour être prévenu·e des nouveautés.
+          Filtrez les offres puis cliquez « Enregistrer la recherche » pour être prévenu·e des nouveautés.
         </AccountEmptyState>
       ) : (
         <ul className="mt-6 flex flex-col gap-3">

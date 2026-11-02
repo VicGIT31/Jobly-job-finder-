@@ -41,6 +41,7 @@ process.on("SIGTERM", () => stop(0));
 run("next", process.execPath, [
   resolve("node_modules/next/dist/bin/next"),
   development ? "dev" : "start",
+  "-H", process.env.JOBLY_BIND_HOST ?? "127.0.0.1",
   "-p",
   process.env.PORT ?? "3000",
 ]);

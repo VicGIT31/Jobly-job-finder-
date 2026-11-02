@@ -3,7 +3,7 @@ name: Jobly desktop
 on:
   workflow_dispatch:
   push:
-    tags: ["desktop-v*"]
+    tags: ["v*", "desktop-v*"]
 
 permissions:
   contents: read

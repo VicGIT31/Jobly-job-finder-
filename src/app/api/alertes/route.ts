@@ -30,6 +30,8 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
 
   // Params persistés au format SearchParams (cf. alerts/match.ts)
   const params = {
+    queryString: parsed.data.queryString,
+    universe: input.univers,
     q: input.q || undefined,
     city: input.ville || undefined,
     contractType: input.contrat.length ? input.contrat : undefined,
@@ -40,9 +42,10 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
 
   const autoName =
     [
+      input.univers === "ASV" ? "ASV" : "Commerce & marketing",
       input.q,
       input.contrat.map((c) => CONTRACT_LABELS[c as keyof typeof CONTRACT_LABELS]).join("/"),
-      input.ville,
+      input.national === "1" ? "France entière" : `${input.ville || "Toulouse"} · ${input.rayon ?? 30} km`,
     ]
       .filter(Boolean)
       .join(" · ") || "Toutes les offres";
@@ -52,7 +55,7 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
       userId: session.user.id,
       name: parsed.data.name ?? autoName,
       params,
-      frequency: parsed.data.frequency ?? "DAILY",
+      frequency: parsed.data.frequency ?? "NEVER",
     },
   });
 

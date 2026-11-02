@@ -1,8 +1,6 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { Role } from "@prisma/client";
-import bcrypt from "bcryptjs";
 import { prisma } from "@/lib/prisma";
 import {
   generalSettingsSchema,
@@ -139,94 +137,6 @@ export async function deleteCompany(companyId: string): Promise<void> {
     `${company.name} (${offerIds.length} offre(s) supprimée(s))`,
   );
   revalidatePath("/admin/entreprises");
-}
-
-// --------------------------------------------------------- Utilisateurs
-
-/** Nombre d'administrateurs actifs — sert de garde-fou anti-verrouillage. */
-async function activeAdminCount(): Promise<number> {
-  return prisma.user.count({ where: { role: Role.ADMIN, suspendedAt: null } });
-}
-
-/** Promeut un compte administrateur ou le rétrograde en utilisateur. */
-export async function toggleUserRole(userId: string): Promise<void> {
-  const admin = await requireAdminAction();
-
-  const user = await prisma.user.findUnique({ where: { id: userId } });
-  if (!user) return;
-  // On ne se retire pas soi-même les droits : il faut passer par un autre admin.
-  if (user.id === admin.id) return;
-  if (user.role === Role.ADMIN && (await activeAdminCount()) <= 1) return;
-
-  const nextRole = user.role === Role.ADMIN ? Role.USER : Role.ADMIN;
-  await prisma.user.update({ where: { id: userId }, data: { role: nextRole } });
-
-  await recordAudit(admin, "user.role.changed", userId, `${user.email} → ${nextRole}`);
-  revalidatePath("/admin/utilisateurs");
-}
-
-/** Suspend un compte (connexion refusée) ou le réactive. Données conservées. */
-export async function toggleUserSuspension(userId: string): Promise<void> {
-  const admin = await requireAdminAction();
-
-  const user = await prisma.user.findUnique({ where: { id: userId } });
-  if (!user) return;
-  if (user.id === admin.id) return;
-  if (!user.suspendedAt && user.role === Role.ADMIN && (await activeAdminCount()) <= 1) return;
-
-  const suspendedAt = user.suspendedAt ? null : new Date();
-  await prisma.user.update({ where: { id: userId }, data: { suspendedAt } });
-
-  await recordAudit(admin, suspendedAt ? "user.suspended" : "user.reinstated", userId, user.email);
-  revalidatePath("/admin/utilisateurs");
-}
-
-/** Valide manuellement l'adresse email d'un compte. */
-export async function verifyUserEmail(userId: string): Promise<void> {
-  const admin = await requireAdminAction();
-
-  const user = await prisma.user.findUnique({ where: { id: userId } });
-  if (!user || user.emailVerified) return;
-
-  await prisma.user.update({ where: { id: userId }, data: { emailVerified: new Date() } });
-  await recordAudit(admin, "user.email.verified", userId, user.email);
-  revalidatePath("/admin/utilisateurs");
-}
-
-/**
- * Définit un nouveau mot de passe pour un compte. Le mot de passe transite par
- * le FormData, n'est jamais journalisé et n'est stocké que haché (bcrypt).
- */
-export async function setUserPassword(userId: string, form: FormData): Promise<void> {
-  const admin = await requireAdminAction();
-
-  const password = text(form, "password");
-  if (password.length < 8) return;
-
-  const user = await prisma.user.findUnique({ where: { id: userId } });
-  if (!user) return;
-
-  await prisma.user.update({
-    where: { id: userId },
-    data: { passwordHash: await bcrypt.hash(password, 12) },
-  });
-
-  await recordAudit(admin, "user.password.reset", userId, user.email);
-  revalidatePath("/admin/utilisateurs");
-}
-
-/** Supprime définitivement un compte et ses données liées (cascade). */
-export async function deleteUser(userId: string): Promise<void> {
-  const admin = await requireAdminAction();
-
-  const user = await prisma.user.findUnique({ where: { id: userId } });
-  if (!user) return;
-  if (user.id === admin.id) return;
-  if (user.role === Role.ADMIN && (await activeAdminCount()) <= 1) return;
-
-  await prisma.user.delete({ where: { id: userId } });
-  await recordAudit(admin, "user.deleted", userId, user.email);
-  revalidatePath("/admin/utilisateurs");
 }
 
 // -------------------------------------------------------------- Réglages

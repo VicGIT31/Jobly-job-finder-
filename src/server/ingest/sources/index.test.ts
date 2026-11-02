@@ -8,7 +8,8 @@ describe("sélection des sources gratuites", () => {
     vi.stubEnv("INGEST_SOURCES", "");
     const connectors = await getSourceConnectors();
     expect(connectors.some((connector) => /JSearch|OAuth/.test(connector.label))).toBe(false);
-    expect(connectors.some((connector) => connector.label === "Airbus")).toBe(true);
+    expect(connectors.some((connector) => connector.label === "AniCura France")).toBe(true);
+    expect(connectors.every((connector) => connector.personal)).toBe(true);
   });
   it("limite réellement les cycles aux entreprises sélectionnées", async () => {
     vi.stubEnv("INGEST_SOURCES", "airbus,thales");

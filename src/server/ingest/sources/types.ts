@@ -8,6 +8,7 @@ import type { RawOffer } from "@/server/ingest/normalize";
  * (seuls stage et alternance sont conservés).
  */
 export interface SourceConnector {
+  readonly personal?: boolean;
   /** Domaine identifiant la source (ex. "francetravail.fr"), stocké sur l'offre. */
   readonly sourceSite: string;
   /** Nom lisible pour les logs. */

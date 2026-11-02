@@ -7,6 +7,7 @@ import { LocalAlertsConnector } from "./local-alerts";
 import { loadSourceCatalog } from "./catalog";
 import { PublicBoardConnector } from "./public-boards";
 import type { SourceConnector } from "./types";
+import { personalConnectors } from "./personal";
 
 /** Aucun fournisseur avec clé ni intermédiaire payant dans le circuit de collecte. */
 export async function getSourceConnectors(options: { ignoreSelection?: boolean } = {}): Promise<SourceConnector[]> {
@@ -28,7 +29,9 @@ export async function getSourceConnectors(options: { ignoreSelection?: boolean }
     if (Array.isArray(setting?.value)) allowed = setting.value.filter((id): id is string => typeof id === "string");
   }
   if (options.ignoreSelection) allowed = undefined;
-  const entries = [
+  const area = process.env.JOBLY_DESKTOP === "1" ? await (await import("@/server/personal/search-area")).getSearchArea() : undefined;
+  const entries: Array<{ id: string; connector: SourceConnector }> = [
+    ...personalConnectors(area),
     ...legacy.map((connector) => ({ id: connector.sourceSite, connector })),
     ...catalog.map((definition) => ({
       id: definition.id,
@@ -40,6 +43,6 @@ export async function getSourceConnectors(options: { ignoreSelection?: boolean }
     if (unknown.length) throw new Error(`Sources inconnues : ${unknown.join(", ")}`);
   }
   return entries
-    .filter((entry) => !allowed?.length || allowed.includes(entry.id))
+    .filter((entry) => options.ignoreSelection || (allowed?.length ? allowed.includes(entry.id) : !!entry.connector.personal))
     .map((entry) => entry.connector);
 }

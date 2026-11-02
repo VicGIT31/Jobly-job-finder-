@@ -29,7 +29,7 @@ export type JsonLdJobPosting = {
   skills?: string | string[];
 };
 
-const SCRIPT_RE = /<script[^>]+type=["']application\/ld\+json["'][^>]*>([\s\S]*?)<\/script>/gi;
+const SCRIPT_RE = /<script[^>]+type=["']application\/ld(?:\+|&#x0*2b;|&#0*43;|&plus;)json["'][^>]*>([\s\S]*?)<\/script>/gi;
 
 /**
  * Échappe les caractères de contrôle présents **à l'intérieur des chaînes**

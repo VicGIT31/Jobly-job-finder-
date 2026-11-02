@@ -8,6 +8,7 @@ import type { CollectionKey } from "@/lib/company-collections";
 import type { OfferDocument } from "./sync";
 import { offerToDocument } from "./sync";
 import { PUBLIC_OFFER_FILTER, PUBLIC_OFFER_WHERE } from "@/server/offers/public-scope";
+import { searchPersonalOffers } from "./personal-query";
 
 export type FacetCounts = Record<string, Record<string, number>>;
 
@@ -18,6 +19,9 @@ export type OfferSearchResult = {
   totalPages: number;
   facets: FacetCounts;
   engine: "meilisearch" | "postgres";
+  limited?: boolean;
+  location?: { city: string; radius: number | null; resolved: boolean };
+  refreshedAt?: string;
 };
 
 /** Coordonnées d'une ville : géocodage (statique puis API, en cache), sinon offres en base. */
@@ -64,6 +68,7 @@ const EMPTY_RESULT: OfferSearchResult = {
  * repli PostgreSQL si le moteur est indisponible.
  */
 export async function searchOffers(input: OfferSearchInput): Promise<OfferSearchResult> {
+  if (input.univers !== "TECH") return searchPersonalOffers(input);
   const categorySlugs = await resolveCategorySlugs(input.categorie);
   if (categorySlugs?.length === 0) return EMPTY_RESULT;
 
@@ -179,7 +184,7 @@ function buildWhere(
     }));
   }
   if (input.contrat.length)
-    where.contractType = { in: input.contrat.filter((c) => c === "STAGE" || c === "ALTERNANCE") };
+    where.contractType = { in: input.contrat };
   if (input.remote.length) where.remotePolicy = { in: input.remote };
   if (input.niveau.length) where.educationLevel = { in: input.niveau };
   if (input.specialite.length) where.specialty = { in: input.specialite };

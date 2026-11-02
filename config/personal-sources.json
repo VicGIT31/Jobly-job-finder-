@@ -1,0 +1,17 @@
+[
+  { "id": "anicura-asv", "label": "AniCura France", "kind": "teamtailor", "url": "https://emplois.anicura.fr/jobs.rss", "company": "AniCura", "priority": 1, "universe": "ASV" },
+  { "id": "ft-commerce-toulouse", "label": "France Travail · commerce Toulouse", "kind": "france-travail", "url": "https://candidat.francetravail.fr/offres/recherche", "query": "commercial", "place": "31555", "priority": 2, "universe": "COMMERCE" },
+  { "id": "ft-marketing-toulouse", "label": "France Travail · marketing Toulouse", "kind": "france-travail", "url": "https://candidat.francetravail.fr/offres/recherche", "query": "marketing", "place": "31555", "priority": 2, "universe": "COMMERCE" },
+  { "id": "ft-asv-toulouse", "label": "France Travail · ASV Toulouse", "kind": "france-travail", "url": "https://candidat.francetravail.fr/offres/recherche", "query": "auxiliaire vétérinaire", "place": "31555", "priority": 2, "universe": "ASV" },
+  { "id": "monveto-asv", "label": "Mon Véto", "kind": "jsonld-board", "url": "https://www.recrutement-monveto.com/recherche/", "company": "Mon Véto", "pattern": "/offre-emploi/", "priority": 3, "universe": "ASV" },
+  { "id": "sevetys-asv", "label": "Sevetys", "kind": "jsonld-board", "url": "https://nous-rejoindre.sevetys.fr/offres/?poste%5B%5D=asv", "company": "Sevetys", "pattern": "/offres/[^/?]+/", "priority": 3, "universe": "ASV" },
+  { "id": "jysk-commerce", "label": "JYSK France", "kind": "smartrecruiters", "url": "https://api.smartrecruiters.com/v1/companies/JYSK/postings", "company": "JYSK", "priority": 3, "universe": "COMMERCE" },
+  { "id": "metro-commerce", "label": "METRO France", "kind": "smartrecruiters", "url": "https://api.smartrecruiters.com/v1/companies/METROMAKRO/postings", "company": "METRO France", "priority": 3, "universe": "COMMERCE" },
+  { "id": "ft-asv-france", "label": "France Travail · ASV France", "kind": "france-travail", "url": "https://candidat.francetravail.fr/offres/recherche", "query": "auxiliaire vétérinaire", "priority": 4, "universe": "ASV" },
+  { "id": "ft-marketing-france", "label": "France Travail · marketing France", "kind": "france-travail", "url": "https://candidat.francetravail.fr/offres/recherche", "query": "marketing", "priority": 4, "universe": "COMMERCE" },
+  { "id": "ft-commerce-france", "label": "France Travail · commerce France", "kind": "france-travail", "url": "https://candidat.francetravail.fr/offres/recherche", "query": "commercial", "priority": 4, "universe": "COMMERCE" },
+  { "id": "hello-commerce", "label": "HelloWork · commerce Toulouse", "kind": "hellowork", "url": "https://www.hellowork.com/fr-fr/emploi/recherche.html", "query": "commercial", "place": "Toulouse-31000", "priority": 5, "universe": "COMMERCE" },
+  { "id": "hello-marketing", "label": "HelloWork · marketing Toulouse", "kind": "hellowork", "url": "https://www.hellowork.com/fr-fr/emploi/recherche.html", "query": "marketing", "place": "Toulouse-31000", "priority": 5, "universe": "COMMERCE" },
+  { "id": "hello-asv", "label": "HelloWork · ASV France", "kind": "hellowork", "url": "https://www.hellowork.com/fr-fr/emploi/recherche.html", "query": "auxiliaire vétérinaire", "priority": 5, "universe": "ASV" },
+  { "id": "argos-asv", "label": "Argos Vétérinaire", "kind": "jsonld-board", "url": "https://groupe.argos-veterinaire.com/nous-rejoindre/", "company": "Argos Vétérinaire", "pattern": "/offres-emploi/[^/?]+/", "priority": 5, "universe": "ASV" }
+]

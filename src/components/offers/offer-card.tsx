@@ -32,8 +32,8 @@ export function OfferCard({
   /** Actions secondaires (ex. « Retirer ») affichées dans le pied de carte. */
   actions?: React.ReactNode;
 }) {
-  const salary = formatSalary(offer.salaryMin, offer.salaryMax);
-  const isNew = Date.now() - offer.publishedAtTs < 3 * 86_400_000;
+  const salary = formatSalary(offer.salaryMin, offer.salaryMax, offer.salaryPeriod);
+  const isNew = offer.publicationKnown && Date.now() - offer.publishedAtTs < 3 * 86_400_000;
   const isExpired = offer.status === "EXPIRED";
   const remote =
     REMOTE_LABELS[offer.remotePolicy as keyof typeof REMOTE_LABELS] ?? offer.remotePolicy;
@@ -81,7 +81,7 @@ export function OfferCard({
             dateTime={new Date(offer.publishedAtTs).toISOString()}
             title={formatDateFr(offer.publishedAtTs)}
           >
-            {timeAgo(offer.publishedAtTs)}
+            {offer.publicationKnown ? timeAgo(offer.publishedAtTs) : "Publication non précisée"}
           </time>
         </dd>
       </div>

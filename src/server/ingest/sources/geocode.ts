@@ -1,4 +1,5 @@
 import { fetchJson } from "@/server/ingest/http";
+import communes from "../../../../config/communes-haute-garonne.json";
 
 /**
  * Géocodage léger des principales villes françaises (lat/lng réels).
@@ -48,6 +49,9 @@ function stripAccents(value: string): string {
 export function geocodeCity(city: string): { lat: number; lng: number } | null {
   if (!city) return null;
   const key = stripAccents(city).toLowerCase().trim();
+  const normalized = key.replace(/\s*\(?\d{2,5}\)?\s*$/, "").replace(/\s*\([^)]*\)\s*$/, "").replace(/-/g, " ").trim();
+  const commune = communes.find((entry) => stripAccents(entry.nom).toLowerCase().replace(/-/g, " ") === normalized || entry.codesPostaux?.includes(normalized));
+  if (commune?.centre?.coordinates) return { lat: commune.centre.coordinates[1], lng: commune.centre.coordinates[0] };
   if (CITY_COORDS[key]) return CITY_COORDS[key];
   // "Paris 15e", "Lyon 3e Arrondissement", "Nantes (44)" → ville de base
   const base = key
@@ -98,16 +102,16 @@ export async function geocodeCityFull(city: string): Promise<Coords | null> {
 }
 
 async function geocodeRemote(city: string): Promise<Coords | null> {
-  const url = new URL("https://api-adresse.data.gouv.fr/search/");
-  url.searchParams.set("q", city);
-  url.searchParams.set("type", "municipality");
+  const url = new URL("https://geo.api.gouv.fr/communes");
+  url.searchParams.set("nom", city.replace(/\s*\(?\d{2,5}\)?\s*$/, "").trim());
+  url.searchParams.set("fields", "nom,centre");
+  url.searchParams.set("boost", "population");
   url.searchParams.set("limit", "1");
 
   try {
-    const json = await fetchJson<{
-      features?: Array<{ geometry?: { coordinates?: [number, number] } }>;
-    }>(url, { timeoutMs: 8_000, minIntervalMs: 120, headers: { "User-Agent": "Jobly/1.0" } });
-    const c = json?.features?.[0]?.geometry?.coordinates;
+    const json = await fetchJson<Array<{ nom: string; centre?: { coordinates?: [number, number] } }>>(url, { timeoutMs: 4_000, retries: 0, minIntervalMs: 80, cacheTtlMs: 30 * 86400000 });
+    const exact = json?.find((entry) => stripAccents(entry.nom).toLowerCase() === stripAccents(city.replace(/\s*\(?\d{2,5}\)?\s*$/, "").trim()).toLowerCase());
+    const c = exact?.centre?.coordinates;
     if (c && c.length === 2) return { lat: c[1], lng: c[0] };
   } catch {
     // API coupée par le disjoncteur : on renvoie null, retenté au prochain cycle.

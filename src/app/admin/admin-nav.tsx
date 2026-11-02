@@ -15,7 +15,6 @@ const TABS = [
   { href: "/admin", label: "Tableau de bord" },
   { href: "/admin/offres", label: "Offres" },
   { href: "/admin/entreprises", label: "Entreprises" },
-  { href: "/admin/utilisateurs", label: "Utilisateurs" },
   { href: "/admin/sources", label: "Sources & ingestion" },
   { href: "/admin/seo", label: "SEO" },
   { href: "/admin/parametres", label: "Paramètres" },

@@ -15,6 +15,8 @@ enum Role {
 }
 
 enum ContractType {
+  UNKNOWN
+  INTERIM
   CDI
   CDD
   STAGE
@@ -32,6 +34,7 @@ enum ContractType {
 }
 
 enum RemotePolicy {
+  UNKNOWN
   ONSITE
   HYBRID
   FULL
@@ -49,6 +52,7 @@ enum EducationLevel {
 enum OfferStatus {
   ACTIVE
   EXPIRED
+  UNCERTAIN
 }
 
 /**
@@ -226,6 +230,16 @@ model JobOffer {
   educationLevel EducationLevel @default(INDIFFERENT)
   sector         String
   specialty      TechSpecialty  @default(AUTRE)
+  universe       String         @default("TECH")
+  jobFamily      String         @default("OTHER")
+  experienceLevel String        @default("UNKNOWN")
+  qualificationText String?
+  salaryPeriod   String         @default("UNKNOWN")
+  publicationKnown Boolean      @default(false)
+  locationPrecise Boolean       @default(false)
+  remoteKnown    Boolean        @default(false)
+  linkCheckedAt  DateTime?
+  linkStatus     Int?
 
   // Provenance scraping
   sourceUrl  String
@@ -246,6 +260,7 @@ model JobOffer {
   hiddenBy     HiddenOffer[]
   applyClicks  ApplyClick[]
   applications Application[]
+  origins      OfferOrigin[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -257,8 +272,22 @@ model JobOffer {
   @@index([blockedAt])
   @@index([specialty, status])
   @@index([countryCode, status])
+  @@index([universe, status, jobFamily])
   @@index([sourceUrl])
   @@map("job_offers")
+}
+
+model OfferOrigin {
+  id String @id @default(cuid())
+  offerId String
+  offer JobOffer @relation(fields: [offerId], references: [id], onDelete: Cascade)
+  sourceUrl String @unique
+  sourceSite String
+  firstSeenAt DateTime @default(now())
+  lastVerifiedAt DateTime
+  status String @default("ACTIVE")
+  @@index([offerId])
+  @@map("offer_origins")
 }
 
 model SavedOffer {

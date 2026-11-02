@@ -1,14 +1,12 @@
 import type { Metadata, Viewport } from "next";
 import localFont from "next/font/local";
-import { headers } from "next/headers";
 import { NuqsAdapter } from "nuqs/adapters/next/app";
 import "./globals.css";
-import { auth } from "@/lib/auth";
 import { getSettings, publicBaseUrl } from "@/lib/settings";
 import { Providers } from "@/components/providers";
 import { SiteHeader } from "@/components/site-header";
 import { SiteFooter } from "@/components/site-footer";
-import { MaintenanceScreen } from "./maintenance-screen";
+export const dynamic = "force-dynamic";
 
 // Geist pour l'interface, Geist Mono pour les métadonnées, Instrument Serif
 // (italique) pour les accents éditoriaux des titres.
@@ -81,26 +79,11 @@ export const viewport: Viewport = {
   ],
 };
 
-/** Chemins toujours servis, même en maintenance : sans eux, plus de retour possible. */
-const MAINTENANCE_ALLOWLIST = ["/admin", "/connexion", "/api"];
-
 export default async function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
-  const general = await getSettings("general");
-
-  // En maintenance, seuls les administrateurs (et les routes d'accès) passent.
-  let maintenance = false;
-  if (general.maintenanceMode) {
-    const pathname = (await headers()).get("x-pathname") ?? "";
-    const allowlisted = MAINTENANCE_ALLOWLIST.some((prefix) => pathname.startsWith(prefix));
-    if (!allowlisted) {
-      const session = await auth();
-      maintenance = session?.user?.role !== "ADMIN";
-    }
-  }
 
   return (
     <html
@@ -119,19 +102,13 @@ export default async function RootLayout({
       <body className="flex min-h-screen flex-col">
         <NuqsAdapter>
           <Providers>
-            {maintenance ? (
-              <main id="contenu" className="flex-1">
-                <MaintenanceScreen message={general.maintenanceMessage} />
-              </main>
-            ) : (
-              <>
+            <>
                 <SiteHeader />
                 <main id="contenu" className="flex-1">
                   {children}
                 </main>
                 <SiteFooter />
-              </>
-            )}
+            </>
           </Providers>
         </NuqsAdapter>
       </body>

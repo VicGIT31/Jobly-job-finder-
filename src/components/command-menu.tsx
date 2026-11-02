@@ -6,11 +6,8 @@ import { ArrowRight, Building2, CornerDownLeft, MapPin, Search, User } from "luc
 import {
   CONTRACT_LABELS,
   CONTRACT_TYPES,
-  SPECIALTIES,
-  SPECIALTY_LABELS,
   TOP_CITIES,
 } from "@/lib/search-params";
-import { SpecialtyIcon } from "@/components/ui/specialty-icon";
 
 type Item = {
   id: string;
@@ -22,13 +19,7 @@ type Item = {
 };
 
 const STATIC_ITEMS: Item[] = [
-  ...SPECIALTIES.map((s) => ({
-    id: `sp-${s}`,
-    group: "Spécialités",
-    label: SPECIALTY_LABELS[s],
-    href: `/offres?specialite=${s}`,
-    icon: <SpecialtyIcon specialty={s} size={16} />,
-  })),
+  ...[{ key: "COMMERCE", label: "Commerce & marketing" }, { key: "ASV", label: "Auxiliaires vétérinaires" }].map(({ key, label }) => ({ id: `universe-${key}`, group: "Univers", label, href: `/offres?univers=${key}`, icon: <Search aria-hidden="true" size={16} /> })),
   ...CONTRACT_TYPES.map((c) => ({
     id: `ct-${c}`,
     group: "Contrats",
@@ -45,8 +36,8 @@ const STATIC_ITEMS: Item[] = [
     id: `city-${city}`,
     group: "Villes",
     label: city,
-    hint: "+ 20 km",
-    href: `/offres?ville=${encodeURIComponent(city)}&rayon=20`,
+    hint: "+ 30 km",
+    href: `/offres?ville=${encodeURIComponent(city)}&rayon=30`,
     icon: <MapPin aria-hidden="true" size={16} />,
   })),
   {

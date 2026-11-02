@@ -3,7 +3,7 @@ import { readFile, readdir, mkdir, writeFile, stat, rename, rm } from "node:fs/p
 import { join, resolve, sep } from "node:path";
 import type { Client } from "pg";
 
-export const TABLES = ["companies", "users", "accounts", "sessions", "verification_tokens", "job_offers", "saved_offers", "hidden_offers", "saved_searches", "apply_clicks", "applications", "application_status_history", "site_settings", "audit_logs", "ingest_runs", "ingest_logs"] as const;
+export const TABLES = ["companies", "users", "accounts", "sessions", "verification_tokens", "job_offers", "saved_offers", "hidden_offers", "saved_searches", "apply_clicks", "applications", "application_status_history", "site_settings", "audit_logs", "ingest_runs", "ingest_logs", "offer_origins"] as const;
 type Backup = { format: "jobly-backup"; version: 1; createdAt: string; tables: Record<string, unknown[]>; files: Record<string, string> };
 async function filesFrom(root: string, relative = ""): Promise<Record<string, string>> {
   const files: Record<string, string> = {};
@@ -19,7 +19,7 @@ export async function createBackup(client: Client, filesRoot: string, destinatio
   const tables: Record<string, unknown[]> = {};
   await client.query("BEGIN ISOLATION LEVEL REPEATABLE READ READ ONLY");
   try {
-    for (const name of TABLES) { const result = await client.query(`SELECT coalesce(json_agg(t), '[]') AS rows FROM "${name}" t`); tables[name] = result.rows[0].rows; }
+    for (const name of TABLES) { const exists = await client.query("SELECT to_regclass($1) AS name", [name]); if (!exists.rows[0].name) { tables[name] = []; continue; } const result = await client.query(`SELECT coalesce(json_agg(t), '[]') AS rows FROM "${name}" t`); tables[name] = result.rows[0].rows; }
     await client.query("COMMIT");
   } catch (e) { await client.query("ROLLBACK"); throw e; }
   const backup: Backup = { format: "jobly-backup", version: 1, createdAt: new Date().toISOString(), tables, files: await filesFrom(filesRoot) };
@@ -29,7 +29,7 @@ export async function createBackup(client: Client, filesRoot: string, destinatio
 export async function restoreBackup(client: Client, filesRoot: string, source: string) {
   if ((await stat(source)).size > 512 * 1024 * 1024) throw new Error("Sauvegarde trop volumineuse (512 Mo maximum).");
   const backup = JSON.parse(gunzipSync(await readFile(source), { maxOutputLength: 1024 * 1024 * 1024 }).toString("utf8")) as Backup;
-  if (backup.format !== "jobly-backup" || backup.version !== 1 || !backup.tables || !backup.files || TABLES.some((name) => !Array.isArray(backup.tables[name]))) throw new Error("Ce fichier n’est pas une sauvegarde Jobly compatible.");
+  if (backup.format !== "jobly-backup" || backup.version !== 1 || !backup.tables || !backup.files || TABLES.some((name) => name !== "offer_origins" && !Array.isArray(backup.tables[name]))) throw new Error("Ce fichier n’est pas une sauvegarde Jobly compatible.");
   const staging = `${filesRoot}.restore`;
   await rm(staging, { recursive: true, force: true }); await mkdir(staging, { recursive: true });
   for (const [key, value] of Object.entries(backup.files)) {
@@ -43,7 +43,14 @@ export async function restoreBackup(client: Client, filesRoot: string, source: s
   let swapped = false;
   try {
     await client.query(`TRUNCATE ${TABLES.map((name) => `"${name}"`).join(",")} CASCADE`);
-    for (const name of TABLES) if (backup.tables[name].length) await client.query(`INSERT INTO "${name}" SELECT * FROM json_populate_recordset(NULL::"${name}", $1::json)`, [JSON.stringify(backup.tables[name])]);
+    for (const name of TABLES) if (backup.tables[name]?.length) {
+      // Old archives lack new columns: let PostgreSQL apply their defaults.
+      const available = await client.query("SELECT column_name FROM information_schema.columns WHERE table_schema='public' AND table_name=$1", [name]);
+      const first = backup.tables[name][0] as Record<string, unknown>;
+      const columns = available.rows.map((row) => row.column_name as string).filter((key) => Object.hasOwn(first, key));
+      const list = columns.map((key) => `"${key}"`).join(",");
+      await client.query(`INSERT INTO "${name}" (${list}) SELECT ${list} FROM json_populate_recordset(NULL::"${name}", $1::json)`, [JSON.stringify(backup.tables[name])]);
+    }
     // Stage files before changing the live directory; keep old files for recovery.
     await rm(`${filesRoot}.previous`, { recursive: true, force: true });
     await rename(filesRoot, `${filesRoot}.previous`).then(() => { previousFiles = true; }).catch((e) => { if (e.code !== "ENOENT") throw e; });

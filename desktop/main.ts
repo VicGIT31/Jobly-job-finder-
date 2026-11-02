@@ -93,7 +93,7 @@ function menu() {
     { label: "Aide", submenu: [
       { label: "Guide d’utilisation", click: () => { void shell.openPath(join(resources, "DEMARRER.html")); } },
       { label: "Afficher les données et le journal", click: () => { void shell.openPath(userData); } },
-      { label: "À propos de Jobly", click: () => { void dialog.showMessageBox(window!, { message: `Jobly ${app.getVersion()}`, detail: "Stages et alternances tech en France.\nDonnées conservées sur cet ordinateur.\nInternet est nécessaire à la collecte et aux candidatures.\nLes messages et alertes restent dans la boîte locale." }); } },
+      { label: "À propos de Jobly", click: () => { void dialog.showMessageBox(window!, { message: `Jobly ${app.getVersion()}`, detail: "Commerce, marketing et auxiliaires vétérinaires en France.\nDonnées conservées sur cet ordinateur.\nInternet est nécessaire à la collecte et aux candidatures.\nLes messages et alertes restent dans la boîte locale." }); } },
     ] },
   ]));
 }
@@ -134,7 +134,7 @@ async function start() {
   window.webContents.on("render-process-gone", (_event, details) => { log(`renderer: ${details.reason}`); loading("L’affichage s’est interrompu. Utilisez Affichage → Recharger, ou relancez Jobly. Vos données sont conservées."); });
   window.webContents.on("console-message", (_event, level, message) => { if (level >= 3) log(`renderer: ${message}`); });
   const configPath = join(userData, "local-config.json");
-  let config: { password: string; authSecret: string; searchKey?: string; port?: number; lastPath?: string };
+  let config: { password: string; authSecret: string; searchKey?: string; port?: number; lastPath?: string; lastVersion?: string; legacyLastPath?: string };
   if (existsSync(configPath)) config = JSON.parse(await readFile(configPath, "utf8"));
   else { config = { password: randomBytes(32).toString("hex"), authSecret: randomBytes(32).toString("hex") }; await writeFile(configPath, JSON.stringify(config), { mode: 0o600 }); }
   token = randomBytes(32).toString("hex");
@@ -143,8 +143,16 @@ async function start() {
   database = new LocalDatabase(userData, join(resources, "postgres"), config.password, log);
   await database.start();
   loading("Mise en place de votre base de données…");
+  // A private, complete snapshot precedes the single-profile migration.
+  const migrationBackup = join(userData, "avant-0.3.0.jobly");
+  if (!existsSync(migrationBackup)) {
+    const client = database.client(); await client.connect();
+    try { const existing = await client.query("SELECT to_regclass('public.users') AS name"); if (existing.rows[0].name) await createBackup(client, join(userData, "files"), migrationBackup); } finally { await client.end(); }
+  }
   await database.migrate(join(resources, "migrations"));
   if (closing) return;
+  if (config.lastVersion !== app.getVersion() && config.lastPath && !/[?&]univers=(COMMERCE|ASV)(?:&|$)/.test(config.lastPath)) { config.legacyLastPath = config.lastPath; delete config.lastPath; }
+  config.lastVersion = app.getVersion();
   const port = await freePort(config.port ?? 32178);
   config.port = port; await writeFile(configPath, JSON.stringify(config), { mode: 0o600 });
   origin = `http://127.0.0.1:${port}`;
@@ -171,21 +179,23 @@ async function start() {
   let status;
   for (let attempt = 0; attempt < 120; attempt++) { try { status = await api(); break; } catch { await pause(500); } }
   if (!status) throw new Error("Le service local n’a pas pu démarrer. Le journal jobly.log contient le détail.");
-  await api("index");
+  // Index repair runs in the background; PostgreSQL serves the first search.
+  void api("index").catch(log);
   if (closing) return;
-  const handlers: Record<string, (data: unknown) => Promise<unknown>> = { status: () => api(), setup: (data) => api("setup", data as Record<string, unknown>), sources: (data) => api("sources", { ids: data }), repair: () => api("index"), collect: () => api("collect", { manual: true }), cancel: () => api("cancel"), backup: backupDialog, restore: restoreDialog, "open-data": () => shell.openPath(userData) };
+  const handlers: Record<string, (data: unknown) => Promise<unknown>> = { status: () => api(), sources: (data) => api("sources", { ids: data }), repair: () => api("index"), collect: (data) => api("collect", { manual: true, ...(data && typeof data === "object" && "city" in data && typeof data.city === "string" ? { city: data.city.slice(0,120) } : {}) }), cancel: () => api("cancel"), backup: backupDialog, restore: restoreDialog, "open-data": () => shell.openPath(userData) };
   for (const [name, handler] of Object.entries(handlers)) {
     ipcMain.handle(`jobly:${name}`, (event, data) => { validate(event); return handler(data); });
   }
   ready = true;
-  await window.loadURL(origin + (status.configured ? (config.lastPath?.startsWith("/offres") ? config.lastPath : "/offres") : "/bureau"));
+  await window.loadURL(origin + (config.lastPath?.startsWith("/offres") ? config.lastPath : "/offres?ville=Toulouse&rayon=30&tri=pertinence"));
   let configWrites = Promise.resolve();
   const saveLocation = () => { const url = window?.webContents.getURL(); if (url && isLocal(url)) { const current = new URL(url); if (current.pathname === "/offres") { config.lastPath = current.pathname + current.search; const serialized = JSON.stringify(config); configWrites = configWrites.then(() => writeFile(configPath + ".tmp", serialized, { mode: 0o600 })).then(() => rename(configPath + ".tmp", configPath)).catch((error) => log(String(error))); } } };
   window.webContents.on("did-navigate", saveLocation); window.webContents.on("did-navigate-in-page", saveLocation);
   if (smoke) await writeFile(join(userData, "smoke-runtime.json"), JSON.stringify({ origin, databasePort: database.port, appVersion: app.getVersion(), packaged: app.isPackaged }), { mode: 0o600 });
   // No irreversible purge on desktop: old offers expire, personal history is kept.
   if (!smoke) {
-    void api("maintenance").then(() => api("collect")).catch(log);
+    void api("collect").catch(log);
+    void api("maintenance").catch(log);
     timers.push(setInterval(() => { void api("collect").catch(log); }, 120 * 60000));
     timers.push(setInterval(() => { void api("maintenance").catch(log); }, 15 * 60000));
   }

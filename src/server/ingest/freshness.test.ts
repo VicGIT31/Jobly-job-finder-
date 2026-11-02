@@ -29,6 +29,12 @@ describe("expiration automatique", () => {
     });
     expect(mocks.sync).toHaveBeenCalledOnce();
   });
+  it("classe une absence de vérification personnelle comme incertaine, pas une expiration certaine", async () => {
+    mocks.find.mockResolvedValueOnce([{ id: "asv", universe: "ASV", validThrough: null }]).mockResolvedValueOnce([]);
+    mocks.update.mockResolvedValue({ count: 1 });
+    await expireStaleOffers();
+    expect(mocks.update.mock.calls[0][0].data.status).toBe("UNCERTAIN");
+  });
   it("n'écrit rien lorsque toutes les annonces sont fraîches", async () => {
     mocks.find.mockResolvedValue([]);
     expect(await expireStaleOffers()).toBe(0);

@@ -1,38 +1,15 @@
 import Link from "next/link";
 import { JoblyLogo } from "@/components/brand/jobly-logo";
-import { getSettings } from "@/lib/settings";
-import { SPECIALTIES, SPECIALTY_LABELS } from "@/lib/search-params";
 
 const COLUMNS = [
-  {
-    title: "Explorer",
-    links: [
-      { href: "/offres", label: "Toutes les offres" },
-      { href: "/offres?contrat=STAGE", label: "Stages" },
-      { href: "/offres?contrat=ALTERNANCE", label: "Alternances" },
-      { href: "/entreprises", label: "Entreprises" },
-    ],
-  },
-  {
-    title: "Spécialités",
-    links: SPECIALTIES.map((s) => ({
-      href: `/offres?specialite=${s}`,
-      label: SPECIALTY_LABELS[s],
-    })),
-  },
-  {
-    title: "Jobly",
-    links: [
-      { href: "/mon-espace", label: "Mon espace" },
-      { href: "/mon-espace/alertes", label: "Alertes email" },
-      { href: "/mentions-legales", label: "Mentions légales" },
-    ],
-  },
+ { title: "Explorer", links: [{ href: "/offres?univers=COMMERCE", label: "Commerce & marketing" }, { href: "/offres?univers=ASV", label: "Auxiliaires vétérinaires" }, { href: "/offres?univers=ASV&national=1", label: "ASV · France entière" }] },
+ { title: "Personnel", links: [{ href: "/mon-espace/sauvegardees", label: "Favoris" }, { href: "/mon-espace/alertes", label: "Recherches sauvegardées" }, { href: "/mon-espace/candidatures", label: "Candidatures" }] },
+ { title: "Jobly 0.3.0", links: [{ href: "/bureau", label: "Actualisation & données" }, { href: "/mon-espace", label: "Profil & CV" }, { href: "/mon-espace/confidentialite", label: "Confidentialité" }] },
 ] as const;
 
 export async function SiteFooter() {
   // Accroche modifiable depuis `/admin/parametres`.
-  const { tagline } = await getSettings("general");
+  const tagline = "Votre recherche personnelle d’emploi. Commerce, marketing et auxiliaires vétérinaires.";
 
   return (
     <footer className="relative mt-24 overflow-hidden border-t border-line bg-paper">

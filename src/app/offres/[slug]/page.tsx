@@ -80,7 +80,7 @@ function jobPostingJsonLd(offer: NonNullable<Awaited<ReturnType<typeof getOffer>
     "@type": "JobPosting",
     title: offer.title,
     description: offer.description,
-    datePosted: offer.publishedAt.toISOString(),
+    ...(offer.publicationKnown ? { datePosted: offer.publishedAt.toISOString() } : {}),
     employmentType: employmentType[offer.contractType],
     hiringOrganization: {
       "@type": "Organization",
@@ -104,7 +104,7 @@ function jobPostingJsonLd(offer: NonNullable<Awaited<ReturnType<typeof getOffer>
               "@type": "QuantitativeValue",
               minValue: offer.salaryMin ?? undefined,
               maxValue: offer.salaryMax ?? undefined,
-              unitText: (offer.salaryMin ?? offer.salaryMax ?? 0) >= 10000 ? "YEAR" : "MONTH",
+              unitText: offer.salaryPeriod !== "UNKNOWN" ? offer.salaryPeriod : undefined,
             },
           },
         }
@@ -164,7 +164,7 @@ export default async function OffrePage({
     : null;
 
   const isExpired = offer.status === "EXPIRED";
-  const salary = formatSalary(offer.salaryMin, offer.salaryMax);
+  const salary = formatSalary(offer.salaryMin, offer.salaryMax, offer.salaryPeriod);
   const isLoggedIn = Boolean(session?.user);
   const specialtyLabel = SPECIALTY_LABELS[offer.specialty as keyof typeof SPECIALTY_LABELS];
 
@@ -259,7 +259,7 @@ export default async function OffrePage({
                 <p className="flex items-center gap-1.5 text-[13px] text-ink/60">
                   {specialtyLabel && (
                     <>
-                      <SpecialtyIcon specialty={offer.specialty} size={13} />
+                      {offer.universe === "TECH" && <SpecialtyIcon specialty={offer.specialty} size={13} />}
                       {specialtyLabel} ·{" "}
                     </>
                   )}
@@ -278,7 +278,7 @@ export default async function OffrePage({
                 <CalendarDays aria-hidden="true" size={14} />
                 Publiée{" "}
                 <time dateTime={offer.publishedAt.toISOString()}>
-                  {timeAgo(offer.publishedAt.getTime())}
+                  {offer.publicationKnown ? timeAgo(offer.publishedAt.getTime()) : "Publication non précisée"}
                 </time>
               </span>
             </div>
@@ -358,7 +358,7 @@ export default async function OffrePage({
                 <dt className="text-ink/60">Publiée le</dt>
                 <dd className="text-right">
                   <time dateTime={offer.publishedAt.toISOString()}>
-                    {formatDateFr(offer.publishedAt.getTime())}
+                    {offer.publicationKnown ? formatDateFr(offer.publishedAt.getTime()) : "Non précisée"}
                   </time>
                 </dd>
               </div>
@@ -377,7 +377,7 @@ export default async function OffrePage({
             </dl>
           </div>
 
-          <MatchScoreCard isLoggedIn={isLoggedIn} result={matchResult} />
+          {offer.universe === "TECH" && <MatchScoreCard isLoggedIn={isLoggedIn} result={matchResult} />}
           <CvMatchCard
             isLoggedIn={isLoggedIn}
             hasCv={Boolean(candidateProfile?.cvText)}

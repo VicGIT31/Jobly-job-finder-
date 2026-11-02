@@ -1,68 +1,60 @@
-# Installer et lancer Jobly
+# Installer et démarrer Jobly 0.3.0
 
-Ce document est un guide. Il ne lance aucun programme d’installation.
+## Choisir votre téléchargement
+
+Téléchargez le ZIP de livraison correspondant à votre ordinateur. Le ZIP du code source proposé par GitHub n’est pas une application prête à installer. Dézippez la livraison, puis ouvrez `installateurs/`. `VERIFICATION.md` énumère les fichiers réellement inclus et les systèmes testés.
 
 ## macOS
 
-La distribution actuelle exige macOS 13 ou ultérieur.
+1. Menu Apple → À propos de ce Mac : « Puce Apple » signifie **arm64**, « Processeur Intel » signifie **x64**.
+2. Ouvrez le fichier `Jobly-0.3.0-mac-arm64.dmg` ou `Jobly-0.3.0-mac-x64.dmg` présent dans `installateurs/`.
+3. Dans la fenêtre du disque, faites glisser **Jobly vers Applications**. Si vous mettez à jour, quittez d’abord l’ancienne application et remplacez son fichier dans Applications.
+4. Éjectez le disque puis ouvrez **Applications → Jobly**. Ajoutez son icône au Dock si souhaité.
+5. La recherche s’ouvre directement. Aucun compte, terminal ou serveur à lancer.
 
-1. Dézippez la livraison si nécessaire.
-2. Dans `installateurs/`, choisissez le DMG correspondant : `arm64` pour Apple Silicon (M1, M2, M3, M4 et suivants), `x64` pour Intel. Le type de puce apparaît dans le menu Apple → À propos de ce Mac.
-3. Double-cliquez sur le fichier `.dmg`.
-4. Glissez **Jobly** dans **Applications**.
-5. Éjectez le disque d’installation.
-6. Lancez **Jobly** depuis Applications ou Launchpad.
-7. Au premier lancement, créez votre compte local, ou importez votre sauvegarde depuis l’écran Bureau.
-
-La livraison locale peut être non signée et non notarisée : consultez VERIFICATION.md. Si macOS refuse de l’ouvrir, utilisez une version signée/notarisée fournie par l’éditeur pour une installation de confiance. Il n’est pas demandé de désactiver Gatekeeper ou une protection du système. La préparation technique de la signature et de la notarisation est incluse dans le dépôt ; l’éditeur doit fournir son identité Apple Developer avant publication.
+Si macOS ne peut pas vérifier l’éditeur, vérifiez l’origine et l’empreinte du téléchargement. Pour un paquet non notarisé dont vous avez vérifié la provenance, utilisez le parcours ponctuel proposé par macOS dans Réglages Système → Confidentialité et sécurité, si disponible. Si le système refuse le paquet, utilisez une distribution signée et notarisée lorsqu’elle est fournie. Ne désactivez pas Gatekeeper et ne retirez pas les attributs de quarantaine en masse.
 
 ## Windows
 
-1. Vérifiez qu’un véritable fichier `Jobly-…-win-x64.exe` figure dans `installateurs/`. S’il est absent, cette livraison ne contient pas encore de build Windows ; ne renommez pas le DMG.
-2. Sur Windows 10/11 x64, double-cliquez sur l’installateur `.exe`.
-3. Suivez l’assistant et choisissez le dossier d’installation. L’installation est propre à votre utilisateur et ne demande normalement pas de droits administrateur.
-4. Ouvrez **Jobly** depuis le menu Démarrer ou le raccourci du Bureau.
-5. Créez votre compte local ou importez une sauvegarde.
+1. Utilisez Windows 10 ou 11 **64 bits x64**.
+2. Ouvrez `Jobly-0.3.0-win-x64.exe` dans `installateurs/`.
+3. Choisissez la langue, le dossier et les raccourcis dans l’assistant, puis terminez l’installation.
+4. Lancez Jobly depuis le menu Démarrer ou son icône de bureau. Aucun Node.js, Docker ou terminal nécessaire.
 
-La compilation native Windows est automatisée dans le dépôt. Aucun résultat Windows n’est présenté comme testé si le build et les tests n’ont pas été exécutés. Sans certificat Authenticode, l’éditeur ne peut pas promettre un parcours sans avertissement SmartScreen. Ne désactivez pas SmartScreen ; utilisez une distribution de confiance signée par l’éditeur.
+Un paquet non signé peut afficher un avertissement d’éditeur inconnu. Vérifiez la source et l’empreinte avant toute décision. Si la politique de votre système bloque l’installateur, utilisez un fichier signé lorsqu’il est fourni ; ne désactivez pas SmartScreen ou l’antivirus. Windows ARM n’est pas une cible native vérifiée.
 
-## Utilisation quotidienne
+## Les dix premières minutes
 
-- Ouvrez Jobly depuis son icône. Le backend local démarre automatiquement.
-- Les nouvelles offres arrivent progressivement. La première collecte peut durer plusieurs dizaines de minutes selon les sources ; les résultats déjà collectés restent consultables.
-- **Fichier → Bureau et messages locaux** indique la progression et les erreurs par source.
-- **Fichier → Actualiser les offres** démarre une collecte immédiate. Les filtres de la recherche continuent de s’appliquer après actualisation.
-- Les raccourcis habituels copier/coller et sélectionner tout sont disponibles ; les formulaires de CV utilisent le sélecteur de fichiers natif.
-- Fermez Jobly pour arrêter ses composants locaux. Les données restent sur disque.
+Choisissez Commerce & marketing ou Auxiliaires vétérinaires. Toulouse et 30 km sont les valeurs initiales. Lancez une recherche, affinez éventuellement les filtres, puis enregistrez un favori et ouvrez « Postuler ». « Toute la France » élargit explicitement la zone. Les résultats se complètent pendant la collecte ; une absence d’ASV à proximité peut refléter la couverture ou le marché réel.
 
-## Vérifier un téléchargement
+Internet est nécessaire à l’actualisation, aux candidatures, à certains logos et au géocodage distant. Les données déjà collectées restent disponibles localement. L’application n’est pas un moteur couvrant toutes les offres d’Internet et ne fonctionne pas entièrement hors ligne.
 
-Ces commandes de contrôle sont facultatives pour l’utilisation, et ne sont pas un programme d’installation.
+## Mise à jour et sauvegarde
 
-macOS, depuis le dossier de livraison :
+Quittez Jobly, installez la nouvelle version au même emplacement, puis relancez-la. Vos données restent dans `~/Library/Application Support/Jobly/` (macOS) ou `%APPDATA%\Jobly\` (Windows), séparément de l’application. Ne supprimez pas ce dossier.
 
-```
-shasum -a 256 -c SHA256SUMS.txt
-```
+Avant migration 0.2.x → 0.3.0, une sauvegarde privée `avant-0.3.0.jobly` est créée automatiquement. Les anciens profils sont regroupés sans écran de connexion. Les données secondaires archivées sont consultables dans Mon espace → Confidentialité. Pour une sauvegarde manuelle, ouvrez **Actualisation & données → Sauvegarder**. Ne partagez pas votre sauvegarde : elle contient vos données personnelles.
 
-Windows, PowerShell :
-
-```
-Get-FileHash .\installateurs\Jobly-0.2.0-win-x64.exe -Algorithm SHA256
-```
-
-Comparez le résultat à la ligne correspondante de SHA256SUMS.txt. Un hash garantit la cohérence avec ce manifeste ; l’authenticité de l’éditeur requiert sa signature et une source de téléchargement de confiance.
+Il n’y a pas de mise à jour automatique de l’exécutable dans cette version : téléchargez et installez la nouvelle distribution. « Actualiser » met à jour les offres.
 
 ## Dépannage
 
-**Fenêtre de préparation persistante ou démarrage impossible** : fermez Jobly, vérifiez l’espace disque disponible et relancez. Le menu Aide donne accès à `jobly.log`. Ne supprimez pas le dossier `postgres/` : il contient vos données.
+- **Aucune offre** : attendez les premiers lots et regardez Actualisation & données. Vérifiez le métier, le contrat et la zone ; élargissez volontairement à 100 km ou à la France. Une commune non résolue n’est jamais remplacée silencieusement par Toulouse.
+- **Offres anciennes** : cliquez Actualiser. Consultez la date de publication, lorsqu’elle est connue, et la dernière vérification. Les sources peuvent échouer ou ne pas exposer de date de publication. Une vérification récente n’implique pas une publication récente.
+- **Nouvelle ville** : saisissez le nom officiel dans la recherche puis cliquez Actualiser pour adapter les collecteurs locaux. Les filtres seuls interrogent le catalogue sans collecte intégrale.
+- **Source indisponible** : les autres sources continuent. Les erreurs et collectes partielles figurent dans Actualisation & données. Aucun compte personnel ni clé API n’est requis pour les sources fournies.
+- **Démarrage impossible** : quittez puis relancez. Aide → Journal de diagnostic donne `jobly.log`. Vérifiez l’espace disque, les droits d’écriture du dossier de données et l’architecture téléchargée.
+- **Recherche incohérente** : Actualisation & données → Réparer la recherche. Vos favoris ne sont pas supprimés.
+- **CV importé introuvable** : si le fichier n’était pas dans la sauvegarde d’origine, réimportez le PDF depuis Profil & CV.
+- **Lien de candidature fermé** : une annonce peut changer entre deux vérifications. Consultez sa fiche et une autre source si disponible.
 
-**Aucune offre immédiatement** : connectez-vous à Internet, lancez une actualisation et consultez le dernier passage des sources. Un refus HTTP, une limite de débit ou une source sans stage actuel peut donner zéro résultat. Aucune collecte exhaustive n’est garantie.
+## Contrôle facultatif de l’intégrité
 
-**Hors connexion** : la consultation des données locales fonctionne, mais les offres ne sont plus mises à jour et les candidatures externes nécessitent Internet. Certains logos peuvent disparaître.
+Les empreintes exactes sont dans `SHA256SUMS.txt`. Cette opération nécessite un terminal mais reste facultative pour l’usage quotidien.
 
-**Lien de réinitialisation** : ouvrez Bureau → Messages locaux. Les messages ne sont pas envoyés dans votre boîte email externe.
+macOS, depuis le dossier dézippé : `shasum -a 256 -c SHA256SUMS.txt`.
+Windows PowerShell : `Get-FileHash .\installateurs\Jobly-0.3.0-win-x64.exe -Algorithm SHA256`, puis comparez avec `SHA256SUMS.txt`.
 
-**Import** : attendez la fin de la collecte. L’application demande une confirmation et conserve une sauvegarde avant de remplacer les données locales. Relancez ensuite l’application. Les données de la web app d’origine restent intactes.
+## Compilation depuis le code source
 
-**Supprimer l’application** : déplacez Jobly dans la corbeille sur macOS, ou utilisez Paramètres → Applications sur Windows. Les données utilisateur restent conservées. Faites une sauvegarde avant toute suppression manuelle de ces données.
+Elle concerne uniquement les développeurs. Node 24 LTS, npm et la plateforme cible sont nécessaires. Dans le dépôt : `npm ci`, `npm run desktop:dist -- --publish never`, `npm run desktop:smoke -- --fresh`, `npm run desktop:delivery`. La CI construit chaque cible nativement. Un fichier Markdown ou HTML de ce guide ne compile et n’installe rien.

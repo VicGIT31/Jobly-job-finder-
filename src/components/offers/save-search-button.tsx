@@ -28,7 +28,7 @@ export function SaveSearchButton({ queryString }: { queryString: string }) {
         role="status"
       >
         <Check aria-hidden="true" size={15} strokeWidth={2.5} />
-        Alerte créée
+        Recherche enregistrée
       </span>
     );
   }
@@ -47,9 +47,9 @@ export function SaveSearchButton({ queryString }: { queryString: string }) {
           <BellPlus aria-hidden="true" size={15} />
         )}
         <span className="hidden sm:inline">
-          {mutation.isPending ? "Création…" : "Créer une alerte"}
+          {mutation.isPending ? "Création…" : "Enregistrer la recherche"}
         </span>
-        <span className="sr-only sm:hidden">Créer une alerte</span>
+        <span className="sr-only sm:hidden">Enregistrer la recherche</span>
       </button>
       {mutation.isError && (
         <span className="text-xs text-danger" role="alert">

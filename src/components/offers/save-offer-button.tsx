@@ -1,21 +1,18 @@
 "use client";
 
 import { useMutation } from "@tanstack/react-query";
-import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { Bookmark, BookmarkCheck } from "lucide-react";
 
 export function SaveOfferButton({
   offerId,
   initialSaved,
-  isLoggedIn,
 }: {
   offerId: string;
   initialSaved: boolean;
   isLoggedIn: boolean;
 }) {
   const [saved, setSaved] = useState(initialSaved);
-  const router = useRouter();
 
   const mutation = useMutation({
     mutationFn: async () => {
@@ -27,24 +24,9 @@ export function SaveOfferButton({
     onSuccess: () => setSaved((s) => !s),
   });
 
-  if (!isLoggedIn) {
-    return (
-      <button
-        type="button"
-        className="btn-outline w-full"
-        onClick={() =>
-          router.push(`/connexion?callbackUrl=${encodeURIComponent(window.location.pathname)}`)
-        }
-      >
-        <Bookmark aria-hidden="true" size={16} />
-        Sauvegarder
-        <span className="text-xs font-normal text-ink/60">(connexion)</span>
-      </button>
-    );
-  }
 
   return (
-    <button
+    <div><button
       type="button"
       className={`btn-outline w-full ${saved ? "!border-accent/40 !bg-accent-soft !text-accent" : ""}`}
       aria-pressed={saved}
@@ -57,6 +39,6 @@ export function SaveOfferButton({
         <Bookmark aria-hidden="true" size={16} />
       )}
       {saved ? "Sauvegardée" : "Sauvegarder"}
-    </button>
+    </button>{mutation.isError && <p role="alert" className="mt-1 text-xs text-danger">Enregistrement impossible. Réessayez.</p>}</div>
   );
 }

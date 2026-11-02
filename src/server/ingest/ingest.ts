@@ -8,10 +8,13 @@ import {
   rawOfferSchema,
   NormalizationError,
   type NormalizeOptions,
+  type NormalizedOffer,
 } from "./normalize";
 import { syncOffersToSearch } from "@/server/search/sync";
 import { isTechOffer } from "./scope";
 import { getSettings } from "@/lib/settings";
+import { samePersonalOffer } from "./personal-dedup";
+import { classifyJob, fold } from "@/lib/job-taxonomy";
 
 export type IngestSummary = {
   received: number;
@@ -81,7 +84,7 @@ export async function processIngest(
         continue;
       }
 
-      let normalized;
+      let normalized: NormalizedOffer;
       try {
         normalized = normalizeOffer(parsed.data, options);
         if (normalized.validThrough && normalized.validThrough <= now)
@@ -100,8 +103,9 @@ export async function processIngest(
           throw new NormalizationError("Observation périmée ou future", "scrapedAt");
         if (
           normalized.countryCode !== "FR" ||
-          !["STAGE", "ALTERNANCE"].includes(normalized.contractType) ||
-          !isTechOffer(normalized.title, normalized.description)
+          (!options.personal && (!["STAGE", "ALTERNANCE"].includes(normalized.contractType) ||
+          !isTechOffer(normalized.title, normalized.description))) ||
+          (options.personal && !["COMMERCE", "ASV"].includes(classifyJob(normalized.title, normalized.description).universe))
         )
           throw new NormalizationError(
             "Offre hors périmètre : tech, France, stage ou alternance",
@@ -128,11 +132,31 @@ export async function processIngest(
       const specialty = classifySpecialty(normalized.title, normalized.description);
       // Attribution : la source portée par l'offre prime (agrégateur multi-sites).
       const offerSourceSite = normalized.sourceSite ?? sourceSite;
+      const classification = classifyJob(normalized.title, normalized.description);
+      const personalFields = options.personal ? {
+        universe: classification.universe, jobFamily: classification.family,
+        experienceLevel: normalized.experienceLevel, qualificationText: normalized.qualificationText,
+        salaryPeriod: normalized.salaryPeriod, publicationKnown: !!normalized.publishedAt,
+        locationPrecise: normalized.locationPrecise, remoteKnown: normalized.remoteKnown,
+      } : {};
 
       // Offre déjà connue ? → rafraîchir last_seen_at (et réactiver si besoin)
-      const existing =
+      let existing =
         (await prisma.jobOffer.findUnique({ where: { dedupHash } })) ??
         (await prisma.jobOffer.findFirst({ where: { sourceUrl: normalized.sourceUrl } }));
+      if (!existing && options.personal) {
+        const origin = await prisma.offerOrigin.findUnique({ where: { sourceUrl: normalized.sourceUrl }, include: { offer: true } });
+        existing = origin?.offer ?? null;
+        // Candidate retrieval is broad; the pure identity check is conservative.
+        if (!existing && !/confidentiel|non precis|non disponible/i.test(fold(normalized.companyName))) {
+          const candidates = await prisma.jobOffer.findMany({ where: { city: { equals: normalized.city, mode: "insensitive" }, contractType: normalized.contractType, company: { name: { equals: normalized.companyName, mode: "insensitive" } }, lastSeenAt: { gte: new Date(now.getTime() - 7 * 86400000) } }, include: { company: true }, take: 100 });
+          existing = candidates.find((candidate) => samePersonalOffer({ ...candidate, companyName: candidate.company.name }, normalized)) ?? null;
+        }
+      }
+      async function recordOrigin(offerId: string) {
+        if (!options.personal || normalized.descriptionIsExcerpt) return;
+        await prisma.offerOrigin.upsert({ where: { sourceUrl: normalized.sourceUrl }, update: { offerId, lastVerifiedAt: normalized.scrapedAt, status: "ACTIVE" }, create: { offerId, sourceUrl: normalized.sourceUrl, sourceSite: offerSourceSite, lastVerifiedAt: normalized.scrapedAt } });
+      }
       if (existing) {
         // Le logo de l'entreprise peut arriver après la création de la fiche.
         if (normalized.companyLogoUrl) {
@@ -151,6 +175,8 @@ export async function processIngest(
                 lastSeenAt: normalized.scrapedAt,
                 scrapedAt: normalized.scrapedAt,
                 specialty,
+                ...personalFields,
+                ...(options.personal && !normalized.publishedAt ? { publicationKnown: existing.publicationKnown } : {}),
                 sector: normalized.sector,
                 countryCode: normalized.countryCode,
                 contractType: normalized.contractType,
@@ -217,6 +243,7 @@ export async function processIngest(
           },
         });
         await queueSearch(updated);
+        await recordOrigin(updated.id);
         continue;
       }
 
@@ -255,6 +282,7 @@ export async function processIngest(
             educationLevel: normalized.educationLevel,
             sector: normalized.sector,
             specialty,
+            ...personalFields,
             sourceUrl: normalized.sourceUrl,
             sourceSite: offerSourceSite,
             scrapedAt: normalized.scrapedAt,
@@ -277,6 +305,7 @@ export async function processIngest(
           },
         });
         await queueSearch(created);
+        await recordOrigin(created.id);
       } catch (err) {
         // Course concurrente : le hash unique a été inséré entre-temps → doublon
         if (err instanceof Prisma.PrismaClientKnownRequestError && err.code === "P2002") {

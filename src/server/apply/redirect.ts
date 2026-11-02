@@ -6,7 +6,7 @@
 export type ApplyOffer = {
   id: string;
   slug: string;
-  status: "ACTIVE" | "EXPIRED";
+  status: "ACTIVE" | "EXPIRED" | "UNCERTAIN";
   sourceUrl: string;
 };
 
@@ -36,10 +36,11 @@ export async function resolveApply(
   const offer = await deps.findOffer(offerId);
   if (!offer) return { kind: "not_found" };
 
-  if (offer.status !== "ACTIVE") {
+  if (offer.status === "EXPIRED") {
     return { kind: "expired", slug: offer.slug };
   }
 
+  try { const url = new URL(offer.sourceUrl); if (!["https:", "http:"].includes(url.protocol)) return { kind: "not_found" }; } catch { return { kind: "not_found" }; }
   await deps.recordClick({ offerId: offer.id, userId, referer });
   return { kind: "redirect", url: offer.sourceUrl };
 }

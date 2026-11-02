@@ -1,35 +1,15 @@
-# Actualiser les offres dans Jobly
+# Actualiser les offres — Jobly 0.3.0
 
-## Lancer une collecte
+La collecte démarre automatiquement à l’ouverture, puis toutes les deux heures pendant que Jobly reste ouvert. Le bouton **Actualiser** et le raccourci Cmd/Ctrl+Maj+R lancent aussi un cycle. Aucun compte ni clé API ne sont requis.
 
-1. Ouvrez l’application Jobly et connectez l’ordinateur à Internet.
-2. Choisissez **Fichier → Actualiser les offres**, ou utilisez **⌘⇧R** sur macOS et **Ctrl+Maj+R** sur Windows.
-3. Consultez **Fichier → Bureau et messages locaux** pour suivre la collecte, les volumes récupérés et les erreurs des sources.
-4. Laissez Jobly ouvert pendant le traitement. Les résultats arrivent progressivement ; un cycle complet peut prendre plusieurs dizaines de minutes, voire davantage selon les sources et les budgets réseau.
+Les premiers lots sont consultables avant la fin du cycle. Les filtres interrogent le catalogue local : changer un contrat ne relance pas toutes les sources. Pour une autre commune, saisissez-la dans la recherche puis cliquez Actualiser ; les recherches locales France Travail/HelloWork utilisent cette commune au cycle suivant. La recherche nationale reste explicite et les collecteurs nationaux restent actifs.
 
-Le bouton **Actualiser les offres** de l’écran Bureau déclenche le même traitement. Si une collecte est déjà en cours, attendez sa fin ou utilisez **Arrêter la collecte**. Les résultats déjà traités restent conservés.
+**Actualisation & données** indique les sources sélectionnées, derniers passages, volumes, erreurs et couverture partielle. Une sélection vide active les collecteurs personnels fournis, pas l’ancien catalogue tech. Le retrait d’une source ne supprime pas vos favoris ni l’historique.
 
-Une collecte automatique est demandée à l’ouverture, puis toutes les deux heures tant que l’application reste ouverte, lorsque les cycles automatiques sont activés. Fermer Jobly arrête ses composants et la collecte. Les cycles automatiques peuvent être suspendus depuis **Admin → Paramètres**.
+La date de publication est affichée uniquement lorsqu’elle est fournie par la source. La détection initiale et la dernière observation sont conservées séparément. Une offre ancienne peut être encore ouverte ; une observation récente n’est pas une nouvelle publication. Les publications connues de plus de 60 jours et échéances dépassées sont rejetées à l’ingestion. Une absence prolongée de vérification indique un état à revérifier ; un lien 404/410 ou une échéance passée peut établir l’expiration.
 
-## Comprendre les dates et les résultats
+Le cache des pages de recherche est de 10 à 15 minutes ; celui des détails peut aller jusqu’à une heure. Actualiser ne contourne pas les limitations des fournisseurs. Les requêtes sont limitées par hôte, avec délais, budgets et respect des refus. Un passage partiel ne permet pas de conclure que les autres offres ont expiré.
 
-La date visible sur une offre est sa **date de publication sur le site d’origine**. Elle ne devient pas la date du jour lorsque Jobly revérifie l’annonce. Une offre publiée la semaine précédente peut donc rester disponible et avoir été vérifiée aujourd’hui.
+Internet est nécessaire. Une source bloquée continue à être signalée, sans bloquer les autres. En cas de liste vide : vérifier l’univers et les filtres, attendre le premier cycle, puis élargir volontairement le rayon ou choisir la France. Les ASV sont rares localement et aucune offre n’est fabriquée pour remplir une liste.
 
-Une collecte peut créer de nouvelles offres, mettre à jour des offres existantes ou confirmer qu’une annonce connue est toujours présente. Un bilan avec zéro création ne signifie pas nécessairement un échec. Consultez également les offres récupérées, les mises à jour et les éventuels avertissements.
-
-La recherche conserve ses filtres et se réactualise toutes les minutes lorsqu’elle est visible. Pour afficher la page à nouveau immédiatement, utilisez **Affichage → Recharger**. Retirez les filtres trop restrictifs si les nouvelles offres ne correspondent pas à la recherche courante.
-
-## Choisir les sources
-
-Sur l’écran Bureau, ouvrez **Sources de la collecte**, sélectionnez les sites souhaités puis cliquez sur **Enregistrer les sources**. La sélection s’applique aux prochains cycles et persiste entre les lancements. Une sélection vide active toutes les sources disponibles du catalogue. Les critères France, stage/alternance et périmètre tech restent appliqués par le pipeline.
-
-## Résoudre les problèmes courants
-
-- **Pas de nouvelles offres** : vérifiez Internet, les sources sélectionnées, les filtres et les bilans. Une source peut n’avoir aucune nouvelle annonce correspondant au périmètre.
-- **HTTP 403 ou 401** : le site refuse l’accès automatisé. Relancer ne garantit pas de lever ce blocage ; aucun contournement n’est effectué.
-- **HTTP 429** : le site limite le débit. Jobly respecte les délais et les garde-fous du connecteur.
-- **Collecte partielle ou budget atteint** : seuls les résultats déjà récupérés sont conservés ; cela ne prouve pas que tout le catalogue a été parcouru.
-- **Données présentes mais recherche incohérente** : utilisez **Réparer la recherche** sur l’écran Bureau. Cela reconstruit l’index depuis la base locale, sans contacter les sites ni inventer de nouvelles offres.
-- **Service local indisponible** : fermez puis relancez Jobly. Le menu **Aide → Afficher les données et le journal** donne accès à `jobly.log`. Ne supprimez pas le dossier de données.
-
-La collecte dépend de sites externes dont la disponibilité et les formats évoluent. Jobly ne peut pas garantir une couverture exhaustive ni l’ajout de nouvelles offres à chaque cycle.
+Les données restent dans le dossier Jobly du profil système. Sauvegardez depuis Actualisation & données ; utilisez Réparer la recherche si les résultats semblent incohérents. Consultez [INSTALLER.md](delivery/INSTALLER.md) pour le dépannage et [SOURCES.md](../docs/v0.3.0/SOURCES.md) pour la couverture réelle.

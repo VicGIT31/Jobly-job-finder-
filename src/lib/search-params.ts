@@ -3,8 +3,8 @@ import type { ContractType } from "@prisma/client";
 import { COLLECTIONS } from "@/lib/company-collections";
 
 /** Jobly propose uniquement des stages et des alternances. */
-export const CONTRACT_TYPES = ["STAGE", "ALTERNANCE"] as const;
-export const REMOTE_POLICIES = ["ONSITE", "HYBRID", "FULL"] as const;
+export const CONTRACT_TYPES = ["CDI", "CDD", "INTERIM", "STAGE", "ALTERNANCE", "PART_TIME", "FULL_TIME", "FREELANCE", "CONTRACT", "UNKNOWN"] as const;
+export const REMOTE_POLICIES = ["ONSITE", "HYBRID", "FULL", "UNKNOWN"] as const;
 export const EDUCATION_LEVELS = [
   "BAC",
   "BAC_2",
@@ -22,7 +22,7 @@ export const SPECIALTIES = ["IA", "CYBERSECURITE", "WEB", "DEVOPS", "SOFTWARE", 
 
 export const DATE_RANGES = ["24h", "7j", "30j"] as const;
 export const SORTS = ["pertinence", "date"] as const;
-export const RADII = [5, 10, 20, 25, 50, 100] as const;
+export const RADII = [5, 10, 20, 25, 30, 50, 100] as const;
 
 /**
  * Les 10 plus grandes villes de France (population). Le filtre rapide « Grandes
@@ -118,6 +118,8 @@ export const EUROPEAN_COUNTRIES = [
 // Couvre tout l'enum Prisma : d'anciennes offres hors périmètre peuvent
 // subsister en base (admin) même si seuls stage/alternance sont exposés.
 export const CONTRACT_LABELS: Record<ContractType, string> = {
+  UNKNOWN: "Contrat non précisé",
+  INTERIM: "Intérim",
   CDI: "CDI",
   CDD: "CDD",
   STAGE: "Stage",
@@ -132,6 +134,7 @@ export const CONTRACT_LABELS: Record<ContractType, string> = {
 };
 
 export const REMOTE_LABELS: Record<(typeof REMOTE_POLICIES)[number], string> = {
+  UNKNOWN: "Télétravail non précisé",
   ONSITE: "Sur site",
   HYBRID: "Hybride",
   FULL: "Full remote",
@@ -188,6 +191,13 @@ export const COLLECTION_ICONS: Record<string, string> = Object.fromEntries(
 
 /** Schéma des query params de /offres — source de vérité partagée serveur/client. */
 export const offerSearchParamsSchema = z.object({
+  univers: z.enum(["COMMERCE", "ASV", "TECH"]).optional().default("COMMERCE"),
+  metier: z.string().max(80).optional().default(""),
+  experience: csv(["JUNIOR", "CONFIRMED", "SENIOR", "UNKNOWN"] as const),
+  qualification: z.string().max(80).optional().default(""),
+  salaire: z.coerce.number().min(0).max(500000).optional(),
+  national: z.enum(["0", "1"]).optional().default("0"),
+  incertaines: z.enum(["0", "1"]).optional().default("0"),
   q: z.string().max(200).optional().default(""),
   ville: z.string().max(120).optional().default(""),
   rayon: z.coerce

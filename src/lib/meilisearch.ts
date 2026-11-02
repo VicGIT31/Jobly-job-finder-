@@ -23,8 +23,9 @@ export async function configureOffersIndex(): Promise<void> {
   const meili = getMeili();
   const index = meili.index(OFFERS_INDEX);
   const task = await index.updateSettings({
-    searchableAttributes: ["title", "companyName", "sector", "city", "descriptionText"],
+    searchableAttributes: ["title", "jobFamily", "qualificationText", "companyName", "sector", "city", "descriptionText"],
     filterableAttributes: [
+      "id",
       "contractType",
       "city",
       "remotePolicy",
@@ -37,8 +38,10 @@ export async function configureOffersIndex(): Promise<void> {
       "sourceSite",
       "countryCode",
       "_geo",
+      "universe", "jobFamily", "experienceLevel", "salaryMin", "salaryMax", "salaryPeriod", "publicationKnown", "verifiedAtTs", "locationPrecise",
     ],
-    sortableAttributes: ["publishedAtTs"],
+    sortableAttributes: ["publishedAtTs", "verifiedAtTs"],
+    synonyms: { asv: ["auxiliaire vétérinaire", "auxiliaire spécialisé vétérinaire", "veterinary nurse"], "business developer": ["développement commercial", "account executive"], vendeur: ["conseiller de vente", "vendeuse"], "service client": ["customer care", "relation client"] },
     rankingRules: ["words", "typo", "proximity", "attribute", "sort", "exactness"],
     typoTolerance: {
       enabled: true,

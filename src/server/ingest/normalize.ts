@@ -30,6 +30,10 @@ export const rawOfferSchema = z.object({
   companyLogoUrl: z.string().url().max(1000).optional(),
   // ISO 3166-1 alpha-2. Absent = source française historique ("FR").
   countryCode: z.string().length(2).optional(),
+  experienceLevel: z.enum(["JUNIOR", "CONFIRMED", "SENIOR", "UNKNOWN"]).optional(),
+  qualificationText: z.string().max(1000).optional(),
+  salaryPeriod: z.enum(["YEAR", "MONTH", "HOUR", "UNKNOWN"]).optional(),
+  locationPrecise: z.boolean().optional(),
 });
 
 export type RawOffer = z.infer<typeof rawOfferSchema>;
@@ -60,16 +64,23 @@ export type NormalizedOffer = {
   validThrough: Date | null;
   companyLogoUrl: string | null;
   countryCode: string;
+  experienceLevel: string;
+  qualificationText: string | null;
+  salaryPeriod: string;
+  locationPrecise: boolean;
+  remoteKnown: boolean;
 };
 
 const CONTRACT_MAP: Record<string, ContractType> = {
+  unknown: "UNKNOWN",
+  intérim: "INTERIM",
+  interim: "INTERIM",
   cdi: "CDI",
   "full-time": "CDI",
   fulltime: "CDI",
   permanent: "CDI",
   cdd: "CDD",
   "fixed-term": "CDD",
-  interim: "CDD",
   stage: "STAGE",
   internship: "STAGE",
   intern: "STAGE",
@@ -104,6 +115,7 @@ const CONTRACT_MAP: Record<string, ContractType> = {
 const DEFAULT_ACCEPTED_CONTRACTS: ReadonlySet<ContractType> = new Set(["STAGE", "ALTERNANCE"]);
 
 const REMOTE_MAP: Record<string, RemotePolicy> = {
+  unknown: "UNKNOWN",
   onsite: "ONSITE",
   "sur site": "ONSITE",
   présentiel: "ONSITE",
@@ -166,6 +178,7 @@ export class NormalizationError extends Error {
 export type NormalizeOptions = {
   /** Périmètre de contrats accepté par la source appelante. Défaut : stage/alternance uniquement. */
   acceptedContracts?: ReadonlySet<ContractType>;
+  personal?: boolean;
 };
 
 /**
@@ -231,5 +244,10 @@ export function normalizeOffer(raw: RawOffer, options: NormalizeOptions = {}): N
     validThrough: raw.validThrough ?? null,
     companyLogoUrl: raw.companyLogoUrl ?? null,
     countryCode: (raw.countryCode ?? "FR").toUpperCase(),
+    experienceLevel: raw.experienceLevel ?? "UNKNOWN",
+    qualificationText: raw.qualificationText ?? null,
+    salaryPeriod: raw.salaryPeriod ?? "UNKNOWN",
+    locationPrecise: raw.locationPrecise ?? false,
+    remoteKnown: !!raw.remotePolicy && raw.remotePolicy !== "unknown",
   };
 }

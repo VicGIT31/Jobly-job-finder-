@@ -30,7 +30,7 @@ export function SiteNav({
   const pathname = usePathname();
   const [open, setOpen] = useState(false);
 
-  const links = [...LINKS, ...(isAdmin ? [{ href: "/admin", label: "Admin" }] : [])];
+  const links = [...LINKS, ...(isAdmin ? [{ href: "/bureau", label: "Actualisation" }] : [])];
   const isActive = (href: string) => pathname === href || pathname?.startsWith(`${href}/`);
 
   // Ferme le menu mobile à chaque navigation et sur Échap ; bloque le défilement dessous.
@@ -57,7 +57,7 @@ export function SiteNav({
     <>
       <nav
         aria-label="Navigation principale"
-        className="hidden flex-1 items-center justify-center sm:flex"
+        className="hidden flex-1 items-center justify-center lg:flex"
       >
         <ul className="flex items-center gap-1">
           {links.map(({ href, label }) => {
@@ -87,7 +87,7 @@ export function SiteNav({
         {isLoggedIn ? (
           <Link
             href="/mon-espace"
-            className="hidden items-center gap-2 rounded-full border border-line bg-paper py-1 pl-1 pr-3 text-sm font-medium shadow-card transition-colors hover:border-ink/25 sm:inline-flex"
+            className="hidden items-center gap-2 rounded-full border border-line bg-paper py-1 pl-1 pr-3 text-sm font-medium shadow-card transition-colors hover:border-ink/25 lg:inline-flex"
           >
             <span
               aria-hidden="true"
@@ -98,14 +98,14 @@ export function SiteNav({
             Mon espace
           </Link>
         ) : (
-          <Link href="/connexion" className="btn-cobalt btn-sm hidden sm:inline-flex">
+          <Link href="/connexion" className="btn-cobalt btn-sm hidden lg:inline-flex">
             Connexion
           </Link>
         )}
 
         <button
           type="button"
-          className="grid h-9 w-9 place-items-center rounded-lg text-ink/80 hover:bg-ink/[0.06] sm:hidden"
+          className="grid h-9 w-9 place-items-center rounded-lg text-ink/80 hover:bg-ink/[0.06] lg:hidden"
           aria-expanded={open}
           aria-controls="menu-mobile"
           onClick={() => setOpen((o) => !o)}
@@ -122,7 +122,7 @@ export function SiteNav({
         ref={(el) => {
           if (el) el.toggleAttribute("inert", !open);
         }}
-        className={`fixed inset-x-0 bottom-0 top-[var(--header-h)] z-40 bg-canvas transition-[opacity,visibility] duration-base ease-out sm:hidden ${
+        className={`fixed inset-x-0 bottom-0 top-[var(--header-h)] z-40 bg-canvas transition-[opacity,visibility] duration-base ease-out lg:hidden ${
           open ? "visible opacity-100" : "invisible opacity-0"
         }`}
       >

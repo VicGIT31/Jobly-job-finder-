@@ -1,39 +1,27 @@
-# Analyse et validation de Jobly bureau
+# Audit et livraison — Jobly 0.3.0
 
-## Périmètre analysé
+## Origine
 
-Le projet est une application Next.js App Router (React, TypeScript, Tailwind), avec authentification Auth.js/Prisma, stockage métier PostgreSQL, recherche Meilisearch, tâches BullMQ/Redis et CV sur S3/MinIO. Les connecteurs collectent des sources publiques puis normalisent les contrats, dédupliquent, classent les spécialités, contrôlent le périmètre tech et France, gèrent l’expiration et synchronisent l’index. L’interface possède des filtres combinables, favoris, offres masquées, suivi de candidatures, profil/CV, alertes, insights et administration.
+Base 0.2.0 : Next.js 15, React, Prisma/PostgreSQL, Meilisearch, pipeline d’ingestion tech stage/alternance, Auth.js et stockage S3 pour la version web ; Electron avec services embarqués pour le bureau. Historique réel : commit 9173159, sans tag de version. Le périmètre élargi justifie 0.3.0.
 
-L’analyse a couvert les points de lancement/build, les migrations et modèles, l’authentification, le stockage, les adaptateurs de recherche, les workers, les points d’entrée de collecte, le catalogue, les budgets et verrous, les emails, les actions utilisateur et l’interface de recherche. Les connecteurs bénéficiaient déjà d’une suite de tests : ils n’ont pas été réécrits. L’analyse ne constitue pas une certification exhaustive de chaque source externe ni un audit de sécurité indépendant.
+## Solution
 
-## Choix d’architecture
+Electron est conservé : il réutilise le serveur Next.js et les composants Node existants. Une migration vers Tauri ajouterait un deuxième runtime sans retirer le backend requis. Le paquet contient Electron, Next standalone, PostgreSQL 18.4 et Meilisearch 1.56. Les polices et l’icône existantes sont conservées.
 
-Electron réutilise directement l’interface et le serveur Next.js de production. Il embarque PostgreSQL et Meilisearch natifs. Le stockage bureau des CV et la boîte de messages locale remplacent les services nécessitant des secrets serveur. Les verrous et limites utilisent un coordinateur en mémoire dans l’unique backend local. Le scheduler appartient au cycle de vie de l’application. La version web reste disponible avec ses adaptateurs Redis/S3 habituels.
+Les processus locaux écoutent uniquement sur loopback. Le renderer est sandboxé et isolé, sans accès Node. Le backend est protégé par jeton éphémère et cookie HttpOnly. Les actions IPC vérifient leur émetteur. Les liens externes HTTP(S) sont ouverts dans le navigateur système. Les CV, préférences, sauvegardes et index vivent dans le dossier de données du système et ne sont jamais embarqués dans les distributions.
 
-Les polices de marque sont désormais locales : la compilation ne dépend plus de Google Fonts. Les caches de collecte et les données de développement sont explicitement exclus du serveur tracé et de la préparation des paquets. Le backend est protégé sur loopback et le renderer Electron reste isolé et sandboxé. Les liens Postuler suivent le parcours de suivi avant ouverture dans le navigateur système.
+## Mode personnel
 
-## Vérifications locales du 29 octobre 2026
+Connexion, inscription, récupération, vérification d’adresse et gestion des utilisateurs sont retirées. Le schéma historique reste pour migrer les relations, puis sert à un seul profil local. La migration regroupe favoris, recherches, notes et candidatures, archive les autres profils et références de CV, et efface les anciens moyens d’authentification. Une sauvegarde complète précède cette opération dans le lanceur de bureau.
 
-- macOS Apple Silicon, Darwin 25.6, architecture arm64. Le DMG a été construit, contrôlé par `hdiutil verify`, monté et son bundle copié dans `/Applications/Jobly.app`. Les tests ont ensuite lancé cet exemplaire installé.
-- 218 tests automatisés réussis dans 33 fichiers. TypeScript et ESLint réussis ; compilation de production Next.js réussie.
-- Exécutable lancé depuis la racine en lecture seule (condition de lancement Finder), avec un PATH ne contenant ni Node/npm ni Docker. Les outils restent installés sur la machine ; une machine vierge n’a pas été testée. Les services Docker Jobly ont été arrêtés avant le test du DMG installé.
-- Création de compte, connexion, filtres combinés (contrat, spécialité, ville, télétravail, niveau), recherche Meilisearch, favoris, alerte, CV PDF privé, boîte locale de réinitialisation, choix de sources et sauvegarde/restauration vérifiés.
-- Raccourci de recherche et collage depuis le presse-papiers système vérifiés. Le parcours Postuler enregistre le suivi puis demande l’ouverture du navigateur système ; cette ouverture a été interceptée par l’automatisation pour éviter une navigation externe pendant le test.
-- Arrêt du serveur et de PostgreSQL puis persistance de la session, des favoris, des filtres, des sources et du CV après relancement vérifiés.
-- Collecte réelle Free-Work : 12 offres récupérées et créées, sans erreur dans le bilan du cycle vérifié. Ce contrôle n’est pas une validation de toutes les autres sources.
-- État hors connexion vérifié. Captures desktop, petite fenêtre, tablette 768 px et mobile 390 px générées et effectivement ouvertes. Correction des champs du premier lancement après revue ; absence de débordement horizontal contrôlée sur les vues testées. Cela ne remplace pas un audit complet d’accessibilité.
-- Aucun fichier `.env`, aucune archive privée `.jobly`, et aucune correspondance avec les secrets de développement contrôlés dans les ressources de l’application installée.
+## Recherche et sources
 
-Les preuves détaillées sont dans `reports/desktop/` (non versionné), notamment `verification.json`, `network.json`, `dmg-verification.txt` et les captures PNG. Les tests emploient un profil isolé et des données synthétiques, exclus des distributions.
+Deux univers : Commerce/Marketing et ASV. Classification par intitulé et synonymes, exclusion des vétérinaires et métiers enseignants, géographie exacte par Haversine, rayon 30 km, national explicite, informations inconnues conservées. Les offres enregistrent provenance, publication connue, détection et observation. Les regroupements intersites sont prudents ; ils ne fusionnent pas deux postes sur la seule base d’un employeur et d’un intitulé proches.
 
-## Données existantes
+Les sources publiques sont isolées par connecteur, avec budgets, cache, limite de concurrence et états partiels. Aucune clé de source ni secret serveur n’est distribué. La disponibilité des sources HTML publiques n’est pas contractuelle. La collecte, les candidatures et certains enrichissements nécessitent Internet. Aucun backend distant Jobly n’est indispensable.
 
-Une archive privée compatible est conservée dans `.cache/Jobly-donnees-existantes.jobly`, séparée de la livraison publique. Elle contient les 7 546 offres et 5 comptes de la base existante. Un ancien CV est référencé par cette base mais absent du bucket source ; sa référence et un avertissement sont conservés dans l’archive, mais aucun fichier ne peut être inventé. L’archive a été importée et vérifiée dans le profil local de l’application installée : 7 546 offres, 5 comptes et 1 333 entreprises. La base d’origine reste conservée.
+## Vérification et limites
 
-## Ce qui reste à vérifier avant publication générale
+Les mesures réelles, tests des exécutables et limites de chaque plateforme sont consignés dans les documents de release et VERIFICATION.md du ZIP. Les tests synthétiques des parcours sont distingués des mesures sur sources réelles. Sans certificats fournis, les exécutables ne sont pas signés par un éditeur reconnu et les DMG ne sont pas notarisés.
 
-Windows x64 et macOS Intel sont configurés dans la matrice de compilation native, mais aucun build ou test de ces systèmes n’a été exécuté dans cette session macOS arm64. Il n’y a pas d’EXE Windows ni de DMG Intel présenté comme disponible. Windows ARM natif et Linux ne sont pas des cibles préparées.
-
-Le DMG local n’est pas signé Developer ID ni notarisé. Pour une distribution macOS de confiance, fournir le certificat Apple et les accès de notarisation documentés dans README.md, puis construire et contrôler la version signée. Pour Windows, fournir une identité Authenticode et vérifier l’installateur sur Windows. Aucune désactivation de Gatekeeper ou SmartScreen n’est prescrite.
-
-L’usage hors ligne couvre les données locales ; l’actualisation, les candidatures, certains logos et le géocodage de nouvelles villes nécessitent Internet. Les emails sont des messages locaux et les services OAuth/IA à secret serveur ne sont pas distribués. La couverture exhaustive des sites externes n’est pas garantie.
+Le runtime se lance sans Node/npm/Docker dans son PATH ; cette vérification n’équivaut pas à l’installation manuelle sur une machine vierge. Une installation classique reste à contrôler sur les systèmes disposant de protections de téléchargement, particulièrement avant diffusion à un large public.

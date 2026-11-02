@@ -28,30 +28,24 @@ export async function expireStaleOffers(now = new Date()): Promise<number> {
       status: "ACTIVE",
       OR: [{ lastSeenAt: { lt: threshold } }, { validThrough: { lte: now } }],
     },
-    select: { id: true },
+    select: { id: true, universe: true, validThrough: true },
   });
   if (stale.length === 0) return 0;
 
   let expired = 0;
-  for (let offset = 0; offset < stale.length; offset += 500) {
-    const ids = stale.slice(offset, offset + 500).map((offer) => offer.id);
-    const result = await prisma.jobOffer.updateMany({
-      where: {
-        id: { in: ids },
-        status: "ACTIVE",
-        OR: [{ lastSeenAt: { lt: threshold } }, { validThrough: { lte: now } }],
-      },
-      data: { status: "EXPIRED" },
-    });
-    expired += result.count;
-    const updated = await prisma.jobOffer.findMany({
-      where: { id: { in: ids } },
-      include: { company: true },
-    });
-    try {
-      await syncOffersToSearch(updated);
-    } catch (err) {
-      console.error("[freshness] Sync Meilisearch échouée, réparation horaire prévue :", err);
+  const personalUnknown = stale.filter((offer) => ["COMMERCE", "ASV"].includes(offer.universe) && !(offer.validThrough && offer.validThrough <= now));
+  const uncertainIds = new Set(personalUnknown.map(({ id }) => id));
+  const confirmed = stale.filter(({ id }) => !uncertainIds.has(id));
+  for (const [group, status] of [[confirmed, "EXPIRED"], [personalUnknown, "UNCERTAIN"]] as const) {
+    for (let offset = 0; offset < group.length; offset += 500) {
+      const ids = group.slice(offset, offset + 500).map((offer) => offer.id);
+      const result = await prisma.jobOffer.updateMany({
+        where: { id: { in: ids }, status: "ACTIVE", OR: [{ lastSeenAt: { lt: threshold } }, { validThrough: { lte: now } }] },
+        data: { status },
+      });
+      expired += result.count;
+      const updated = await prisma.jobOffer.findMany({ where: { id: { in: ids } }, include: { company: true } });
+      try { await syncOffersToSearch(updated); } catch (err) { console.error("[freshness] Sync échouée ; réparation prévue", err); }
     }
   }
   return expired;
@@ -67,7 +61,7 @@ export async function purgeOldOffers(now = new Date()): Promise<number> {
   const threshold = new Date(now.getTime() - days * 86_400_000);
 
   const old = await prisma.jobOffer.findMany({
-    where: { publishedAt: { lt: threshold } },
+    where: { publishedAt: { lt: threshold }, savedBy: { none: {} }, hiddenBy: { none: {} }, applications: { none: {} } },
     select: { id: true },
   });
   if (old.length === 0) return 0;

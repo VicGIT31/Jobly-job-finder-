@@ -76,6 +76,7 @@ export async function GET(): Promise<NextResponse> {
   const payload = {
     exportedAt: new Date().toISOString(),
     profile: user,
+    importedProfiles: (await prisma.siteSetting.findUnique({ where: { key: "importedPersonalProfiles" } }))?.value ?? [],
     savedOffers,
     hiddenOffers,
     savedSearches,
