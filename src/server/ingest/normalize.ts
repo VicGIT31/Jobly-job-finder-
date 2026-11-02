@@ -1,6 +1,7 @@
 import { z } from "zod";
 import type { ContractType, EducationLevel, RemotePolicy } from "@prisma/client";
 import { nonStudentContractEvidence } from "./contract-evidence";
+import { experienceFrom, qualificationFrom } from "@/lib/job-taxonomy";
 
 /** Offre brute telle que reçue du scraper (champs volontairement souples). */
 export const rawOfferSchema = z.object({
@@ -244,10 +245,10 @@ export function normalizeOffer(raw: RawOffer, options: NormalizeOptions = {}): N
     validThrough: raw.validThrough ?? null,
     companyLogoUrl: raw.companyLogoUrl ?? null,
     countryCode: (raw.countryCode ?? "FR").toUpperCase(),
-    experienceLevel: raw.experienceLevel ?? "UNKNOWN",
-    qualificationText: raw.qualificationText ?? null,
+    experienceLevel: raw.experienceLevel ?? experienceFrom(raw.title, raw.description),
+    qualificationText: raw.qualificationText ?? qualificationFrom(raw.description),
     salaryPeriod: raw.salaryPeriod ?? "UNKNOWN",
-    locationPrecise: raw.locationPrecise ?? false,
+    locationPrecise: raw.locationPrecise ?? (raw.latitude != null && raw.longitude != null),
     remoteKnown: !!raw.remotePolicy && raw.remotePolicy !== "unknown",
   };
 }

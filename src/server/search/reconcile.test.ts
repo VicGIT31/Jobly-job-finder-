@@ -13,6 +13,7 @@ vi.mock("@/lib/meilisearch", () => ({
   getMeili: () => ({ index: () => ({ getDocuments: mocks.documents }) }),
 }));
 vi.mock("./sync", () => ({ syncOffersToSearch: mocks.sync, removeOffersFromSearch: mocks.remove }));
+vi.mock("@/server/ingest/reclassify", () => ({ ensureClassification: async () => null }));
 import { reconcileSearchIndex } from "./reconcile";
 beforeEach(() => vi.resetAllMocks());
 describe("réparation périodique de l'index", () => {

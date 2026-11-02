@@ -1,9 +1,12 @@
 import { prisma } from "@/lib/prisma";
 import { getMeili, configureOffersIndex, OFFERS_INDEX } from "@/lib/meilisearch";
 import { removeOffersFromSearch, syncOffersToSearch } from "./sync";
+import { ensureClassification } from "@/server/ingest/reclassify";
 
 /** Répare aussi les échecs d'indexation d'un cycle précédent. */
 export async function reconcileSearchIndex(): Promise<{ indexed: number; removed: number }> {
+  // Le classement d'abord : l'index est reconstruit depuis des offres déjà reclassées.
+  await ensureClassification();
   await configureOffersIndex();
   let cursor: string | undefined;
   let indexed = 0;

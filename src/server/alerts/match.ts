@@ -1,6 +1,6 @@
-import { parseOfferSearchParams, dateRangeToTimestamp } from "@/lib/search-params";
-import { classifyJob, queryFamilies, VOCABULARY, fold } from "@/lib/job-taxonomy";
-import { distanceKm } from "@/lib/geo";
+import { parseOfferSearchParams, dateRangeToTimestamp, type OfferSearchInput } from "@/lib/search-params";
+import { isKnownJobQuery, queryFamilies, fold } from "@/lib/job-taxonomy";
+import { distanceKm, type Point } from "@/lib/geo";
 import { geocodeCity } from "@/server/ingest/sources/geocode";
 import type { JobOffer } from "@prisma/client";
 import { normalizeForDedup } from "@/server/ingest/dedup";
@@ -30,7 +30,46 @@ export type MatchableOffer = Pick<
   | "sector"
   | "salaryMin"
   | "salaryMax"
-> & Partial<Pick<JobOffer, "universe" | "jobFamily" | "latitude" | "longitude" | "experienceLevel" | "qualificationText" | "salaryPeriod" | "publicationKnown" | "publishedAt">> & { companyName?: string };
+> & Partial<Pick<JobOffer, "universe" | "jobFamily" | "specialty" | "latitude" | "longitude" | "experienceLevel" | "qualificationText" | "salaryPeriod" | "publicationKnown" | "publishedAt">> & { companyName?: string };
+
+/** Les mêmes critères que la recherche /offres, appliqués à une offre fraîchement ingérée. */
+function offerMatchesInput(input: OfferSearchInput, offer: MatchableOffer, center?: Point): boolean {
+  const universe = offer.universe ?? "TECH";
+  if (input.univers.length && !input.univers.includes(universe as never)) return false;
+  const jobFamily = offer.jobFamily ?? "OTHER";
+  // Un métier et une spécialité tech s'additionnent (OU) : c'est un seul filtre « Métier ».
+  if (input.metier.length || input.specialite.length) {
+    const family = input.metier.includes(jobFamily);
+    const specialty = !!offer.specialty && input.specialite.includes(offer.specialty as never);
+    if (!family && !specialty) return false;
+  }
+  if (input.q) {
+    const families = queryFamilies(input.q);
+    if (isKnownJobQuery(input.q) && families.length) {
+      if (!families.includes(jobFamily)) return false;
+    } else {
+      const text = fold([offer.title, offer.description, offer.companyName].join(" "));
+      if (!fold(input.q).split(" ").every((word) => text.includes(word))) return false;
+    }
+  }
+  if (input.ville) {
+    const origin = center ?? geocodeCity(input.ville);
+    if (input.rayon && origin) {
+      if (offer.latitude == null || offer.longitude == null) return false;
+      if (distanceKm(origin, { lat: offer.latitude, lng: offer.longitude }) > input.rayon) return false;
+    } else if (fold(offer.city) !== fold(input.ville)) return false;
+  }
+  if (input.contrat.length && !input.contrat.includes(offer.contractType as never)) return false;
+  if (input.remote.length && !input.remote.includes(offer.remotePolicy)) return false;
+  if (input.niveau.length && !input.niveau.includes(offer.educationLevel)) return false;
+  if (input.experience.length && !input.experience.includes((offer.experienceLevel ?? "UNKNOWN") as never)) return false;
+  if (input.secteur.length && !input.secteur.includes(offer.sector)) return false;
+  if (input.qualification && offer.qualificationText && !fold(offer.qualificationText).includes(fold(input.qualification))) return false;
+  // Un salaire inconnu n'est pas une incompatibilité : seuls les montants annuels connus sont comparés.
+  if (input.salaire && offer.salaryPeriod === "YEAR" && (offer.salaryMax ?? offer.salaryMin) != null && (offer.salaryMax ?? offer.salaryMin)! < input.salaire) return false;
+  if (input.datePub && (!offer.publicationKnown || !offer.publishedAt || offer.publishedAt.getTime() < dateRangeToTimestamp(input.datePub))) return false;
+  return true;
+}
 
 /**
  * Une offre correspond-elle à une recherche sauvegardée ?
@@ -39,26 +78,7 @@ export type MatchableOffer = Pick<
 export function offerMatchesSearch(params: SearchParams, offer: MatchableOffer): boolean {
   if (params.queryString !== undefined) {
     const input = parseOfferSearchParams(Object.fromEntries(new URLSearchParams(params.queryString)));
-    if (input.univers !== "TECH") {
-      const classification = classifyJob(offer.title);
-      if ((offer.universe ?? classification.universe) !== input.univers) return false;
-      const families = input.metier ? [input.metier] : queryFamilies(input.q, input.univers);
-      if (families.length && !families.includes(offer.jobFamily ?? classification.family)) return false;
-      const semantic = Object.values(VOCABULARY).flat().includes(fold(input.q)) || /^(commerce|vente|commercial|sales)$/.test(fold(input.q));
-      if (input.q && !semantic) { const text = fold([offer.title, offer.description, offer.companyName].join(" ")); if (!fold(input.q).split(" ").every((word) => text.includes(word))) return false; }
-      if (input.national !== "1") {
-        const city = input.ville || "Toulouse", center = params.center ?? geocodeCity(city);
-        if (center) { if (offer.latitude == null || offer.longitude == null || distanceKm(center, { lat: offer.latitude, lng: offer.longitude }) > (input.rayon ?? 30)) return false; }
-        else if (fold(offer.city) !== fold(city)) return false;
-      }
-      if (input.contrat.length && !input.contrat.includes(offer.contractType as never)) return false;
-      if (input.remote.length && !input.remote.includes(offer.remotePolicy)) return false;
-      if (input.experience.length && !input.experience.includes((offer.experienceLevel ?? "UNKNOWN") as never)) return false;
-      if (input.qualification && offer.qualificationText && !fold(offer.qualificationText).includes(fold(input.qualification))) return false;
-      if (input.salaire && offer.salaryPeriod === "YEAR" && (offer.salaryMax ?? offer.salaryMin) != null && (offer.salaryMax ?? offer.salaryMin)! < input.salaire) return false;
-      if (input.datePub && (!offer.publicationKnown || !offer.publishedAt || offer.publishedAt.getTime() < dateRangeToTimestamp(input.datePub))) return false;
-      return true;
-    }
+    return offerMatchesInput(input, offer, params.center);
   }
   if (params.q) {
     const haystack = normalizeForDedup(

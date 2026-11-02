@@ -3,6 +3,7 @@ import { z } from "zod";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { geocodeCityFull } from "@/server/ingest/sources/geocode";
+import { UNIVERSE_SHORT_LABELS } from "@/lib/job-taxonomy";
 import { parseOfferSearchParams, CONTRACT_LABELS } from "@/lib/search-params";
 
 export const dynamic = "force-dynamic";
@@ -32,8 +33,8 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
   // Params persistés au format SearchParams (cf. alerts/match.ts)
   const params = {
     queryString: parsed.data.queryString,
-    center: input.national === "1" ? undefined : await geocodeCityFull(input.ville || "Toulouse") ?? undefined,
-    universe: input.univers,
+    center: input.ville && input.rayon ? ((await geocodeCityFull(input.ville)) ?? undefined) : undefined,
+    universe: input.univers.join(",") || undefined,
     q: input.q || undefined,
     city: input.ville || undefined,
     contractType: input.contrat.length ? input.contrat : undefined,
@@ -44,10 +45,10 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
 
   const autoName =
     [
-      input.univers === "ASV" ? "ASV" : "Commerce & marketing",
+      input.univers.map((key) => UNIVERSE_SHORT_LABELS[key]).join(" + "),
       input.q,
       input.contrat.map((c) => CONTRACT_LABELS[c as keyof typeof CONTRACT_LABELS]).join("/"),
-      input.national === "1" ? "France entière" : `${input.ville || "Toulouse"} · ${input.rayon ?? 30} km`,
+      input.ville ? `${input.ville}${input.rayon ? ` · ${input.rayon} km` : ""}` : "",
     ]
       .filter(Boolean)
       .join(" · ") || "Toutes les offres";

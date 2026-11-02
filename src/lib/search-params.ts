@@ -1,9 +1,24 @@
 import { z } from "zod";
 import type { ContractType } from "@prisma/client";
 import { COLLECTIONS } from "@/lib/company-collections";
+import { FAMILY_LABELS, TAG_LABELS, UNIVERSES } from "@/lib/job-taxonomy";
 
-/** Jobly propose uniquement des stages et des alternances. */
-export const CONTRACT_TYPES = ["CDI", "CDD", "INTERIM", "STAGE", "ALTERNANCE", "PART_TIME", "FULL_TIME", "FREELANCE", "CONTRACT", "UNKNOWN"] as const;
+/**
+ * Contrats de toute l'application : stages et alternances pour la tech, tous
+ * les contrats pour le commerce, le marketing, la communication et l'ASV.
+ */
+export const CONTRACT_TYPES = [
+  "CDI",
+  "CDD",
+  "INTERIM",
+  "STAGE",
+  "ALTERNANCE",
+  "PART_TIME",
+  "FULL_TIME",
+  "FREELANCE",
+  "CONTRACT",
+  "UNKNOWN",
+] as const;
 export const REMOTE_POLICIES = ["ONSITE", "HYBRID", "FULL", "UNKNOWN"] as const;
 export const EDUCATION_LEVELS = [
   "BAC",
@@ -189,13 +204,21 @@ export const COLLECTION_ICONS: Record<string, string> = Object.fromEntries(
   COLLECTIONS.map((c) => [c.key, c.icon]),
 );
 
+/** Familles de métiers filtrables (hors « Autre »), dérivées des libellés. */
+export const FAMILY_KEYS = Object.keys(FAMILY_LABELS).filter((key) => key !== "OTHER");
+export const TAG_KEYS = Object.keys(TAG_LABELS);
+export const EXPERIENCE_KEYS = ["JUNIOR", "CONFIRMED", "SENIOR", "UNKNOWN"] as const;
+
 /** Schéma des query params de /offres — source de vérité partagée serveur/client. */
 export const offerSearchParamsSchema = z.object({
-  univers: z.enum(["COMMERCE", "ASV", "TECH"]).optional().default("COMMERCE"),
-  metier: z.string().max(80).optional().default(""),
-  experience: csv(["JUNIOR", "CONFIRMED", "SENIOR", "UNKNOWN"] as const),
+  // Domaines : vide = tous les métiers mélangés (tech, commerce, communication, ASV).
+  univers: csv(UNIVERSES),
+  metier: csv(FAMILY_KEYS),
+  experience: csv(EXPERIENCE_KEYS),
+  tag: csv(TAG_KEYS),
   qualification: z.string().max(80).optional().default(""),
   salaire: z.coerce.number().min(0).max(500000).optional(),
+  // Ancien mode « Toute la France » : sans ville, la recherche est déjà nationale.
   national: z.enum(["0", "1"]).optional().default("0"),
   incertaines: z.enum(["0", "1"]).optional().default("0"),
   q: z.string().max(200).optional().default(""),
@@ -215,8 +238,8 @@ export const offerSearchParamsSchema = z.object({
     .optional()
     .transform((v) => (v ? v.split(",").filter(Boolean).slice(0, 10) : [])),
   datePub: z.enum(DATE_RANGES).optional(),
-  // Tri par date de publication réelle (site d'origine) par défaut.
-  tri: z.enum(SORTS).optional().default("date"),
+  // Absent : pertinence quand une recherche textuelle ou une ville est donnée, sinon récentes.
+  tri: z.enum(SORTS).optional(),
   page: z.coerce.number().int().min(1).max(5000).optional().default(1),
 });
 
@@ -232,6 +255,13 @@ export function parseOfferSearchParams(
   }
   const parsed = offerSearchParamsSchema.safeParse(flat);
   return parsed.success ? parsed.data : offerSearchParamsSchema.parse({});
+}
+
+/** Tri effectif : la pertinence n'a de sens que s'il y a quelque chose à comparer. */
+export function resolveSort(
+  input: Pick<OfferSearchInput, "tri" | "q" | "ville">,
+): (typeof SORTS)[number] {
+  return input.tri ?? (input.q || input.ville ? "pertinence" : "date");
 }
 
 export function dateRangeToTimestamp(

@@ -15,7 +15,14 @@
  */
 
 export type CollectionKey =
-  "gafam" | "tech-francaises" | "licornes" | "fintech" | "deep-tech" | "grande-distribution";
+  | "gafam"
+  | "tech-francaises"
+  | "licornes"
+  | "fintech"
+  | "deep-tech"
+  | "grande-distribution"
+  | "sante-animale"
+  | "protection-animale";
 
 type Member = {
   /** Nom affiché, indépendant de l'orthographe des annonces. */
@@ -166,6 +173,37 @@ export const COLLECTIONS: Collection[] = [
       { name: "ManoMano", patterns: ["manomano"] },
       { name: "Veepee", patterns: ["veepee", "vente-privee"] },
       { name: "Vestiaire Collective", patterns: ["vestiaire"] },
+      { name: "JYSK", patterns: ["jysk"] },
+      { name: "METRO", patterns: ["metro"], exact: ["metro-france"] },
+      { name: "Maxi Zoo", patterns: ["maxi-zoo"] },
+      { name: "Animalis", patterns: ["animalis"] },
+    ],
+  },
+  {
+    key: "sante-animale",
+    label: "Cliniques & groupes vétérinaires",
+    tagline: "Les structures qui recrutent des ASV partout en France",
+    icon: "🩺",
+    members: [
+      { name: "AniCura", patterns: ["anicura"] },
+      { name: "Sevetys", patterns: ["sevetys"] },
+      { name: "Mon Véto", patterns: ["monveto", "mon-veto"] },
+      { name: "Argos Vétérinaire", patterns: ["argos-veterinaire"] },
+      { name: "IVC Evidensia", patterns: ["evidensia", "ivc-evidensia"] },
+      { name: "Vetopartners", patterns: ["vetopartners"] },
+      { name: "Cliniques vétérinaires", patterns: ["clinique-veterinaire", "cabinet-veterinaire", "hopital-veterinaire"] },
+    ],
+  },
+  {
+    key: "protection-animale",
+    label: "Refuges & protection animale",
+    tagline: "SPA, associations et refuges qui recrutent des soigneurs et agents",
+    icon: "🐾",
+    members: [
+      { name: "SPA", patterns: ["spa"], exact: ["societe-protectrice-des-animaux"] },
+      { name: "30 Millions d'Amis", patterns: ["30-millions-d-amis"] },
+      { name: "Fondation Brigitte Bardot", patterns: ["brigitte-bardot"] },
+      { name: "Refuges", patterns: ["refuge"] },
     ],
   },
 ];

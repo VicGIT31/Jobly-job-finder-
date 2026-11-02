@@ -1,7 +1,6 @@
 import { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { slugifyFr } from "@/lib/slug";
-import { classifySpecialty } from "./classify";
 import { computeDedupHash } from "./dedup";
 import {
   normalizeOffer,
@@ -11,10 +10,10 @@ import {
   type NormalizedOffer,
 } from "./normalize";
 import { syncOffersToSearch } from "@/server/search/sync";
-import { isTechOffer } from "./scope";
 import { getSettings } from "@/lib/settings";
 import { samePersonalOffer } from "./personal-dedup";
-import { classifyJob, fold } from "@/lib/job-taxonomy";
+import { fold } from "@/lib/job-taxonomy";
+import { classifyJob, isInScope, type JobClassification } from "./job-classifier";
 
 export type IngestSummary = {
   received: number;
@@ -85,6 +84,7 @@ export async function processIngest(
       }
 
       let normalized: NormalizedOffer;
+      let classification: JobClassification;
       try {
         normalized = normalizeOffer(parsed.data, options);
         if (normalized.validThrough && normalized.validThrough <= now)
@@ -101,16 +101,17 @@ export async function processIngest(
           normalized.scrapedAt.getTime() > now.getTime() + 300_000
         )
           throw new NormalizationError("Observation périmée ou future", "scrapedAt");
-        if (
-          normalized.countryCode !== "FR" ||
-          (!options.personal && (!["STAGE", "ALTERNANCE"].includes(normalized.contractType) ||
-          !isTechOffer(normalized.title, normalized.description))) ||
-          (options.personal && !["COMMERCE", "ASV"].includes(classifyJob(normalized.title, normalized.description).universe))
-        )
-          throw new NormalizationError(
-            "Offre hors périmètre : tech, France, stage ou alternance",
-            "scope",
-          );
+        if (normalized.countryCode !== "FR")
+          throw new NormalizationError("Offre hors périmètre : France uniquement", "scope");
+        // Une seule règle pour tout le catalogue : la tech reste en stage ou
+        // alternance, le commerce, la communication et l'ASV acceptent tous les contrats.
+        classification = classifyJob(normalized.title, normalized.description, {
+          company: normalized.companyName,
+          sector: normalized.sector,
+          contract: normalized.contractType,
+        });
+        const scope = isInScope(classification, normalized.contractType);
+        if (!scope.ok) throw new NormalizationError(scope.reason, "scope");
       } catch (err) {
         const reason = err instanceof NormalizationError ? err.message : "Normalisation impossible";
         summary.rejected++;
@@ -127,24 +128,27 @@ export async function processIngest(
         normalized.city,
         normalized.sourceUrl,
       );
-      // Spécialité déduite ici plutôt que dans chaque connecteur : toute source,
-      // présente ou future, est classée de la même façon.
-      const specialty = classifySpecialty(normalized.title, normalized.description);
+      // Domaine, métier et spécialité déduits ici plutôt que dans chaque
+      // connecteur : toute source, présente ou future, est classée de la même façon.
+      const specialty = classification.specialty;
       // Attribution : la source portée par l'offre prime (agrégateur multi-sites).
       const offerSourceSite = normalized.sourceSite ?? sourceSite;
-      const classification = classifyJob(normalized.title, normalized.description);
-      const personalFields = options.personal ? {
-        universe: classification.universe, jobFamily: classification.family,
-        experienceLevel: normalized.experienceLevel, qualificationText: normalized.qualificationText,
-        salaryPeriod: normalized.salaryPeriod, publicationKnown: !!normalized.publishedAt,
-        locationPrecise: normalized.locationPrecise, remoteKnown: normalized.remoteKnown,
-      } : {};
+      const personalFields = {
+        universe: classification.universe,
+        jobFamily: classification.family,
+        experienceLevel: normalized.experienceLevel,
+        qualificationText: normalized.qualificationText,
+        salaryPeriod: normalized.salaryPeriod,
+        publicationKnown: !!normalized.publishedAt,
+        locationPrecise: normalized.locationPrecise,
+        remoteKnown: normalized.remoteKnown,
+      };
 
       // Offre déjà connue ? → rafraîchir last_seen_at (et réactiver si besoin)
       let existing =
         (await prisma.jobOffer.findUnique({ where: { dedupHash } })) ??
         (await prisma.jobOffer.findFirst({ where: { sourceUrl: normalized.sourceUrl } }));
-      if (!existing && options.personal) {
+      if (!existing) {
         const origin = await prisma.offerOrigin.findUnique({ where: { sourceUrl: normalized.sourceUrl }, include: { offer: true } });
         existing = origin?.offer ?? null;
         // Candidate retrieval is broad; the pure identity check is conservative.
@@ -154,7 +158,7 @@ export async function processIngest(
         }
       }
       async function recordOrigin(offerId: string) {
-        if (!options.personal || normalized.descriptionIsExcerpt) return;
+        if (normalized.descriptionIsExcerpt) return;
         await prisma.offerOrigin.upsert({ where: { sourceUrl: normalized.sourceUrl }, update: { offerId, lastVerifiedAt: normalized.scrapedAt, status: "ACTIVE" }, create: { offerId, sourceUrl: normalized.sourceUrl, sourceSite: offerSourceSite, lastVerifiedAt: normalized.scrapedAt } });
       }
       if (existing) {
@@ -176,7 +180,7 @@ export async function processIngest(
                 scrapedAt: normalized.scrapedAt,
                 specialty,
                 ...personalFields,
-                ...(options.personal && !normalized.publishedAt ? { publicationKnown: existing.publicationKnown } : {}),
+                ...(!normalized.publishedAt ? { publicationKnown: existing.publicationKnown } : {}),
                 sector: normalized.sector,
                 countryCode: normalized.countryCode,
                 contractType: normalized.contractType,
@@ -217,6 +221,9 @@ export async function processIngest(
             "longitude",
             "sourceSite",
             "sector",
+            "universe",
+            "jobFamily",
+            "experienceLevel",
           ].some(
             (key) =>
               existing[key as keyof typeof existing] !== updated[key as keyof typeof updated],

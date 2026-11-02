@@ -1,5 +1,6 @@
 /**
- * Vocabulaire de compétences tech reconnu par `analyze.ts`. Volontairement
+ * Vocabulaire de compétences reconnu par `analyze.ts` : tech, puis commerce,
+ * marketing, communication et santé animale. Volontairement
  * une liste contrôlée plutôt qu'une extraction naïve de mots : évite de
  * comparer un CV à des mots vides ou du texte de boilerplate juridique
  * (spec §21 : "Found: Product strategy, Figma, User research…", pas
@@ -92,4 +93,52 @@ export const SKILL_KEYWORDS = [
   "sre",
   "cybersécurité",
   "cybersecurity",
+  // Commerce et relation client
+  "prospection",
+  "négociation",
+  "b2b",
+  "b2c",
+  "salesforce",
+  "hubspot",
+  "crm",
+  "merchandising",
+  "encaissement",
+  "gestion de rayon",
+  "fidélisation",
+  "service après-vente",
+  "vente additionnelle",
+  "e-commerce",
+  // Marketing et communication
+  "seo",
+  "sea",
+  "google ads",
+  "google analytics",
+  "emailing",
+  "newsletter",
+  "réseaux sociaux",
+  "community management",
+  "relations presse",
+  "plan de communication",
+  "wordpress",
+  "canva",
+  "photoshop",
+  "indesign",
+  "rédaction web",
+  "marketing automation",
+  // Santé animale
+  "contention",
+  "anesthésie",
+  "radiographie",
+  "échographie",
+  "prise de sang",
+  "soins infirmiers",
+  "hospitalisation",
+  "aide opératoire",
+  "stérilisation",
+  "avq",
+  "asv",
+  "nac",
+  "équine",
+  "faune sauvage",
+  "pharmacie vétérinaire",
 ] as const;

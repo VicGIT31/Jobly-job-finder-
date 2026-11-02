@@ -1,6 +1,7 @@
 import type { Company, JobOffer } from "@prisma/client";
 import { getMeili, OFFERS_INDEX } from "@/lib/meilisearch";
 import { confirmSearchTask } from "./task";
+import { classifyJob } from "@/server/ingest/job-classifier";
 
 export type OfferWithCompany = JobOffer & { company: Company };
 
@@ -34,6 +35,13 @@ export type OfferDocument = {
   firstSeenAtTs?: number;
   locationPrecise?: boolean;
   remoteKnown?: boolean;
+  /** Attributs déduits du texte (débutant accepté, équine, refuge…). */
+  tags?: string[];
+  /** Confiance du classement métier, 0 à 1, et indices qui l'ont décidé. */
+  jobConfidence?: number;
+  jobEvidence?: string[];
+  /** Pertinence textuelle Meilisearch, 0 à 1 (présente seulement quand elle est demandée). */
+  _rankingScore?: number;
   sourceUrl?: string;
   distanceKm?: number | null;
   reasons?: string[];
@@ -55,6 +63,13 @@ function stripMarkdown(md: string): string {
 }
 
 export function offerToDocument(offer: OfferWithCompany): OfferDocument {
+  // Les attributs lisibles viennent du même classifieur que l'ingestion : ils
+  // restent cohérents avec le domaine et le métier stockés.
+  const insight = classifyJob(offer.title, offer.description, {
+    company: offer.company.name,
+    sector: offer.sector,
+    contract: offer.contractType,
+  });
   return {
     id: offer.id,
     title: offer.title,
@@ -80,6 +95,9 @@ export function offerToDocument(offer: OfferWithCompany): OfferDocument {
     salaryPeriod: offer.salaryPeriod ?? "UNKNOWN", publicationKnown: offer.publicationKnown ?? false,
     verifiedAtTs: offer.lastSeenAt.getTime(), firstSeenAtTs: offer.createdAt?.getTime() ?? offer.scrapedAt.getTime(),
     locationPrecise: offer.locationPrecise ?? false, remoteKnown: offer.remoteKnown ?? false,
+    tags: insight.tags,
+    jobConfidence: insight.confidence,
+    jobEvidence: insight.evidence,
     sourceUrl: offer.sourceUrl,
     ...(offer.latitude != null && offer.longitude != null
       ? { _geo: { lat: offer.latitude, lng: offer.longitude } }

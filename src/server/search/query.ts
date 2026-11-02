@@ -1,14 +1,20 @@
-import { Prisma } from "@prisma/client";
+import type { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { getMeili, OFFERS_INDEX } from "@/lib/meilisearch";
-import { dateRangeToTimestamp, PAGE_SIZE, type OfferSearchInput } from "@/lib/search-params";
+import {
+  dateRangeToTimestamp,
+  PAGE_SIZE,
+  resolveSort,
+  type OfferSearchInput,
+} from "@/lib/search-params";
+import { fold, isKnownJobQuery, queryFamilies } from "@/lib/job-taxonomy";
+import { distanceKm, type Point } from "@/lib/geo";
 import { geocodeCityFull } from "@/server/ingest/sources/geocode";
 import { companySlugsForCollection } from "@/server/companies/collections";
 import type { CollectionKey } from "@/lib/company-collections";
-import type { OfferDocument } from "./sync";
-import { offerToDocument } from "./sync";
-import { PUBLIC_OFFER_FILTER, PUBLIC_OFFER_WHERE } from "@/server/offers/public-scope";
-import { searchPersonalOffers } from "./personal-query";
+import { getPersonalProfile } from "@/server/personal/profile";
+import { offerToDocument, type OfferDocument } from "./sync";
+import { rankOffer, type RankContext } from "./ranking";
 
 export type FacetCounts = Record<string, Record<string, number>>;
 
@@ -24,11 +30,61 @@ export type OfferSearchResult = {
   refreshedAt?: string;
 };
 
+/** Candidats classés en mémoire par recherche ; au-delà, la recherche invite à préciser. */
+const CANDIDATE_LIMIT = 5000;
+
+const FACETS = [
+  "contractType",
+  "city",
+  "remotePolicy",
+  "sector",
+  "specialty",
+  "educationLevel",
+  "countryCode",
+  "universe",
+  "jobFamily",
+  "experienceLevel",
+  "tags",
+] as const;
+
+/** Champs utiles au classement : on ne rapatrie le document complet que pour la page affichée. */
+const SLIM_FIELDS = [
+  "id",
+  "title",
+  "companyName",
+  "status",
+  "_geo",
+  "publishedAtTs",
+  "firstSeenAtTs",
+  "verifiedAtTs",
+  "publicationKnown",
+  "salaryMin",
+  "salaryMax",
+  "salaryPeriod",
+  "qualificationText",
+  "jobConfidence",
+  "jobEvidence",
+  ...FACETS,
+];
+
+type Plan = {
+  input: OfferSearchInput;
+  statuses: Array<"ACTIVE" | "UNCERTAIN">;
+  center: Point | null;
+  profileId: string;
+  hiddenIds: string[];
+  categorySlugs: string[] | null;
+  /** Texte réellement recherché : vide quand la requête est un intitulé connu (voir `families`). */
+  query: string;
+  /** Métiers imposés par une requête connue (« ASV », « commercial », « marketing »). */
+  impliedFamilies: string[];
+  rank: RankContext;
+};
+
 /** Coordonnées d'une ville : géocodage (statique puis API, en cache), sinon offres en base. */
-async function resolveCityGeo(city: string): Promise<{ lat: number; lng: number } | null> {
+async function resolveCityGeo(city: string): Promise<Point | null> {
   const geocoded = await geocodeCityFull(city);
   if (geocoded) return geocoded;
-
   const offer = await prisma.jobOffer.findFirst({
     where: { city: { equals: city, mode: "insensitive" }, latitude: { not: null } },
     select: { latitude: true, longitude: true },
@@ -39,12 +95,9 @@ async function resolveCityGeo(city: string): Promise<{ lat: number; lng: number 
 }
 
 /**
- * Slugs d'entreprise des catégories sélectionnées (union, dédupliquée) — les
- * collections ne sont pas un champ indexé, contrairement à pays/spécialité/
- * contrat : on les traduit ici en une liste de `companySlug` à filtrer,
- * consommée par les deux moteurs de recherche. `null` = aucun filtre
- * catégorie actif ; tableau vide = catégorie(s) sélectionnée(s) sans aucune
- * entreprise correspondante en base (résultat vide, pas "tout").
+ * Slugs d'entreprise des catégories sélectionnées (union dédupliquée).
+ * `null` = aucun filtre catégorie ; tableau vide = catégorie sans entreprise
+ * en base (résultat vide, pas « tout »).
  */
 async function resolveCategorySlugs(categorie: string[]): Promise<string[] | null> {
   if (categorie.length === 0) return null;
@@ -63,208 +116,356 @@ const EMPTY_RESULT: OfferSearchResult = {
   engine: "meilisearch",
 };
 
+async function buildPlan(input: OfferSearchInput): Promise<Plan | null> {
+  const [profile, categorySlugs] = await Promise.all([
+    getPersonalProfile(),
+    resolveCategorySlugs(input.categorie),
+  ]);
+  if (categorySlugs?.length === 0) return null;
+  const hidden = await prisma.hiddenOffer.findMany({
+    where: { userId: profile.id },
+    select: { offerId: true },
+  });
+  const center = input.ville && input.rayon ? await resolveCityGeo(input.ville) : null;
+  const implied = queryFamilies(input.q);
+  // Un intitulé connu (« ASV », « veterinary nurse », « commercial ») s'appuie sur
+  // la classification : une exigence textuelle exclurait les équivalents français/anglais.
+  const known = !!input.q && isKnownJobQuery(input.q) && implied.length > 0;
+  return {
+    input,
+    statuses: input.incertaines === "1" ? ["ACTIVE", "UNCERTAIN"] : ["ACTIVE"],
+    center,
+    profileId: profile.id,
+    hiddenIds: hidden.map(({ offerId }) => offerId),
+    categorySlugs,
+    query: known ? "" : input.q,
+    impliedFamilies: known ? implied : [],
+    rank: {
+      center,
+      radius: input.rayon,
+      query: known ? "" : input.q,
+      families: [...input.metier, ...(known ? implied : [])],
+      specialties: input.specialite,
+    },
+  };
+}
+
 /**
- * Recherche d'offres : Meilisearch en premier (typo-tolérance, facettes, géo),
- * repli PostgreSQL si le moteur est indisponible.
+ * Recherche d'offres, tous domaines mélangés (tech, commerce, communication,
+ * ASV) : Meilisearch en premier (typo-tolérance, facettes, géo), repli
+ * PostgreSQL si le moteur est indisponible. Les offres masquées sont écartées.
  */
 export async function searchOffers(input: OfferSearchInput): Promise<OfferSearchResult> {
-  if (input.univers !== "TECH") return searchPersonalOffers(input);
-  const categorySlugs = await resolveCategorySlugs(input.categorie);
-  if (categorySlugs?.length === 0) return EMPTY_RESULT;
-
+  const plan = await buildPlan(input);
+  if (!plan) return EMPTY_RESULT;
   try {
-    return await searchWithMeilisearch(input, categorySlugs);
+    return await searchWithMeilisearch(plan);
   } catch (err) {
     console.error("[search] Meilisearch indisponible, repli PostgreSQL :", err);
-    return searchWithPostgres(input, categorySlugs);
+    return searchWithPostgres(plan);
   }
 }
 
-async function searchWithMeilisearch(
-  input: OfferSearchInput,
-  categorySlugs: string[] | null,
-): Promise<OfferSearchResult> {
-  const filters: string[] = [PUBLIC_OFFER_FILTER];
+/* ------------------------------------------------------------------ */
+/* Meilisearch                                                         */
+/* ------------------------------------------------------------------ */
 
-  if (input.contrat.length) {
-    filters.push(`contractType IN [${input.contrat.map((c) => `"${c}"`).join(", ")}]`);
-  }
-  if (input.remote.length) {
-    filters.push(`remotePolicy IN [${input.remote.map((r) => `"${r}"`).join(", ")}]`);
-  }
-  if (input.niveau.length) {
-    filters.push(`educationLevel IN [${input.niveau.map((n) => `"${n}"`).join(", ")}]`);
-  }
-  if (input.specialite.length) {
-    filters.push(`specialty IN [${input.specialite.map((s) => `"${s}"`).join(", ")}]`);
-  }
-  if (input.pays.length) {
-    filters.push(`countryCode IN [${input.pays.map((p) => `"${p}"`).join(", ")}]`);
-  }
-  if (input.secteur.length) {
-    filters.push(`sector IN [${input.secteur.map((s) => `"${s.replace(/"/g, "")}"`).join(", ")}]`);
-  }
-  if (categorySlugs) {
-    filters.push(`companySlug IN [${categorySlugs.map((s) => `"${s}"`).join(", ")}]`);
-  }
+const quoted = (value: string) => JSON.stringify(value);
+const inList = (field: string, values: readonly string[]) =>
+  `${field} IN [${values.map(quoted).join(", ")}]`;
+
+function meiliFilter(plan: Plan): string {
+  const { input } = plan;
+  const filters = [
+    inList("status", plan.statuses),
+    inList("countryCode", input.pays.length ? input.pays : ["FR"]),
+  ];
+  if (input.univers.length) filters.push(inList("universe", input.univers));
+  // Un métier et une spécialité tech s'additionnent (OU) : c'est un seul filtre « Métier ».
+  const job = [
+    input.metier.length ? inList("jobFamily", input.metier) : "",
+    input.specialite.length ? inList("specialty", input.specialite) : "",
+  ].filter(Boolean);
+  if (job.length) filters.push(job.length > 1 ? `(${job.join(" OR ")})` : job[0]);
+  if (plan.impliedFamilies.length) filters.push(inList("jobFamily", plan.impliedFamilies));
+  if (input.contrat.length) filters.push(inList("contractType", input.contrat));
+  if (input.remote.length) filters.push(inList("remotePolicy", input.remote));
+  if (input.niveau.length) filters.push(inList("educationLevel", input.niveau));
+  if (input.experience.length) filters.push(inList("experienceLevel", input.experience));
+  if (input.tag.length) filters.push(inList("tags", input.tag));
+  if (input.secteur.length)
+    filters.push(
+      inList(
+        "sector",
+        input.secteur.map((value) => value.replace(/"/g, "")),
+      ),
+    );
+  if (plan.categorySlugs) filters.push(inList("companySlug", plan.categorySlugs));
+  if (plan.hiddenIds.length) filters.push(`id NOT IN [${plan.hiddenIds.map(quoted).join(", ")}]`);
   if (input.datePub) {
-    filters.push(`publishedAtTs >= ${dateRangeToTimestamp(input.datePub)}`);
+    const since = dateRangeToTimestamp(input.datePub);
+    // Une publication inconnue se date par sa première détection, plutôt que d'être écartée.
+    filters.push(
+      `((publicationKnown = true AND publishedAtTs >= ${since}) OR (publicationKnown = false AND firstSeenAtTs >= ${since}))`,
+    );
+  }
+  if (input.ville) {
+    filters.push(
+      plan.center
+        ? `_geoRadius(${plan.center.lat}, ${plan.center.lng}, ${(input.rayon ?? 30) * 1000})`
+        : `city = ${quoted(input.ville)}`,
+    );
+  }
+  return filters.join(" AND ");
+}
+
+async function searchWithMeilisearch(plan: Plan): Promise<OfferSearchResult> {
+  const { input } = plan;
+  const index = getMeili().index<OfferDocument>(OFFERS_INDEX);
+  const filter = meiliFilter(plan);
+  const sort = resolveSort(input);
+  const needsRanking = sort === "pertinence" || !!input.salaire || !!input.qualification;
+
+  if (!needsRanking) {
+    // « Récentes » : pagination native, facettes sur tout le catalogue filtré.
+    const result = await index.search(plan.query, {
+      filter,
+      facets: [...FACETS],
+      sort: ["publishedAtTs:desc"],
+      hitsPerPage: PAGE_SIZE,
+      page: input.page,
+    });
+    const hits = result.hits.map((hit) => rankOffer(hit, plan.rank));
+    return {
+      hits: await withPersonalState(hits, plan.profileId),
+      totalHits: result.totalHits ?? result.hits.length,
+      page: result.page ?? input.page,
+      totalPages: result.totalPages ?? 1,
+      facets: (result.facetDistribution as FacetCounts) ?? {},
+      engine: "meilisearch",
+      ...locationInfo(plan),
+    };
   }
 
-  // Ville : géo-recherche si rayon demandé et ville géocodable, sinon filtre exact
-  if (input.ville) {
-    const geo = input.rayon ? await resolveCityGeo(input.ville) : null;
-    if (geo && input.rayon) {
-      filters.push(`_geoRadius(${geo.lat}, ${geo.lng}, ${input.rayon * 1000})`);
-    } else {
-      filters.push(`city = "${input.ville.replace(/"/g, "")}"`);
+  const result = await index.search(plan.query, {
+    filter,
+    facets: [...FACETS],
+    limit: CANDIDATE_LIMIT,
+    attributesToRetrieve: SLIM_FIELDS,
+    showRankingScore: true,
+  });
+  const candidates = result.hits as OfferDocument[];
+  const loadPage = async (ids: string[]) => {
+    if (!ids.length) return [] as OfferDocument[];
+    const full = await index.search("", { filter: inList("id", ids), limit: ids.length });
+    return full.hits as OfferDocument[];
+  };
+  return finishRanked(plan, candidates, {
+    engine: "meilisearch",
+    facets: (result.facetDistribution as FacetCounts) ?? {},
+    candidateTotal: result.estimatedTotalHits ?? candidates.length,
+    loadPage,
+  });
+}
+
+/* ------------------------------------------------------------------ */
+/* Pipeline commun : filtres en mémoire, classement, pagination        */
+/* ------------------------------------------------------------------ */
+
+/** Critères que l'index ne sait pas exprimer, et garde-fous après un repli PostgreSQL. */
+function passes(doc: OfferDocument, plan: Plan): boolean {
+  const { input, center } = plan;
+  if (center && (!doc._geo || distanceKm(center, doc._geo) > (input.rayon ?? 30))) return false;
+  if (input.tag.length && !input.tag.some((tag) => doc.tags?.includes(tag))) return false;
+  if (
+    input.qualification &&
+    doc.qualificationText &&
+    !fold(doc.qualificationText).includes(fold(input.qualification))
+  )
+    return false;
+  // Un salaire inconnu n'est pas une incompatibilité : seuls les montants annuels connus sont comparés.
+  const pay = doc.salaryMax ?? doc.salaryMin;
+  if (input.salaire && doc.salaryPeriod === "YEAR" && pay != null && pay < input.salaire)
+    return false;
+  return true;
+}
+
+function facetsFrom(docs: OfferDocument[]): FacetCounts {
+  const facets: FacetCounts = {};
+  for (const key of FACETS) facets[key] = {};
+  for (const doc of docs) {
+    for (const key of FACETS) {
+      const raw = (doc as unknown as Record<string, unknown>)[key];
+      for (const value of Array.isArray(raw) ? raw : [raw ?? "UNKNOWN"]) {
+        const label = String(value);
+        facets[key][label] = (facets[key][label] ?? 0) + 1;
+      }
     }
   }
+  return facets;
+}
 
-  const meili = getMeili();
-  // hitsPerPage/page activent la pagination exhaustive (totalHits/totalPages)
-  const result = (await meili.index(OFFERS_INDEX).search<OfferDocument>(input.q || "", {
-    filter: filters.join(" AND "),
-    facets: [
-      "contractType",
-      "city",
-      "remotePolicy",
-      "sector",
-      "specialty",
-      "educationLevel",
-      "countryCode",
-    ],
-    // "Pertinence" sans mot-clé n'a rien à classer par pertinence (aucun
-    // texte à comparer) : sans repli, l'ordre dépend de l'ID interne
-    // Meilisearch, imprévisible pour l'utilisateur. On retombe alors sur la
-    // date, comme "Plus récentes". Avec un mot-clé, la pertinence textuelle
-    // reste prioritaire — seuls les ex æquo de pertinence sont alors
-    // départagés par date (position de `sort` dans `rankingRules`, voir
-    // src/lib/meilisearch.ts).
-    sort: input.tri === "date" || !input.q ? ["publishedAtTs:desc"] : undefined,
-    hitsPerPage: PAGE_SIZE,
-    page: input.page,
-  })) as {
-    hits: OfferDocument[];
-    totalHits?: number;
-    page?: number;
-    totalPages?: number;
-    facetDistribution?: FacetCounts;
-  };
-
+async function finishRanked(
+  plan: Plan,
+  candidates: OfferDocument[],
+  options: {
+    engine: "meilisearch" | "postgres";
+    facets: FacetCounts;
+    candidateTotal: number;
+    loadPage: (ids: string[]) => Promise<OfferDocument[]>;
+  },
+): Promise<OfferSearchResult> {
+  const { input } = plan;
+  const kept = candidates.filter((doc) => passes(doc, plan));
+  const ranked = kept.map((doc) => rankOffer(doc, plan.rank));
+  ranked.sort((a, b) =>
+    resolveSort(input) === "date"
+      ? b.publishedAtTs - a.publishedAtTs
+      : b.score - a.score || (b.verifiedAtTs ?? 0) - (a.verifiedAtTs ?? 0),
+  );
+  const pageSlice = ranked.slice((input.page - 1) * PAGE_SIZE, input.page * PAGE_SIZE);
+  const fullById = new Map(
+    (await options.loadPage(pageSlice.map(({ id }) => id))).map((doc) => [doc.id, doc]),
+  );
+  const hits = pageSlice.map((slim) => ({ ...(fullById.get(slim.id) ?? slim), ...pick(slim) }));
   return {
-    hits: result.hits,
-    totalHits: result.totalHits ?? result.hits.length,
-    page: result.page ?? input.page,
-    totalPages: result.totalPages ?? 1,
-    facets: (result.facetDistribution as FacetCounts) ?? {},
-    engine: "meilisearch",
+    hits: await withPersonalState(hits, plan.profileId),
+    totalHits: ranked.length,
+    page: input.page,
+    totalPages: Math.max(1, Math.ceil(ranked.length / PAGE_SIZE)),
+    // Les facettes de l'index restent exactes tant que rien n'a été retiré en mémoire.
+    facets:
+      options.engine === "postgres" || kept.length !== candidates.length
+        ? facetsFrom(kept)
+        : options.facets,
+    engine: options.engine,
+    ...(options.candidateTotal >= CANDIDATE_LIMIT ? { limited: true } : {}),
+    ...locationInfo(plan),
   };
 }
 
-// ---------- Repli PostgreSQL ----------
+const pick = ({ score, distanceKm: distance, reasons }: ReturnType<typeof rankOffer>) => ({
+  score,
+  distanceKm: distance,
+  reasons,
+});
 
-function buildWhere(
-  input: OfferSearchInput,
-  categorySlugs: string[] | null,
-  withGeo?: { lat: number; lng: number; km: number },
-) {
-  const where: Prisma.JobOfferWhereInput = { ...PUBLIC_OFFER_WHERE };
+function locationInfo(plan: Plan) {
+  const { input } = plan;
+  return {
+    refreshedAt: new Date().toISOString(),
+    ...(input.ville
+      ? {
+          location: {
+            city: input.ville,
+            radius: input.rayon ?? null,
+            resolved: !input.rayon || !!plan.center,
+          },
+        }
+      : {}),
+  };
+}
 
-  if (input.q) {
-    const terms = input.q.split(/\s+/).filter(Boolean);
-    where.AND = terms.map((term) => ({
-      OR: [
-        { title: { contains: term, mode: "insensitive" } },
-        { description: { contains: term, mode: "insensitive" } },
-        { city: { contains: term, mode: "insensitive" } },
-        { sector: { contains: term, mode: "insensitive" } },
-        { company: { name: { contains: term, mode: "insensitive" } } },
-      ],
-    }));
+/** Sources regroupées (provenance) et état « favori » de la page affichée. */
+async function withPersonalState(
+  hits: OfferDocument[],
+  profileId: string,
+): Promise<OfferDocument[]> {
+  if (!hits.length) return hits;
+  const ids = hits.map(({ id }) => id);
+  const [origins, saved] = await Promise.all([
+    prisma.offerOrigin.findMany({
+      where: { offerId: { in: ids } },
+      select: { offerId: true, sourceSite: true, sourceUrl: true, status: true },
+    }),
+    prisma.savedOffer.findMany({
+      where: { userId: profileId, offerId: { in: ids } },
+      select: { offerId: true },
+    }),
+  ]);
+  const savedIds = new Set(saved.map(({ offerId }) => offerId));
+  return hits.map((offer) => ({
+    ...offer,
+    saved: savedIds.has(offer.id),
+    sources: origins
+      .filter(({ offerId }) => offerId === offer.id)
+      .map(({ offerId: _offerId, ...origin }) => origin),
+  }));
+}
+
+/* ------------------------------------------------------------------ */
+/* Repli PostgreSQL                                                    */
+/* ------------------------------------------------------------------ */
+
+function buildWhere(plan: Plan): Prisma.JobOfferWhereInput {
+  const { input } = plan;
+  const and: Prisma.JobOfferWhereInput[] = [];
+  const where: Prisma.JobOfferWhereInput = {
+    status: { in: plan.statuses },
+    countryCode: input.pays.length ? { in: input.pays } : "FR",
+  };
+  if (plan.hiddenIds.length) where.id = { notIn: plan.hiddenIds };
+  if (input.univers.length) where.universe = { in: input.univers };
+  const job: Prisma.JobOfferWhereInput[] = [];
+  if (input.metier.length) job.push({ jobFamily: { in: input.metier } });
+  if (input.specialite.length) job.push({ specialty: { in: input.specialite } });
+  if (job.length) and.push({ OR: job });
+  if (plan.impliedFamilies.length) and.push({ jobFamily: { in: plan.impliedFamilies } });
+  if (plan.query) {
+    for (const term of plan.query.split(/\s+/).filter(Boolean)) {
+      and.push({
+        OR: [
+          { title: { contains: term, mode: "insensitive" } },
+          { description: { contains: term, mode: "insensitive" } },
+          { city: { contains: term, mode: "insensitive" } },
+          { sector: { contains: term, mode: "insensitive" } },
+          { company: { name: { contains: term, mode: "insensitive" } } },
+        ],
+      });
+    }
   }
-  if (input.contrat.length)
-    where.contractType = { in: input.contrat };
+  if (input.contrat.length) where.contractType = { in: input.contrat };
   if (input.remote.length) where.remotePolicy = { in: input.remote };
   if (input.niveau.length) where.educationLevel = { in: input.niveau };
-  if (input.specialite.length) where.specialty = { in: input.specialite };
-  if (input.pays.length) where.countryCode = { in: input.pays };
+  if (input.experience.length) where.experienceLevel = { in: input.experience };
   if (input.secteur.length) where.sector = { in: input.secteur };
-  if (categorySlugs) where.company = { slug: { in: categorySlugs } };
-  if (input.datePub) where.publishedAt = { gte: new Date(dateRangeToTimestamp(input.datePub)) };
-
-  if (withGeo) {
-    // Approximation par boîte englobante (1° lat ≈ 111 km)
-    const dLat = withGeo.km / 111;
-    const dLng = withGeo.km / (111 * Math.cos((withGeo.lat * Math.PI) / 180));
-    where.latitude = { gte: withGeo.lat - dLat, lte: withGeo.lat + dLat };
-    where.longitude = { gte: withGeo.lng - dLng, lte: withGeo.lng + dLng };
-  } else if (input.ville) {
-    where.city = { equals: input.ville, mode: "insensitive" };
+  if (plan.categorySlugs) where.company = { slug: { in: plan.categorySlugs } };
+  if (input.datePub) {
+    const since = new Date(dateRangeToTimestamp(input.datePub));
+    and.push({
+      OR: [
+        { publicationKnown: true, publishedAt: { gte: since } },
+        { publicationKnown: false, createdAt: { gte: since } },
+      ],
+    });
   }
-
+  if (input.ville) {
+    if (plan.center) {
+      // Boîte englobante (1° de latitude ≈ 111 km) ; la distance exacte est filtrée ensuite.
+      const radius = input.rayon ?? 30;
+      const dLat = radius / 111;
+      const dLng = radius / (111 * Math.cos((plan.center.lat * Math.PI) / 180));
+      where.latitude = { gte: plan.center.lat - dLat, lte: plan.center.lat + dLat };
+      where.longitude = { gte: plan.center.lng - dLng, lte: plan.center.lng + dLng };
+    } else where.city = { equals: input.ville, mode: "insensitive" };
+  }
+  if (and.length) where.AND = and;
   return where;
 }
 
-async function searchWithPostgres(
-  input: OfferSearchInput,
-  categorySlugs: string[] | null,
-): Promise<OfferSearchResult> {
-  let geoBox: { lat: number; lng: number; km: number } | undefined;
-  if (input.ville && input.rayon) {
-    const geo = await resolveCityGeo(input.ville);
-    if (geo) geoBox = { ...geo, km: input.rayon };
-  }
-
-  const where = buildWhere(input, categorySlugs, geoBox);
-
-  const [
-    offers,
-    totalHits,
-    contractFacet,
-    cityFacet,
-    remoteFacet,
-    sectorFacet,
-    specialtyFacet,
-    educationFacet,
-    countryFacet,
-  ] = await Promise.all([
-    prisma.jobOffer.findMany({
-      where,
-      include: { company: true },
-      orderBy: { publishedAt: "desc" },
-      skip: (input.page - 1) * PAGE_SIZE,
-      take: PAGE_SIZE,
-    }),
-    prisma.jobOffer.count({ where }),
-    prisma.jobOffer.groupBy({ by: ["contractType"], where, _count: true }),
-    prisma.jobOffer.groupBy({ by: ["city"], where, _count: true }),
-    prisma.jobOffer.groupBy({ by: ["remotePolicy"], where, _count: true }),
-    prisma.jobOffer.groupBy({ by: ["sector"], where, _count: true }),
-    prisma.jobOffer.groupBy({ by: ["specialty"], where, _count: true }),
-    prisma.jobOffer.groupBy({ by: ["educationLevel"], where, _count: true }),
-    prisma.jobOffer.groupBy({ by: ["countryCode"], where, _count: true }),
-  ]);
-
-  const toRecord = <K extends string>(
-    rows: Array<{ _count: number } & Record<K, string>>,
-    key: K,
-  ) => Object.fromEntries(rows.map((row) => [row[key], row._count]));
-
-  return {
-    hits: offers.map(offerToDocument),
-    totalHits,
-    page: input.page,
-    totalPages: Math.max(1, Math.ceil(totalHits / PAGE_SIZE)),
-    facets: {
-      contractType: toRecord(contractFacet as never, "contractType"),
-      city: toRecord(cityFacet as never, "city"),
-      remotePolicy: toRecord(remoteFacet as never, "remotePolicy"),
-      sector: toRecord(sectorFacet as never, "sector"),
-      specialty: toRecord(specialtyFacet as never, "specialty"),
-      educationLevel: toRecord(educationFacet as never, "educationLevel"),
-      countryCode: toRecord(countryFacet as never, "countryCode"),
-    },
+async function searchWithPostgres(plan: Plan): Promise<OfferSearchResult> {
+  const offers = await prisma.jobOffer.findMany({
+    where: buildWhere(plan),
+    include: { company: true },
+    orderBy: { lastSeenAt: "desc" },
+    take: CANDIDATE_LIMIT,
+  });
+  const documents = offers.map(offerToDocument);
+  const byId = new Map(documents.map((doc) => [doc.id, doc]));
+  return finishRanked(plan, documents, {
     engine: "postgres",
-  };
+    facets: {},
+    candidateTotal: documents.length,
+    loadPage: async (ids) => ids.map((id) => byId.get(id)!).filter(Boolean),
+  });
 }

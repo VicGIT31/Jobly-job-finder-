@@ -3,14 +3,23 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 const mocks = vi.hoisted(() => ({
   findUnique: vi.fn(),
   findFirst: vi.fn(),
+  findMany: vi.fn().mockResolvedValue([]),
   update: vi.fn(),
+  originFind: vi.fn().mockResolvedValue(null),
+  originUpsert: vi.fn(),
   companyUpdate: vi.fn(),
   log: vi.fn(),
   sync: vi.fn(),
 }));
 vi.mock("@/lib/prisma", () => ({
   prisma: {
-    jobOffer: { findUnique: mocks.findUnique, findFirst: mocks.findFirst, update: mocks.update },
+    jobOffer: {
+      findUnique: mocks.findUnique,
+      findFirst: mocks.findFirst,
+      findMany: mocks.findMany,
+      update: mocks.update,
+    },
+    offerOrigin: { findUnique: mocks.originFind, upsert: mocks.originUpsert },
     company: { update: mocks.companyUpdate },
     ingestLog: { create: mocks.log },
   },
@@ -85,7 +94,7 @@ describe("rafraîchissement et indexation par lots", () => {
       log.mockRestore();
     }
   });
-  it("rejette aussi les imports internes non tech ou hors France avant écriture", async () => {
+  it("rejette les imports internes dont le métier n'est pas suivi ou hors France avant écriture", async () => {
     const offer = {
       title: "Stage développeur",
       companyName: "Test",
@@ -96,7 +105,7 @@ describe("rafraîchissement et indexation par lots", () => {
       sourceUrl: "https://example.com/job/1",
     };
     const result = await processIngest("internal", [
-      { ...offer, title: "Stage vendeur" },
+      { ...offer, title: "Stage comptable", description: "Tenue de la comptabilité fournisseurs et clôtures mensuelles" },
       { ...offer, countryCode: "GB", city: "London" },
     ]);
     expect(result.rejected).toBe(2);
