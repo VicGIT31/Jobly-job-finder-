@@ -1,5 +1,13 @@
 # Jobly 0.3.0
 
+## Version 0.4.1 : Windows et Barista
+
+Les installateurs natifs se livrent dans un ZIP avec une commande d'installation. La collecte publique n'utilise aucune clé API externe. Le nouveau domaine Café & barista couvre la Haute-Garonne (Toulouse et l'ensemble du département), Agen et Bordeaux à 30 km, avec tous les contrats.
+
+- [Fonctionnement et périmètre](docs/v0.4.1/ANALYSE.md)
+- [Commande d'installation](desktop/delivery/COMMANDES.md)
+
+
 ## Version 0.4.0 : découverte autonome et assurance/finance
 
 La découverte des sources publiques avance automatiquement à chaque collecte, sans clé API. Les stages et alternances assurance, banque, finance, comptabilité, audit et investissement disposent d’un domaine et de recherches nationales dédiés, dont BTS Assurance.

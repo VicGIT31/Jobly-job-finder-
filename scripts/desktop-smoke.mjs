@@ -99,7 +99,7 @@ try {
   await page.goto(origin + "/offres/desktop-qa-commerce"); await page.getByRole("heading", { name: "Commercial CDI — vérification" }).waitFor();
   await page.screenshot({ path: join(artifacts, "fiche-offre.png"), fullPage: true });
   await app.evaluate(({ shell }) => { shell.openExternal = async (url) => { globalThis.__joblyLastExternal = url; }; });
-  await page.getByRole("link", { name: "Postuler sur example.com", exact: true }).click();
+  await page.getByRole("link", { name: /^Postuler sur example\.com/ }).click();
   let external; for (let attempt = 0; attempt < 200 && !external; attempt++) { await pause(100); external = await app.evaluate(() => globalThis.__joblyLastExternal); } assert.equal(external, "https://example.com/careers");
   checks.push("Fiche et Postuler : suivi de candidature et ouverture dans le navigateur système");
   const pdfPath = join(artifacts, "test-cv.pdf");
