@@ -1,15 +1,23 @@
-# Actualiser les offres — Jobly 0.3.0
+# Actualiser les offres — Jobly 0.4.1
 
-La collecte démarre automatiquement à l’ouverture, puis toutes les deux heures pendant que Jobly reste ouvert. Le bouton **Actualiser** et le raccourci Cmd/Ctrl+Maj+R lancent aussi un cycle. Aucun compte ni clé API ne sont requis.
+La collecte démarre à l’ouverture puis est déclenchée toutes les deux heures tant que Jobly est ouvert. **Actualiser** et Cmd/Ctrl+Maj+R permettent aussi de la demander. Un cycle déjà actif n’est pas doublé. Aucun compte ni clé API ne sont requis.
 
-Les premiers lots sont consultables avant la fin du cycle. Les filtres interrogent le catalogue local : changer un contrat ne relance pas toutes les sources. Pour une autre commune, saisissez-la dans la recherche puis cliquez Actualiser ; les recherches locales France Travail/HelloWork utilisent cette commune au cycle suivant. La recherche nationale reste explicite et les collecteurs nationaux restent actifs.
+## Combien de temps attendre ?
 
-**Actualisation & données** indique les sources sélectionnées, derniers passages, volumes, erreurs et couverture partielle. Une sélection vide active les collecteurs personnels fournis, pas l’ancien catalogue tech. Le retrait d’une source ne supprime pas vos favoris ni l’historique.
+Le catalogue déjà enregistré reste consultable immédiatement. Les nouvelles offres apparaissent par lots. Pour un passage large, prévoyez plusieurs dizaines de minutes : **environ 30 minutes est un ordre de grandeur, avec des dépassements possibles d’une heure** selon le volume, la connexion et les sites. Ce délai ne garantit pas que toutes les offres ont été répertoriées.
 
-La date de publication est affichée uniquement lorsqu’elle est fournie par la source. La détection initiale et la dernière observation sont conservées séparément. Une offre ancienne peut être encore ouverte ; une observation récente n’est pas une nouvelle publication. Les publications connues de plus de 60 jours et échéances dépassées sont rejetées à l’ingestion. Une absence prolongée de vérification indique un état à revérifier ; un lien 404/410 ou une échéance passée peut établir l’expiration.
+Quatre collecteurs travaillent en parallèle. Chacun doit parcourir les listes et parfois des centaines de fiches, puis vérifier le pays, le métier, le contrat, les dates et les doublons avant l’indexation. Les requêtes sont espacées par hôte, les réponses lentes et reprises rallongent le parcours. Lors d’un contrôle local, Airbus a pris environ 6 minutes, Thales 12 minutes et Capgemini 3 minutes pour un passage ; ces durées varient et ne s’additionnent pas directement.
 
-Le cache des pages de recherche est de 10 à 15 minutes ; celui des détails peut aller jusqu’à une heure. Actualiser ne contourne pas les limitations des fournisseurs. Les requêtes sont limitées par hôte, avec délais, budgets et respect des refus. Un passage partiel ne permet pas de conclure que les autres offres ont expiré.
+## France Travail et sites recruteurs
 
-Internet est nécessaire. Une source bloquée continue à être signalée, sans bloquer les autres. En cas de liste vide : vérifier l’univers et les filtres, attendre le premier cycle, puis élargir volontairement le rayon ou choisir la France. Les ASV sont rares localement et aucune offre n’est fabriquée pour remplir une liste.
+La collecte ne se limite pas à France Travail. Le catalogue employeurs contient notamment Airbus et Thales ; d’autres connecteurs lisent directement les sites de recrutement, flux publics et sitemaps. Les requêtes locales et généralistes, notamment les 52 recherches finance et 24 Barista, passent avant le catalogue employeurs dans la file actuelle. France Travail et HelloWork peuvent donc être visibles en premier.
 
-Les données restent dans le dossier Jobly du profil système. Sauvegardez depuis Actualisation & données ; utilisez Réparer la recherche si les résultats semblent incohérents. Consultez [INSTALLER.md](delivery/INSTALLER.md) pour le dépannage et [SOURCES.md](../docs/v0.3.0/SOURCES.md) pour la couverture réelle.
+Dans **Bureau → Sources de la collecte**, une sélection vide active **toutes les sources activées du catalogue, y compris les employeurs**. Une sélection explicite limite les prochains cycles aux sources choisies. Les filtres métier, contrat et ville interrogent les offres déjà collectées ; ils ne relancent pas tous les sites. Les recherches finance restent nationales et Barista couvre la Haute-Garonne, Agen et Bordeaux selon le périmètre documenté.
+
+## Suivre l’avancement
+
+Gardez l’application ouverte et consultez **Bureau → Derniers passages des sources** : les 20 passages récents indiquent les sites traités, volumes et avertissements. Cette liste n’est pas un inventaire complet du cycle. Une source bloquée ou limitée est signalée et les résultats partiels sont conservés. L’absence d’une offre dans une collecte partielle ne prouve pas son expiration.
+
+Le cache évite certaines relectures mais ne contourne pas les limitations des fournisseurs. La publication, la détection et la dernière observation sont distinctes ; les inconnues ne sont pas remplacées par des dates ou qualifications inventées. La couverture reste partielle et aucune offre n’est fabriquée pour remplir une liste.
+
+Les données restent dans le profil local. Utilisez **Sauvegarder** pour créer une archive privée et **Réparer la recherche** si l’index semble incohérent. Voir [COLLECTE.md](../docs/v0.4.1/COLLECTE.md) pour l’analyse des sources, l’ordre et les délais, et [INSTALLER.md](delivery/INSTALLER.md) pour l’installation.

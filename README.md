@@ -36,6 +36,14 @@ La finance utilise 52 combinaisons de recherche nationales générées automatiq
 
 La collecte démarre à l’ouverture puis toutes les deux heures tant que l’application est ouverte. Les premiers résultats sont accessibles pendant le cycle. Une connexion Internet est nécessaire pour les nouvelles offres, certaines coordonnées et certains logos. Le catalogue déjà collecté et les données personnelles restent consultables localement.
 
+## Pourquoi l’actualisation peut prendre 30 minutes ou plus
+
+Les offres déjà enregistrées sont disponibles immédiatement. Les nouvelles arrivent par lots pendant la collecte : **prévoir plusieurs dizaines de minutes, environ 30 minutes comme ordre de grandeur, parfois plus d’une heure** pour un passage large. Ce n’est ni une durée fixe ni la garantie que toutes les offres d’Internet seront répertoriées.
+
+L’algorithme parcourt les sources sélectionnées avec **quatre collecteurs en parallèle**, lit les listes puis les fiches, vérifie le métier, le contrat, le pays et les dates, déduplique les offres et les ajoute à la recherche. Les appels sont espacés par site pour respecter ses limites ; les délais réseau, reprises et gros catalogues rallongent le cycle. Au contrôle local du 8 novembre, un passage Airbus a pris environ **6 minutes**, Thales **12 minutes** et Capgemini **3 minutes**.
+
+La collecte ne se limite pas à France Travail. Les requêtes généralistes et locales passent actuellement avant le catalogue des employeurs : France Travail et HelloWork peuvent donc apparaître en premier, tandis qu’Airbus, Thales et les autres sites directs arrivent plus tard. L’ordre des premières offres ne représente pas la liste complète des sources. Gardez l’application ouverte et consultez **Bureau → Derniers passages des sources** pour suivre le travail. Détails : [sources, ordre et délais](docs/v0.4.1/COLLECTE.md#sources-ordre-et-délais).
+
 ## Découverte automatique des recruteurs
 
 La découverte conserve sa progression entre les lancements. Elle part des sources connues, de sites d’employeurs mentionnés dans les annonces et d’annuaires publics. Elle suit les liens carrières, reconnaît sept familles d’ATS — Workday, Greenhouse, Lever, Ashby, SmartRecruiters, Recruitee et Teamtailor — et vérifie les flux avant activation.

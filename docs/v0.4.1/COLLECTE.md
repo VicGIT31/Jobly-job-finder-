@@ -4,6 +4,38 @@ L'installation de bureau ne demande aucune configuration de fournisseur. Une con
 
 La découverte automatique est activée par défaut. La source se sélectionne dans le Bureau comme les autres connecteurs. En mode serveur, `JOB_DISCOVERY_ENABLED=0` la désactive. Les sélections explicites de sources sont respectées : une sélection restrictive n'inclut pas implicitement tous les futurs employeurs.
 
+## Sources, ordre et délais
+
+**Non : Jobly n’a pas été limité à France Travail.** Le catalogue contient toujours les connecteurs employeurs (Airbus, Thales, Capgemini, etc.), les autres sites d’offres et la découverte automatique. Au contrôle local du 8 novembre 2026, aucune sélection ne restreignait la collecte à France Travail. La base contenait notamment **225 offres actives d’Airbus, 577 de Thales et 118 de Capgemini**, avec leurs URLs de sites recruteurs. Ces nombres sont une photographie de contrôle, pas des volumes garantis. Crédit Agricole ne dispose pas actuellement d’un connecteur dédié vérifié dans le catalogue fourni ; une offre portant son nom et trouvée via un agrégateur ne prouve pas une collecte directe de son site.
+
+### L’algorithme en quatre étapes
+
+1. Charger les sources activées et la sélection du Bureau : sources locales/généralistes, recherches Barista et finance, pages recruteurs, autres connecteurs, découverte puis catalogue employeurs. Une sélection explicite peut réduire ce périmètre ; une sélection vide inclut tout le catalogue activé.
+2. Lire les listes paginées, flux publics et sitemaps, puis les fiches nécessaires, avec quatre collecteurs en parallèle et des appels espacés par hôte.
+3. Contrôler la France, les métiers/contrats suivis, les dates et les doublons ; conserver la provenance. Les offres valides sont enregistrées et indexées par lots, sans attendre tous les sites.
+4. Conserver la progression et les résultats partiels ; la découverte validée enrichit les cycles suivants. Les refus d’accès et limites de temps sont signalés.
+
+### Quel délai attendre ?
+
+- **Catalogue existant :** consultable immédiatement, même pendant un nouveau cycle.
+- **Premières nouvelles offres :** dès la fin des premiers lots, généralement en quelques minutes si les sites répondent.
+- **Passage large :** prévoir plusieurs dizaines de minutes ; **environ 30 minutes est un ordre de grandeur, pas une borne**. Un gros volume, des sites lents ou des reprises peuvent porter le cycle à plus d’une heure. Aucun délai ne garantit l’exhaustivité.
+- **Passages suivants :** le cache peut réduire le temps de lecture, mais la disponibilité des sites et les contrôles restent déterminants.
+
+La collecte comprend notamment 52 combinaisons de recherche finance et 24 Barista, en plus des autres sources. Elles sont placées avant le catalogue employeurs dans la file actuelle : les sources directes restent actives mais peuvent commencer plus tard. Les quatre créneaux sont partagés entre tous les connecteurs ; plusieurs requêtes vers le même hôte restent espacées, même si elles proviennent de collecteurs différents.
+
+| Dernier passage observé le 8 novembre | Fiches récupérées avant traitement commun | Durée approximative du passage |
+| --- | ---: | ---: |
+| Airbus | 258 | 6 min |
+| Thales | 610 | 12 min |
+| Capgemini | 119 | 3 min |
+
+Ces durées incluent la lecture et le traitement du connecteur ; elles ne s’additionnent pas directement puisque quatre collecteurs tournent en parallèle. Un seul grand employeur peut nécessiter des centaines de lectures de fiches. Les connecteurs employeurs espacent normalement les requêtes d’au moins 750 ms par hôte. Les budgets par source sont habituellement de 3 minutes pour les connecteurs personnels et de 15 minutes pour les autres, avec arrêt coopératif et conservation des résultats partiels ; ce ne sont pas des budgets pour le cycle entier. Les descriptions peuvent être réutilisées depuis un cache valide, puis les offres sont normalisées, classées, dédupliquées et indexées.
+
+Dans **Bureau → Derniers passages des sources**, vérifiez les sites déjà passés, les volumes et les avertissements. La liste montre les 20 passages les plus récents, pas nécessairement toutes les sources du cycle. Laissez Jobly ouvert pour poursuivre le travail. Un déclenchement est prévu toutes les deux heures tant que l’application est ouverte ; si un cycle est encore actif, un second cycle n’est pas lancé en parallèle. Les filtres de recherche interrogent le catalogue local et ne déclenchent pas une nouvelle collecte complète.
+
+## Scripts de collecte
+
 Depuis le dépôt :
 
 ```bash
