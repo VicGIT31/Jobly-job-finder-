@@ -7,20 +7,20 @@ export const BARISTA_AREAS = [
     id: "haute-garonne",
     label: "Haute-Garonne · Toulouse et environs",
     franceTravail: "31D",
-    helloWork: "haute-garonne-31",
+    helloWork: "Haute-Garonne",
   },
   {
     id: "agen",
     label: "Agen et environs · 30 km",
     franceTravail: "47001",
-    helloWork: "agen-47000",
+    helloWork: "Agen",
     center: { lat: 44.2031, lng: 0.6164 },
   },
   {
     id: "bordeaux",
     label: "Bordeaux et environs · 30 km",
     franceTravail: "33063",
-    helloWork: "bordeaux-33000",
+    helloWork: "Bordeaux",
     center: { lat: 44.8378, lng: -0.5792 },
   },
 ] as const;
