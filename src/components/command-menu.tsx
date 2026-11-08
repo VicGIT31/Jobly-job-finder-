@@ -19,7 +19,7 @@ type Item = {
 };
 
 const STATIC_ITEMS: Item[] = [
-  ...[{ key: "COMMERCE", label: "Commerce & marketing" }, { key: "ASV", label: "Auxiliaires vétérinaires" }].map(({ key, label }) => ({ id: `universe-${key}`, group: "Univers", label, href: `/offres?univers=${key}`, icon: <Search aria-hidden="true" size={16} /> })),
+  ...[{ key: "COMMERCE", label: "Commerce & marketing" }, { key: "FINANCE", label: "Assurance, banque & finance" }, { key: "HOSPITALITY", label: "Café & barista" }, { key: "ASV", label: "Auxiliaires vétérinaires" }].map(({ key, label }) => ({ id: `universe-${key}`, group: "Univers", label, href: `/offres?univers=${key}`, icon: <Search aria-hidden="true" size={16} /> })),
   ...CONTRACT_TYPES.map((c) => ({
     id: `ct-${c}`,
     group: "Contrats",

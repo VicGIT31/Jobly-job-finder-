@@ -2,7 +2,8 @@ import "./load-env";
 import { readFile } from "node:fs/promises";
 import { processIngest } from "../src/server/ingest/ingest";
 import { rawOfferSchema, normalizeOffer, type RawOffer } from "../src/server/ingest/normalize";
-import { isTechOffer } from "../src/server/ingest/scope";
+import { classifyJob, isInScope } from "../src/server/ingest/job-classifier";
+import { PERSONAL_CONTRACTS } from "../src/server/ingest/personal-offer";
 import { prisma } from "../src/lib/prisma";
 
 /** Import local de l'export collect:offers, sans rappeler les sites sources. */
@@ -25,8 +26,8 @@ async function main(): Promise<void> {
       continue;
     }
     try {
-      const offer = normalizeOffer(parsed.data);
-      if (offer.countryCode !== "FR" || !isTechOffer(offer.title, offer.description)) {
+      const offer = normalizeOffer(parsed.data, { acceptedContracts: PERSONAL_CONTRACTS, personal: true });
+      if (offer.countryCode !== "FR" || !isInScope(classifyJob(offer.title, offer.description), offer.contractType, offer).ok) {
         rejected++;
         continue;
       }
@@ -40,7 +41,7 @@ async function main(): Promise<void> {
   }
   console.log(`${rejected} offre(s) invalide(s) ou hors périmètre ignorée(s).`);
   for (const [source, offers] of sources) {
-    const summary = await processIngest(source, offers);
+    const summary = await processIngest(source, offers, { acceptedContracts: PERSONAL_CONTRACTS, personal: true });
     console.log(
       `${source}: ${summary.created} créée(s), ${summary.duplicates} doublon(s), ${summary.rejected} rejet(s)`,
     );

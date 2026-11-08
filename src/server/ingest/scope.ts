@@ -1,3 +1,6 @@
+import { observeEmployerWebsite } from "./sources/discovery-store";
+import { personalContract } from "./personal-offer";
+import { classifyJob, isInScope } from "./job-classifier";
 import { classifySpecialty } from "./classify";
 import { offerMissionText } from "./offer-text";
 import type { RawOffer } from "./normalize";
@@ -58,6 +61,7 @@ export function studentContract(title: string, structured = "", description = ""
   if (/apprent|altern|contrat[ _-]*pro/.test(value)) return "alternance";
   const fromTitle = inferContractType(title);
   if (fromTitle) return fromTitle;
+  if (/^intern(?:ship)?$/.test(value) && /\bcontrat (?:d.apprentissage|de professionnalisation)\b/.test(foldText(description.slice(0, 2500)))) return "alternance";
   if (/intern|stage|trainee/.test(value)) return "stage";
   if (/full[ _-]?time|part[ _-]?time|contract|freelance|regular/.test(value)) return null;
   if (/\b(cdi|cdd|permanent|regular employee)\b/.test(value)) return null;
@@ -125,10 +129,12 @@ export function makeStudentOffer(input: {
   validThrough?: string | number;
   logo?: string;
   remote?: string;
-}): RawOffer | null {
+}, options: { baristaContracts?: boolean } = {}): RawOffer | null {
   const { title, city, description } = input;
-  if (!frenchLocation(city, input.country) || !isTechOffer(title, description)) return null;
-  const contract = studentContract(title, input.contract, description);
+  if (!frenchLocation(city, input.country)) return null;
+  const classification = classifyJob(title, description, { company: input.company });
+  if (classification.universe === "OTHER") return null;
+  const contract = options.baristaContracts && classification.universe === "HOSPITALITY" ? personalContract(title, input.contract, description) : studentContract(title, input.contract, description);
   const url = publicUrl(input.url);
   if (!contract || !url || description.trim().length < 20 || !input.company.trim() || !city.trim())
     return null;
@@ -136,6 +142,7 @@ export function makeStudentOffer(input: {
   const validThrough = validDate(input.validThrough);
   if (validThrough && validThrough.getTime() <= Date.now()) return null;
   const geo = geocodeCity(city);
+  if (!isInScope(classification, contract.toUpperCase(), { city, latitude: geo?.lat, longitude: geo?.lng }).ok) return null;
   return {
     title: title.trim().slice(0, 200),
     companyName: input.company.trim().slice(0, 120),
@@ -146,7 +153,7 @@ export function makeStudentOffer(input: {
     description: description.trim().slice(0, 12000),
     contractType: contract,
     countryCode: "FR",
-    sector: "Tech / Informatique",
+    sector: classification.universe === "TECH" ? "Tech / Informatique" : classification.universe === "FINANCE" ? "Assurance / Banque / Finance" : classification.universe === "ASV" ? "Santé animale" : classification.universe === "HOSPITALITY" ? "Café / Restauration" : "Commerce / Marketing",
     sourceUrl: url,
     sourceSite: new URL(url).hostname.replace(/^www\./, ""),
     scrapedAt: new Date(),
@@ -164,7 +171,11 @@ export function jsonLdOffer(
   url: string,
   company?: string,
   defaultCountry?: string,
+  baristaContracts = false,
 ): RawOffer | null {
+  const employer = posting.hiringOrganization;
+  for (const value of [employer?.url, ...(Array.isArray(employer?.sameAs) ? employer.sameAs : [employer?.sameAs])])
+    if (typeof value === "string") observeEmployerWebsite(value, employer?.name ?? "Employeur");
   if (posting.validThrough) {
     const expiry = validDate(posting.validThrough);
     if (expiry && expiry.getTime() < Date.now()) return null;
@@ -196,7 +207,7 @@ export function jsonLdOffer(
         ? { logo: posting.hiringOrganization.logo }
         : {}),
       ...(posting.jobLocationType === "TELECOMMUTE" ? { remote: "remote" } : {}),
-    });
+    }, { baristaContracts });
     if (raw) return raw;
   }
   return null;

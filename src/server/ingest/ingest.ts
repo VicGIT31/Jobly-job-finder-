@@ -110,7 +110,7 @@ export async function processIngest(
           sector: normalized.sector,
           contract: normalized.contractType,
         });
-        const scope = isInScope(classification, normalized.contractType);
+        const scope = isInScope(classification, normalized.contractType, normalized);
         if (!scope.ok) throw new NormalizationError(scope.reason, "scope");
       } catch (err) {
         const reason = err instanceof NormalizationError ? err.message : "Normalisation impossible";

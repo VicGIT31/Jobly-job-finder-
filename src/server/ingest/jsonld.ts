@@ -22,7 +22,7 @@ export type JsonLdJobPosting = {
   validThrough?: string;
   employmentType?: string | string[];
   educationRequirements?: unknown;
-  hiringOrganization?: { name?: string; logo?: unknown };
+  hiringOrganization?: { name?: string; logo?: unknown; url?: string; sameAs?: string | string[] };
   jobLocation?: unknown;
   jobLocationType?: string;
   baseSalary?: unknown;

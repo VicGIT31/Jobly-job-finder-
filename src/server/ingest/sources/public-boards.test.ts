@@ -4,6 +4,7 @@ import { boardEndpoint, extractLinks, PublicBoardConnector, sitemapEntries } fro
 import { RateLimitedError } from "../http";
 import { fetchJson, fetchText } from "../http";
 
+vi.mock("../robots", () => ({ robotsAllows: vi.fn().mockResolvedValue(true) }));
 vi.mock("../http", async (original) => ({
   ...(await original<typeof import("../http")>()),
   fetchJson: vi.fn(),

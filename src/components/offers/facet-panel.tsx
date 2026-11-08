@@ -264,6 +264,8 @@ export function FacetPanel({
   const jobGroups = [
     { universe: "TECH" as const, rows: specialtyRows },
     { universe: "COMMERCE" as const, rows: familyRows("COMMERCE") },
+    { universe: "FINANCE" as const, rows: familyRows("FINANCE") },
+    { universe: "HOSPITALITY" as const, rows: familyRows("HOSPITALITY") },
     { universe: "ASV" as const, rows: familyRows("ASV") },
   ]
     // Une ligne sans résultat reste affichée si elle est sélectionnée, sinon on évite le cul-de-sac.

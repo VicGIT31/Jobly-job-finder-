@@ -2,7 +2,8 @@ import "./load-env";
 import { mkdir, writeFile } from "node:fs/promises";
 import { prisma } from "../src/lib/prisma";
 import { nonStudentContractEvidence } from "../src/server/ingest/contract-evidence";
-import { studentContract, isTechOffer } from "../src/server/ingest/scope";
+import { studentContract } from "../src/server/ingest/scope";
+import { classifyJob } from "../src/server/ingest/job-classifier";
 import { syncOffersToSearch } from "../src/server/search/sync";
 
 /** Audit réversible : conserve les anciennes fiches, expire celles sans preuve fiable. */
@@ -18,8 +19,8 @@ async function main(): Promise<void> {
     const inferred = studentContract(offer.title, "", offer.description);
     const reason =
       evidence ??
-      (!isTechOffer(offer.title, offer.description)
-        ? "Poste hors périmètre tech"
+      (classifyJob(offer.title, offer.description).universe === "OTHER"
+        ? "Métier non suivi"
         : legacy && !inferred
           ? "Ancien import depuis un filtre de recherche sans preuve de stage/alternance"
           : null);

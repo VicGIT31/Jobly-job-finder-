@@ -8,9 +8,9 @@ import { SearchClient } from "@/components/offers/search-client";
 export const dynamic = "force-dynamic";
 
 export const metadata: Metadata = {
-  title: "Offres : tech, commerce, marketing, communication & ASV",
+  title: "Offres : tech, commerce, assurance, finance, barista & ASV",
   description:
-    "Recherchez parmi les offres de stage, d'alternance et d'emploi : tech, commerce, marketing, communication, auxiliaires vétérinaires et métiers animaliers. Filtres par domaine, métier, ville, rayon, contrat et expérience.",
+    "Recherchez parmi les offres de stage, d'alternance et d'emploi : tech, commerce, assurance, banque, finance, marketing, communication, barista, auxiliaires vétérinaires et métiers animaliers. Filtres par domaine, métier, ville, rayon, contrat et expérience.",
 };
 
 /**
@@ -36,7 +36,7 @@ export default async function OffresPage({
     <div className="container-page pb-8 pt-8 sm:pt-12">
       <header className="flex flex-wrap items-end justify-between gap-x-10 gap-y-3">
         <div>
-          <p className="eyebrow">Catalogue · tech, commerce, communication &amp; ASV</p>
+          <p className="eyebrow">Catalogue · tech, commerce, assurance, finance, barista &amp; ASV</p>
           <h1 className="mt-3 text-display-sm font-semibold">
             Trouvez votre <span className="serif-accent text-accent">prochain poste</span>.
           </h1>

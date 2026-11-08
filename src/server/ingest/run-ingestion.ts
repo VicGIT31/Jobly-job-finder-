@@ -2,7 +2,7 @@ import { prisma } from "@/lib/prisma";
 import { processIngest, type IngestSummary } from "./ingest";
 import { getHttpFailures, resetHttpState, withCollectionBudget } from "./http";
 import { getSourceConnectors } from "./sources";
-import { isTechOffer } from "./scope";
+import { classifyJob } from "./job-classifier";
 import { getRedis } from "@/lib/redis";
 import { randomUUID } from "node:crypto";
 import type { SourceConnector, CollectionCoverage } from "./sources/types";
@@ -127,7 +127,7 @@ async function runConnector(connector: SourceConnector, signal?: AbortSignal): P
     const offers = fetched.filter(
       (offer) =>
         (offer.countryCode ?? "FR").toUpperCase() === "FR" &&
-        (connector.personal || isTechOffer(offer.title, offer.description)),
+        (connector.personal || classifyJob(offer.title, offer.description).universe !== "OTHER"),
     );
     const prefixes = connector.requestPrefixes ?? [
       `https://www.${connector.sourceSite}/`,

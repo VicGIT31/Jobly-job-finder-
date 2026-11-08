@@ -1,3 +1,6 @@
+import { fetchWithRetry, getHttpFailures } from "./http";
+import { publicHttpUrl } from "./public-network";
+
 /**
  * Respect de robots.txt pour les sites d'employeurs et de cliniques, qui ne
  * sont pas des API publiques : une page interdite n'est jamais demandée.
@@ -78,15 +81,15 @@ async function loadRules(origin: string): Promise<RobotsRules | "deny"> {
   if (hit && Date.now() - hit.at < TTL_MS) return hit.rules;
   let rules: RobotsRules | "deny";
   try {
-    const response = await fetch(`${origin}/robots.txt`, {
-      headers: { "User-Agent": "Jobly/1.0 (public job listings; personal use)" },
-      signal: AbortSignal.timeout(5000),
-      redirect: "follow",
-      cache: "no-store",
+    const offset = getHttpFailures().length;
+    const response = await fetchWithRetry(`${origin}/robots.txt`, {
+      publicOnly: true, timeoutMs: 5000, retries: 0, minIntervalMs: 750,
     });
-    if (response.ok) rules = parseRobots((await response.text()).slice(0, 500_000));
-    else if (response.status >= 500) rules = "deny";
-    else rules = { allow: [], disallow: [] };
+    if (response?.ok) rules = parseRobots((await response.text()).slice(0, 500_000));
+    else {
+      const missing = getHttpFailures().slice(offset).some((failure) => failure.url === `${origin}/robots.txt` && [404, 410].includes(failure.status ?? 0));
+      rules = missing ? { allow: [], disallow: [] } : "deny";
+    }
   } catch {
     rules = "deny";
   }
@@ -96,7 +99,8 @@ async function loadRules(origin: string): Promise<RobotsRules | "deny"> {
 
 /** Cette page publique peut-elle être demandée par un programme ? */
 export async function robotsAllows(url: string | URL): Promise<boolean> {
-  const target = typeof url === "string" ? new URL(url) : url;
+  const target = publicHttpUrl(String(url));
+  if (!target) return false;
   const rules = await loadRules(target.origin);
   if (rules === "deny") return false;
   return isPathAllowed(rules, target.pathname + target.search);

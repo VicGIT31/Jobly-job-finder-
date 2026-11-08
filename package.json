@@ -1,6 +1,6 @@
 {
   "name": "jobly",
-  "version": "0.3.0",
+  "version": "0.4.1",
   "private": true,
   "scripts": {
     "dev": "node scripts/start-all.mjs --dev",
@@ -30,15 +30,16 @@
     "specialty:backfill": "tsx scripts/specialty-backfill.ts",
     "contract:backfill": "tsx scripts/contract-backfill.ts",
     "postinstall": "prisma generate",
-    "desktop:prepare": "npm run build && node scripts/desktop-build.mjs",
+    "desktop:prepare": "npm run desktop:guides && npm run build && node scripts/desktop-build.mjs",
     "desktop:run": "electron build/desktop-app",
     "desktop:pack": "npm run desktop:prepare && electron-builder --config electron-builder.cjs --dir",
     "desktop:dist": "npm run desktop:prepare && electron-builder --config electron-builder.cjs",
-    "desktop:delivery": "node scripts/desktop-delivery.mjs",
+    "desktop:delivery": "npm run desktop:guides && node scripts/desktop-delivery.mjs",
     "desktop:smoke": "node scripts/desktop-smoke.mjs",
     "desktop:export-web": "tsx scripts/desktop-export-web.ts",
     "desktop:install-test": "node scripts/desktop-install.mjs",
-    "desktop:command-test": "node scripts/desktop-command-test.mjs"
+    "desktop:command-test": "node scripts/desktop-command-test.mjs",
+    "desktop:guides": "node scripts/desktop-guides.mjs"
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.1088.0",

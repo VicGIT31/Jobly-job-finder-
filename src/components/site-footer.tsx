@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { version } from "../../package.json";
 import { JoblyLogo } from "@/components/brand/jobly-logo";
 
 const COLUMNS = [
@@ -8,6 +9,8 @@ const COLUMNS = [
       { href: "/offres", label: "Toutes les offres" },
       { href: "/offres?univers=TECH", label: "Tech · stages & alternances" },
       { href: "/offres?univers=COMMERCE", label: "Commerce, marketing & com" },
+      { href: "/offres?univers=FINANCE&national=1", label: "Assurance, banque & finance" },
+      { href: "/offres?univers=HOSPITALITY&national=1", label: "Café & barista" },
       { href: "/offres?univers=ASV", label: "ASV & métiers animaliers" },
     ],
   },
@@ -20,7 +23,7 @@ const COLUMNS = [
     ],
   },
   {
-    title: "Jobly 0.3.0",
+    title: `Jobly ${version}`,
     links: [
       { href: "/bureau", label: "Actualisation & données" },
       { href: "/mon-espace", label: "Profil & CV" },
@@ -32,7 +35,7 @@ const COLUMNS = [
 export async function SiteFooter() {
   // Accroche modifiable depuis `/admin/parametres`.
   const tagline =
-    "Votre recherche personnelle d’emploi : tech, commerce, marketing, communication et auxiliaires vétérinaires.";
+    "Votre recherche personnelle d’emploi : tech, commerce, assurance, banque, finance, barista, marketing et métiers animaliers.";
 
   return (
     <footer className="relative mt-24 overflow-hidden border-t border-line bg-paper">

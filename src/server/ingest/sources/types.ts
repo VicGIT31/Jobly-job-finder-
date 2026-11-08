@@ -7,7 +7,7 @@ import type { RawOffer } from "@/server/ingest/normalize";
  * charge de la normalisation, de la déduplication et du rejet hors périmètre
  * (seuls stage et alternance sont conservés).
  */
-export type SourceGroup = "TECH" | "COMMERCE" | "ASV" | "RECRUITERS";
+export type SourceGroup = "TECH" | "COMMERCE" | "FINANCE" | "HOSPITALITY" | "ASV" | "RECRUITERS";
 
 export interface SourceConnector {
   readonly personal?: boolean;

@@ -4,6 +4,11 @@ import {
   ArrowRight,
   ArrowUpRight,
   Bell,
+  Coffee,
+  ShieldCheck,
+  Landmark,
+  Calculator,
+  ChartNoAxesCombined,
   ClipboardList,
   Handshake,
   Headset,
@@ -41,6 +46,13 @@ import {
 export const dynamic = "force-dynamic";
 
 const FAMILY_ICONS: Record<string, LucideIcon> = {
+  INSURANCE: ShieldCheck,
+  BANKING: Landmark,
+  CORPORATE_FINANCE: ChartNoAxesCombined,
+  ACCOUNTING: Calculator,
+  AUDIT_RISK: ShieldCheck,
+  FINANCIAL_MARKETS: TrendingUp,
+  BARISTA: Coffee,
   SALES: TrendingUp,
   BUSINESS_DEVELOPMENT: Handshake,
   RETAIL: ShoppingBag,
@@ -137,7 +149,7 @@ export default async function HomePage() {
     }),
     prisma.jobOffer.groupBy({
       by: ["jobFamily"],
-      where: { ...PUBLIC_OFFER_WHERE, universe: { in: ["COMMERCE", "ASV"] } },
+      where: { ...PUBLIC_OFFER_WHERE, universe: { in: ["COMMERCE", "ASV", "FINANCE", "HOSPITALITY"] } },
       _count: true,
     }),
     prisma.jobOffer.count({ where: PUBLIC_OFFER_WHERE }),
@@ -186,12 +198,12 @@ export default async function HomePage() {
     }));
 
   const heroFeed = recentOffers.slice(0, 3);
-  const familyCards = (universe: "COMMERCE" | "ASV"): JobCard[] =>
+  const familyCards = (universe: "COMMERCE" | "ASV" | "FINANCE" | "HOSPITALITY"): JobCard[] =>
     UNIVERSE_FAMILIES[universe].map((family) => {
       const Icon = FAMILY_ICONS[family] ?? Search;
       return {
         key: family,
-        href: `/offres?metier=${family}`,
+        href: `/offres?metier=${family}${["FINANCE", "HOSPITALITY"].includes(universe) ? "&national=1" : ""}`,
         label: FAMILY_LABELS[family],
         count: countByFamily.get(family) ?? 0,
         icon: <Icon aria-hidden="true" size={20} />,
@@ -241,7 +253,7 @@ export default async function HomePage() {
               <span className="serif-accent text-accent">Votre prochain départ.</span>
             </h1>
             <p className="mt-7 max-w-xl animate-fade-up text-lg leading-relaxed text-ink/65 [animation-delay:120ms]">
-              Tech en stage et alternance ; commerce, marketing, communication et auxiliaires
+              Tech, assurance, banque et finance en stage et alternance ; commerce, marketing, communication et auxiliaires
               vétérinaires en tous contrats. Les offres des entreprises, cliniques, refuges et sites
               de recrutement, réunies au même endroit. Postulez toujours sur l&apos;annonce
               d&apos;origine.
@@ -253,7 +265,9 @@ export default async function HomePage() {
                 <span className="mr-1 text-ink/60">Populaire :</span>
                 {[
                   { href: "/offres?ville=Toulouse&rayon=30", label: "Toulouse" },
+                  { href: "/offres?univers=HOSPITALITY&national=1", label: "Barista · Toulouse, Agen, Bordeaux" },
                   { href: "/offres?univers=ASV", label: "ASV & animalier" },
+                  { href: "/offres?univers=FINANCE&national=1", label: "Assurance & finance" },
                   { href: "/offres?metier=MARKETING,COMMUNICATION", label: "Marketing & com" },
                   { href: "/offres?specialite=IA", label: "Data & IA" },
                   { href: "/offres?contrat=ALTERNANCE", label: "Alternance" },
@@ -369,6 +383,8 @@ export default async function HomePage() {
           hint="Tous contrats"
           cards={familyCards("COMMERCE")}
         />
+        <JobGrid title={UNIVERSE_LABELS.FINANCE} hint="Stages et alternances · France entière · BTS Assurance" cards={familyCards("FINANCE")} />
+        <JobGrid title={UNIVERSE_LABELS.HOSPITALITY} hint="Haute-Garonne, Agen et Bordeaux · tous contrats" cards={familyCards("HOSPITALITY")} />
         <JobGrid
           title={UNIVERSE_LABELS.ASV}
           hint="Cliniques, refuges, animaleries · tous contrats"

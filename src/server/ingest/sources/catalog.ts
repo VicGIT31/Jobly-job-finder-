@@ -18,7 +18,7 @@ export const sourceDefinitionSchema = z
   .object({
     id: z.string().regex(/^[a-z0-9][a-z0-9-]*$/),
     label: z.string().min(1),
-    kind: z.enum(["html", "workday", "greenhouse", "lever", "ashby", "smartrecruiters"]),
+    kind: z.enum(["html", "workday", "greenhouse", "lever", "ashby", "smartrecruiters", "recruitee", "teamtailor"]),
     url: urlSchema,
     company: z.string().optional(),
     enabled: z.boolean().default(true),
@@ -47,6 +47,8 @@ export const sourceDefinitionSchema = z
       lever: /^jobs(?:\.eu)?\.lever\.co$/,
       ashby: /^jobs\.ashbyhq\.com$/,
       smartrecruiters: /^careers\.smartrecruiters\.com$/,
+      recruitee: /^[a-z0-9-]+\.recruitee\.com$/,
+      teamtailor: /^[a-z0-9-]+\.teamtailor\.com$/,
     };
     if (expected[source.kind] && !expected[source.kind]!.test(host)) {
       context.addIssue({ code: "custom", message: `Domaine incompatible avec ${source.kind}` });
@@ -74,5 +76,16 @@ const catalogSchema = z.array(sourceDefinitionSchema).superRefine((sources, cont
 export async function loadSourceCatalog(): Promise<SourceDefinition[]> {
   const path = process.env.JOB_SOURCES_FILE;
   const data: unknown = path ? JSON.parse(await readFile(path, "utf8")) : bundledSources;
-  return catalogSchema.parse(data);
+  const catalog = catalogSchema.parse(data);
+  try {
+    const { discoveredDefinitions } = await import("./discovery-store");
+    const { boardEndpoint } = await import("./public-boards");
+    const endpoints = new Set(catalog.map(boardEndpoint));
+    const ids = new Set(catalog.map((source) => source.id));
+    for (const source of await discoveredDefinitions()) {
+      if (endpoints.has(boardEndpoint(source)) || ids.has(source.id)) continue;
+      catalog.push(source); ids.add(source.id); endpoints.add(boardEndpoint(source));
+    }
+  } catch (error) { console.error("[discovery] Catalogue embarqué conservé :", error); }
+  return catalog;
 }

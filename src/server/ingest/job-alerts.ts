@@ -115,6 +115,6 @@ export async function parseJobAlert(input: Buffer): Promise<AlertParseResult> {
     if (offer) offers.set(url, { ...offer, descriptionIsExcerpt: true });
   });
   if (!offers.size && !warnings.length)
-    warnings.push("Aucune annonce complète France/tech/stage-alternance reconnue dans ce mail");
+    warnings.push("Aucune annonce complète France/stage-alternance des métiers suivis reconnue dans ce mail");
   return { offers: [...offers.values()], warnings, receivedAt };
 }

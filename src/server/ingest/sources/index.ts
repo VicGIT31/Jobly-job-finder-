@@ -1,3 +1,6 @@
+import { AutoDiscoveryConnector } from "./auto-discovery";
+import { baristaConnectors } from "./barista";
+import { financeConnectors } from "./finance";
 import { ApecConnector } from "./apec";
 import { FreeWorkConnector } from "./free-work";
 import { HelloWorkConnector } from "./hellowork";
@@ -34,8 +37,11 @@ export async function getSourceEntries(): Promise<SourceEntry[]> {
       : undefined;
   return [
     ...personalConnectors(area),
+    ...baristaConnectors(),
+    ...financeConnectors(),
     ...recruiterConnectors(area),
     ...legacy.map((connector) => ({ id: connector.sourceSite, connector })),
+    { id: "auto-discovery", connector: new AutoDiscoveryConnector() },
     ...catalog.map((definition) => ({
       id: definition.id,
       connector: new PublicBoardConnector(definition),
