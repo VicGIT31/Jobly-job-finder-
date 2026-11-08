@@ -3,6 +3,7 @@ import { experienceFrom, qualificationFrom, fold } from "@/lib/job-taxonomy";
 import { classifyJob, isInScope } from "./job-classifier";
 import { geocodeCityFull } from "./sources/geocode";
 import { TECH_SECTOR } from "./sources/types";
+import { inferEducationLevel } from "./enrich";
 import { htmlToText } from "./html-to-text";
 import type { RawOffer } from "./normalize";
 
@@ -37,10 +38,14 @@ const contractFrom = (text: string) =>
 
 /** Le titre et le contrat structuré priment sur le vocabulaire du reste de l'annonce. */
 export function personalContract(title: string, structured = "", description = ""): string {
-  const raw = fold(structured);
+  const raw = fold(structured.replace(/([a-z])([A-Z])/g, "$1 $2"));
+  // HelloWork emploie INTERN pour stage ET alternance. Une mention explicite
+  // de contrat d'apprentissage tranche, sans prendre « expérience en stage » pour un contrat.
+  const genericIntern = /^(intern|internship|employment internship)$/.test(raw);
+  const apprenticeship = genericIntern && /\bcontrat (?:d apprentissage|de professionnalisation)\b/.test(fold(description).slice(0, 2500));
   return (
     contractFrom(fold(title)) ??
-    contractFrom(raw) ??
+    (apprenticeship ? "alternance" : contractFrom(raw)) ??
     contractFrom(fold(description).match(CONTRACT_IN_BODY)?.[0] ?? "") ??
     (raw === "full time"
       ? "employment_full_time"
@@ -73,6 +78,8 @@ const SECTORS = {
   ASV: "Santé animale",
   COMMERCE: "Commerce / Marketing",
   TECH: TECH_SECTOR,
+  FINANCE: "Assurance / Banque / Finance",
+  HOSPITALITY: "Café / Restauration",
 } as const;
 
 function remoteFrom(context: string): string {
@@ -108,6 +115,7 @@ export async function makePersonalOffer(input: PersonalOfferInput): Promise<RawO
     Number.isFinite(input.lng)
       ? { lat: input.lat, lng: input.lng }
       : await geocodeCityFull(city);
+  if (!isInScope(classification, contractKey.toUpperCase(), { city, latitude: geo?.lat, longitude: geo?.lng }).ok) return null;
   const dates: { publishedAt?: Date; validThrough?: Date } = {};
   for (const field of ["publishedAt", "validThrough"] as const) {
     const value = input[field];
@@ -128,7 +136,7 @@ export async function makePersonalOffer(input: PersonalOfferInput): Promise<RawO
     sector: SECTORS[classification.universe as keyof typeof SECTORS],
     contractType: contractKey,
     remotePolicy: remote,
-    educationLevel: "indifférent",
+    educationLevel: inferEducationLevel(input.title, description),
     sourceUrl: input.url,
     scrapedAt: new Date(),
     ...dates,

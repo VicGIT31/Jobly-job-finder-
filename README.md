@@ -1,5 +1,14 @@
 # Jobly 0.3.0
 
+## Version 0.4.0 : découverte autonome et assurance/finance
+
+La découverte des sources publiques avance automatiquement à chaque collecte, sans clé API. Les stages et alternances assurance, banque, finance, comptabilité, audit et investissement disposent d’un domaine et de recherches nationales dédiés, dont BTS Assurance.
+
+- [Analyse du projet et changements](docs/v0.4.0/ANALYSE.md)
+- [Fonctionnement, commandes et limites de collecte](docs/v0.4.0/COLLECTE.md)
+- [Installation depuis le ZIP en une commande](desktop/delivery/COMMANDES.md)
+
+
 Application personnelle de recherche d’emploi qui réunit, dans une seule recherche, **la tech (stages et alternances)**, **le commerce, le marketing et la communication**, et **les auxiliaires vétérinaires (ASV) et métiers animaliers** (tous contrats). Recherche directe, sans compte ni clé API. France entière par défaut ; commune et rayon (5 à 100 km) au choix, la zone de collecte locale étant Toulouse tant qu’une autre commune n’est pas choisie.
 
 ## Installer l’application

@@ -3,7 +3,7 @@ import { syncOffersToSearch } from "@/server/search/sync";
 import { mapPool } from "./http";
 /** Bounded, uncached checks. A refused request is not evidence of expiration. */
 export async function verifyKnownOfferLinks(limit = 30) {
-  const offers = await prisma.jobOffer.findMany({ where: { universe: { in: ["COMMERCE", "ASV"] }, status: { in: ["ACTIVE", "UNCERTAIN"] }, OR: [{ linkCheckedAt: null }, { linkCheckedAt: { lt: new Date(Date.now() - 7 * 86400000) } }] }, include: { company: true }, orderBy: [{ linkCheckedAt: { sort: "asc", nulls: "first" } }, { lastSeenAt: "desc" }], take: limit });
+  const offers = await prisma.jobOffer.findMany({ where: { universe: { in: ["COMMERCE", "ASV", "FINANCE", "HOSPITALITY"] }, status: { in: ["ACTIVE", "UNCERTAIN"] }, OR: [{ linkCheckedAt: null }, { linkCheckedAt: { lt: new Date(Date.now() - 7 * 86400000) } }] }, include: { company: true }, orderBy: [{ linkCheckedAt: { sort: "asc", nulls: "first" } }, { lastSeenAt: "desc" }], take: limit });
   const results = await mapPool(offers, 3, async (offer) => {
     const target = new URL(offer.sourceUrl);
     // Only known public providers; never fetch private/local URLs from an import.

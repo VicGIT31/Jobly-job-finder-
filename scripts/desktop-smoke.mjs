@@ -15,6 +15,7 @@ const checks = [], consoleErrors = [], timings = {};
 const start = Date.now();
 let app;
 let appVersion;
+let sourceDigest;
 async function launch() {
   const env = Object.fromEntries(Object.entries(process.env).filter(([key]) => ["HOME", "USERPROFILE", "APPDATA", "LOCALAPPDATA", "SystemRoot", "SYSTEMROOT", "WINDIR", "TEMP", "TMP", "TMPDIR", "DISPLAY", "XDG_RUNTIME_DIR", "LANG"].includes(key)));
   Object.assign(env, { PATH: process.platform === "win32" ? `${process.env.SystemRoot}\\System32` : "/usr/bin:/bin", JOBLY_USER_DATA: profile, JOBLY_DEBUG_PORT: "0" });
@@ -35,6 +36,10 @@ try {
   let page = await launch(); const origin = new URL(page.url()).origin;
   appVersion = await app.evaluate(({ app }) => app.getVersion());
   assert.equal(appVersion, JSON.parse(await readFile("package.json", "utf8")).version);
+  const resourcesPath = await app.evaluate(() => process.resourcesPath);
+  const buildManifest = JSON.parse(await readFile(join(resourcesPath, "build-manifest.json"), "utf8"));
+  assert.equal(buildManifest.version, appVersion);
+  sourceDigest = buildManifest.sourceDigest;
   timings.firstSearchWindowMs = Date.now() - start;
   await page.getByRole("heading", { name: /Tous les métiers/ }).waitFor();
   // Let client effects register global shortcuts before exercising them. The
@@ -48,6 +53,11 @@ try {
   const now = new Date();
   await db.query(`INSERT INTO companies (id,name,slug,description,sector,size,"updatedAt") VALUES ('desktop-qa-company','Entreprise de vérification','desktop-qa-company','Jeu synthétique isolé de validation.','Commerce','11-50',$1) ON CONFLICT DO NOTHING`, [now]);
   const fixtures = [
+    ["barista-toulouse", "Barista Toulouse — vérification", "CDI", "HOSPITALITY", "BARISTA", "Toulouse",43.6047,1.4442],
+    ["barista-agen", "Barista Agen — vérification", "CDD", "HOSPITALITY", "BARISTA", "Agen",44.2031,0.6164],
+    ["barista-bordeaux", "Barista Bordeaux — vérification", "PART_TIME", "HOSPITALITY", "BARISTA", "Bordeaux",44.8378,-0.5792],
+    ["barista-saint-gaudens", "Barista Haute-Garonne — vérification", "CDI", "HOSPITALITY", "BARISTA", "Saint-Gaudens",43.1081,0.7233],
+    ["finance", "Stage BTS Assurance — vérification", "STAGE", "FINANCE", "INSURANCE", "Niort",46.3237,-0.4648],
     ["commerce", "Commercial CDI — vérification", "CDI", "COMMERCE", "SALES", "Toulouse",43.6045,1.444],
     ["marketing", "Marketing digital — vérification", "ALTERNANCE", "COMMERCE", "MARKETING", "Blagnac",43.635,1.393],
     ["asv", "Auxiliaire vétérinaire — vérification", "CDD", "ASV", "ASV", "Colomiers",43.61,1.335],
@@ -62,7 +72,22 @@ try {
   assert.equal(local.engine, "meilisearch"); assert.equal(local.totalHits, 2); assert.ok(local.hits.every((offer) => offer.universe === "COMMERCE"));
   const asv = await page.evaluate(async () => (await fetch("/api/search?univers=ASV&ville=Toulouse&rayon=30")).json()); assert.equal(asv.totalHits, 1);
   const national = await page.evaluate(async () => (await fetch("/api/search?univers=ASV&national=1")).json()); assert.equal(national.totalHits, 2);
-  checks.push("Deux univers, Toulouse 30 km, communes voisines, ASV national, contrats CDI/CDD/alternance et explication de classement");
+  const finance = await page.evaluate(async () => (await fetch("/api/search?univers=FINANCE&metier=INSURANCE&national=1")).json());
+  assert.equal(finance.totalHits, 1); assert.equal(finance.hits[0].jobFamily, "INSURANCE");
+  const barista = await page.evaluate(async () => (await fetch("/api/search?univers=HOSPITALITY&metier=BARISTA&national=1")).json());
+  assert.equal(barista.totalHits, 4);
+  await page.goto(origin + "/offres?univers=HOSPITALITY&national=1");
+  await page.getByRole("link", { name: "Barista Agen — vérification", exact: true }).waitFor();
+  for (const width of [390,768,1440]) { await page.setViewportSize({ width, height: 1000 }); await page.waitForTimeout(500); await page.screenshot({ path: join(artifacts, `barista-${width}.png`), fullPage: true }); assert.ok(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth), `Débordement barista à ${width}px`); }
+  checks.push("Barista : Haute-Garonne, Toulouse, Agen, Bordeaux ; CDI, CDD, temps partiel et filtres dédiés");
+  await page.goto(origin + "/offres?univers=FINANCE&national=1");
+  await page.getByRole("link", { name: "Stage BTS Assurance — vérification", exact: true }).waitFor();
+  for (const width of [390,768,1440]) { await page.setViewportSize({ width, height: 1000 }); await page.screenshot({ path: join(artifacts, `finance-${width}.png`), fullPage: true }); assert.ok(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth), `Débordement finance à ${width}px`); }
+  await page.goto(origin + "/offres?ville=Toulouse&rayon=30&tri=pertinence");
+  await page.getByRole("link", { name: "Commercial CDI — vérification", exact: true }).waitFor();
+  checks.push("Assurance et BTS Assurance nationaux, filtres domaine/métier et rendu mobile/tablette/desktop");
+  await page.waitForTimeout(150);
+  checks.push("Quatre univers, Toulouse 30 km, communes voisines, ASV national, contrats CDI/CDD/alternance et explication de classement");
   await page.keyboard.press("/"); assert.equal(await page.evaluate(() => document.activeElement.id), "recherche-q");
   await app.evaluate(({ clipboard }) => clipboard.writeText("Marketing")); await page.keyboard.press(process.platform === "darwin" ? "Meta+V" : "Control+V"); assert.equal(await page.locator("#recherche-q").inputValue(), "Marketing"); await page.locator("#recherche-q").fill("");
   checks.push("Raccourci de recherche et copier-coller natif");
@@ -74,8 +99,8 @@ try {
   await page.goto(origin + "/offres/desktop-qa-commerce"); await page.getByRole("heading", { name: "Commercial CDI — vérification" }).waitFor();
   await page.screenshot({ path: join(artifacts, "fiche-offre.png"), fullPage: true });
   await app.evaluate(({ shell }) => { shell.openExternal = async (url) => { globalThis.__joblyLastExternal = url; }; });
-  await page.evaluate(() => window.open("/go/desktop-qa-commerce", "_blank"));
-  let external; for (let attempt = 0; attempt < 50 && !external; attempt++) { await pause(100); external = await app.evaluate(() => globalThis.__joblyLastExternal); } assert.equal(external, "https://example.com/careers");
+  await page.getByRole("link", { name: "Postuler sur example.com", exact: true }).click();
+  let external; for (let attempt = 0; attempt < 200 && !external; attempt++) { await pause(100); external = await app.evaluate(() => globalThis.__joblyLastExternal); } assert.equal(external, "https://example.com/careers");
   checks.push("Fiche et Postuler : suivi de candidature et ouverture dans le navigateur système");
   const pdfPath = join(artifacts, "test-cv.pdf");
   const objects = ["<< /Type /Catalog /Pages 2 0 R >>", "<< /Type /Pages /Kids [3 0 R] /Count 1 >>", "<< /Type /Page /Parent 2 0 R /MediaBox [0 0 300 200] /Resources << /Font << /F1 5 0 R >> >> /Contents 4 0 R >>", "<< /Length 100 >>\nstream\nBT /F1 12 Tf 30 100 Td (Marketing commercial relation client CV de verification.) Tj ET\nendstream", "<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>"];
@@ -120,5 +145,5 @@ try {
   if(process.env.JOBLY_TEST_NETWORK === "1") {await page.evaluate(()=> window.joblyDesktop.collect()); const deadline=Date.now()+240000;let status;do{status=await page.evaluate(()=> window.joblyDesktop.status());if(!status.collecting&&status.runs.length)break;await pause(500);}while(Date.now()<deadline);assert.ok(status.runs.some(run=>run.label.includes("AniCura")&&run.fetched>0));await writeFile(join(artifacts,"network.json"),JSON.stringify(status,null,2));checks.push("Collecte réelle AniCura dans l’exécutable empaqueté");}
   assert.deepEqual(consoleErrors,[]);
   await app.close();app=undefined;
-  await writeFile(join(artifacts,"verification.json"),JSON.stringify({at:new Date().toISOString(),platform:process.platform,arch:process.arch,executable,appVersion,fixtures:"synthétiques isolées ; réseau uniquement si JOBLY_TEST_NETWORK=1",checks,timings,passed:true},null,2));console.log(JSON.stringify({passed:true,checks,timings},null,2));
+  await writeFile(join(artifacts,"verification.json"),JSON.stringify({at:new Date().toISOString(),platform:process.platform,arch:process.arch,executable,appVersion, sourceDigest,fixtures:"synthétiques isolées ; réseau uniquement si JOBLY_TEST_NETWORK=1",checks,timings,passed:true},null,2));console.log(JSON.stringify({passed:true,checks,timings},null,2));
 }catch(error){const diagnostic = await readFile(join(profile,"jobly.log"),"utf8").catch(()=>""); await writeFile(join(artifacts,"runtime-diagnostic.log"),diagnostic.slice(-30000)); console.error(diagnostic.slice(-16000)); if(app){try{await(await app.firstWindow()).screenshot({path:join(artifacts,"failure.png"),fullPage:true});}catch{}await app.close().catch(()=>{});}await writeFile(join(artifacts,"verification.json"),JSON.stringify({at:new Date().toISOString(),platform:process.platform,arch:process.arch,checks,passed:false,error:String(error)},null,2));throw error;}

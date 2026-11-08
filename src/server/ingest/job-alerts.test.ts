@@ -37,14 +37,15 @@ describe("annonces d'alertes email gratuites", () => {
     expect(result.offers[0].publishedAt).toBeUndefined();
     expect(result.receivedAt?.toISOString()).toBe("2026-10-05T08:00:00.000Z");
   });
-  it("n'invente ni entreprise ni lieu et exclut les offres étrangères/CDI/commerciales", async () => {
+  it("n'invente ni entreprise ni lieu et exclut les offres étrangères et CDI, conserve les stages commerciaux", async () => {
     const result = await parseJobAlert(eml(
       card("Stage développeur", "aaaaaa1234567890", "", "Paris") +
       card("Stage développeur", "bbbbbb1234567890", "Test", "London") +
       card("CDI Software Engineer", "cccccc1234567890") +
       card("Sales Intern", "dddddd1234567890"),
     ));
-    expect(result.offers).toHaveLength(0);
+    expect(result.offers).toHaveLength(1);
+    expect(result.offers[0].title).toBe("Sales Intern");
     expect(result.warnings.join(" ")).toContain("entreprise ou lieu illisible");
   });
 });

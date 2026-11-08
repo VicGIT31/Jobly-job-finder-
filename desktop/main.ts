@@ -93,7 +93,7 @@ function menu() {
     { label: "Aide", submenu: [
       { label: "Guide d’utilisation", click: () => { void shell.openPath(join(resources, "DEMARRER.html")); } },
       { label: "Afficher les données et le journal", click: () => { void shell.openPath(userData); } },
-      { label: "À propos de Jobly", click: () => { void dialog.showMessageBox(window!, { message: `Jobly ${app.getVersion()}`, detail: "Commerce, marketing et auxiliaires vétérinaires en France.\nDonnées conservées sur cet ordinateur.\nInternet est nécessaire à la collecte et aux candidatures.\nLes messages et alertes restent dans la boîte locale." }); } },
+      { label: "À propos de Jobly", click: () => { void dialog.showMessageBox(window!, { message: `Jobly ${app.getVersion()}`, detail: "Tech, commerce, assurance, finance, barista et métiers animaliers en France.\nDonnées conservées sur cet ordinateur.\nInternet est nécessaire à la collecte et aux candidatures.\nLes messages et alertes restent dans la boîte locale." }); } },
     ] },
   ]));
 }
@@ -151,7 +151,7 @@ async function start() {
   }
   await database.migrate(join(resources, "migrations"));
   if (closing) return;
-  if (config.lastVersion !== app.getVersion() && config.lastPath && !/[?&]univers=(COMMERCE|ASV)(?:&|$)/.test(config.lastPath)) { config.legacyLastPath = config.lastPath; delete config.lastPath; }
+  if (config.lastVersion !== app.getVersion() && config.lastPath && !/[?&]univers=(COMMERCE|ASV|FINANCE|TECH|HOSPITALITY)(?:&|$)/.test(config.lastPath)) { config.legacyLastPath = config.lastPath; delete config.lastPath; }
   config.lastVersion = app.getVersion();
   const port = await freePort(config.port ?? 32178);
   config.port = port; await writeFile(configPath, JSON.stringify(config), { mode: 0o600 });

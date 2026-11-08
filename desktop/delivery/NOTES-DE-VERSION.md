@@ -1,4 +1,16 @@
-# Jobly 0.3.0
+# Jobly 0.4.1
+
+- Windows x64 : construction native, installation testée et ZIP avec commande PowerShell.
+- Barista et coffee shops : Haute-Garonne, Toulouse, Agen et Bordeaux, tous contrats.
+- 24 combinaisons de sources géographiques générées, sans clé API.
+- Test de candidature avec clic réel et attente adaptée aux démarrages Windows.
+
+- Découverte automatique persistante des employeurs : annuaire public, liens carrières, ATS et vérification des flux, sans clé API.
+- Stages et alternances assurance, banque, finance, comptabilité, audit et investissement dans toute la France ; synonymes BTS Assurance et filtres dédiés.
+- Pagination nationale progressive, reprise entre cycles et protection réseau des sources découvertes.
+- Guides et commande d’installation générés depuis une version et un modèle uniques.
+
+## Fonctions conservées
 
 - Recherche personnelle immédiate sans compte, inscription ni mot de passe.
 - Commerce & marketing et auxiliaires vétérinaires ; référentiel français/anglais et exclusion des postes vétérinaires des résultats ASV.

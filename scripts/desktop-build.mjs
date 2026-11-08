@@ -1,3 +1,4 @@
+import { sourceFingerprint } from "./desktop-provenance.mjs";
 import { build } from "esbuild";
 import { cp, mkdir, readFile, writeFile, rm, readdir, stat } from "node:fs/promises";
 import { existsSync } from "node:fs";
@@ -15,7 +16,7 @@ await mkdir(resources, { recursive: true });
 await build({ entryPoints: ["desktop/main.ts"], outfile: join(desktop, "main.cjs"), bundle: true, platform: "node", format: "cjs", target: "node22", external: ["electron", "pg-native"], sourcemap: false });
 await cp("desktop/preload.cjs", join(desktop, "preload.cjs"));
 const pkg = JSON.parse(await readFile("package.json", "utf8"));
-await writeFile(join(desktop, "package.json"), JSON.stringify({ name: "jobly-desktop", productName: "Jobly", version: pkg.version, description: "Commerce, marketing et auxiliaires vétérinaires en France", author: "Jobly", main: "main.cjs" }, null, 2));
+await writeFile(join(desktop, "package.json"), JSON.stringify({ name: "jobly-desktop", productName: "Jobly", version: pkg.version, description: "Tech, commerce, assurance, finance, barista et métiers animaliers en France", author: "Jobly", main: "main.cjs" }, null, 2));
 const nativePackage = process.platform === "win32" ? "windows-x64" : `${process.platform}-${process.arch}`;
 const native = join(root, "node_modules/@embedded-postgres", nativePackage, "native");
 if (!existsSync(native)) throw new Error(`PostgreSQL non disponible pour ${process.platform}/${process.arch}. Construisez sur le système et processeur cibles.`);
@@ -86,4 +87,5 @@ async function assertNoSecrets(directory) {
 await assertNoSecrets(resources);
 const serverFiles = await stat(join(resources, "server/server.js"));
 if (!serverFiles.size) throw new Error("Serveur de production manquant");
+await writeFile(join(resources, "build-manifest.json"), JSON.stringify({ version: pkg.version, platform: process.platform, arch: process.arch, builtAt: new Date().toISOString(), sourceDigest: await sourceFingerprint() }, null, 2));
 console.log(`Application préparée pour ${process.platform}/${process.arch}, sans .env ni données personnelles.`);

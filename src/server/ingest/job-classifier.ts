@@ -1,3 +1,4 @@
+import { isBaristaArea } from "@/lib/barista-area";
 import type { TechSpecialty } from "@prisma/client";
 import { fold, VOCABULARY, TAG_LABELS } from "@/lib/job-taxonomy";
 import { classifySpecialty } from "./classify";
@@ -20,7 +21,7 @@ import { isTechOffer } from "./scope";
  * (« Assistant(e) », « Agent d'accueil »), jamais l'inventer seul.
  */
 
-export type ClassifiedUniverse = "TECH" | "COMMERCE" | "ASV" | "OTHER";
+export type ClassifiedUniverse = "TECH" | "COMMERCE" | "FINANCE" | "HOSPITALITY" | "ASV" | "OTHER";
 
 export type ClassifyContext = {
   company?: string;
@@ -337,6 +338,14 @@ export function classifyJob(
     /veterinaire|sante animale/.test(company) ||
     VET_STRUCTURE_INTRO.test(intro);
 
+  const coffeeRole = /\bbaristas?\b|\bcoffee specialist\b|\bpreparat(?:eur|rice)(?: de)? cafe\b/.test(heading);
+  const coffeeContext = /coffee shop|salon de the|cafe de specialite|coffee house|cafeteria/.test(`${heading} ${company}`);
+  const cafeSupport = /\b(employe|employee|equipier|equipiere|serveur|serveuse|polyvalent|polyvalente|vendeur|vendeuse)\b/.test(heading);
+  const coffeeTasks = [/prepar(?:er|ation).{0,35}(?:cafe|boissons? chaudes?)/, /espresso|expresso|latte art|extraction du cafe/, /accueil.{0,25}client|encaissement|service au comptoir/].filter((signal) => signal.test(missions));
+  const nonCoffeeRole = /\b(developpeur|developer|logiciel|software|technicien|commercial|reparateur|maintenance|torrefacteur|formateur|formatrice)\b/.test(heading);
+  if (!nonCoffeeRole && (coffeeRole || cafeSupport && coffeeContext && coffeeTasks.length >= 2))
+    return build("HOSPITALITY", "BARISTA", coffeeRole ? 1 : 0.8, "Préparation et service du café en coffee shop", [coffeeRole ? "Rôle de barista dans l’intitulé" : "Coffee shop et missions de préparation/service du café"], input);
+
   // Formations et vétérinaires : métiers voisins, jamais un poste d'ASV.
   if (/\b(professeur|enseignant|enseignante|formateur|formatrice)\b/.test(heading))
     return OUT("Poste de formation, distinct du métier recherché");
@@ -435,6 +444,18 @@ export function classifyJob(
   // Tout autre intitulé vétérinaire (remplaçant, salarié, stage vétérinaire) n'est pas un ASV.
   if (/\b(veterinaires?|veterinary|veterinarian|chirurgiens?|praticiens?)\b/.test(heading))
     return OUT("Poste vétérinaire, distinct d’un ASV");
+
+  /* Un rôle financier explicite prime sur le vocabulaire informatique des missions.
+   * Un développeur ou data analyst chez un assureur reste en tech. */
+  const explicitTech = /\b(developpeur|developpeuse|developer|software|data (?:analyst|engineer|scientist)|devops|cybersecurite|informatique)\b/.test(heading);
+  const financeFamilies = ["AUDIT_RISK", "FINANCIAL_MARKETS", "INSURANCE", "BANKING", "ACCOUNTING", "CORPORATE_FINANCE"];
+  const otherFunction = /\b(marketing|communication|ressources humaines|juriste|juridique|recrutement|logistique|achats|assurance qualite)\b/.test(heading);
+  const finance = !explicitTech && !otherFunction && financeFamilies.find((family) =>
+    VOCABULARY[family].some((term) => phrase(heading, term)),
+  );
+  if (finance) return build("FINANCE", finance, 0.95,
+    "Intitulé de métier en assurance, banque ou finance",
+    ["Métier financier ou assurantiel nommé dans l’intitulé"], input);
 
   /* --- Tech et commerce : même arbitrage que le reste du catalogue -- */
   const commerceByTitle = COMMERCE_ORDER.filter((family) =>
@@ -558,10 +579,13 @@ const FAMILY_REASON: Record<string, string> = {
 export function isInScope(
   classification: Pick<JobClassification, "universe">,
   contractType: string,
+  location?: Parameters<typeof isBaristaArea>[0],
 ): { ok: true } | { ok: false; reason: string } {
+  if (classification.universe === "HOSPITALITY" && location && !isBaristaArea(location))
+    return { ok: false, reason: "Offre barista hors Haute-Garonne, Agen et Bordeaux" };
   if (classification.universe === "OTHER")
     return { ok: false, reason: "Offre hors périmètre : métier non suivi" };
-  if (classification.universe === "TECH" && !["STAGE", "ALTERNANCE"].includes(contractType))
-    return { ok: false, reason: "Offre hors périmètre : poste tech hors stage ou alternance" };
+  if (["TECH", "FINANCE"].includes(classification.universe) && !["STAGE", "ALTERNANCE"].includes(contractType))
+    return { ok: false, reason: `Offre hors périmètre : poste ${classification.universe === "FINANCE" ? "finance" : "tech"} hors stage ou alternance` };
   return { ok: true };
 }

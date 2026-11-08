@@ -6,7 +6,7 @@ import { Download, FolderOpen, RefreshCw, WifiOff, Mail } from "lucide-react";
 type Status = { configured: boolean; offers: number; collecting: boolean; error: string | null; selectedSources: string[]; sources: { id: string; label: string; group?: string }[]; runs: { id: string; label: string; ok: boolean; fetched: number; error: string | null; startedAt: string }[]; messages: { subject: string; text: string; at: string; to: string }[] };
 type Bridge = { status(): Promise<Status>; collect(data?: { city: string }): Promise<unknown>; cancel(): Promise<unknown>; repair(): Promise<unknown>; sources(ids: string[]): Promise<unknown>; backup(): Promise<string | null>; restore(): Promise<string | null>; openData(): Promise<unknown> };
 declare global { interface Window { joblyDesktop?: Bridge } }
-const GROUPS: [string, string][] = [["TECH", "Tech · stages et alternances"], ["COMMERCE", "Commerce, marketing et communication"], ["ASV", "ASV et métiers animaliers"], ["RECRUITERS", "Pages recruteurs (cliniques, refuges, employeurs)"]];
+const GROUPS: [string, string][] = [["TECH", "Tech · stages et alternances"], ["COMMERCE", "Commerce, marketing et communication"], ["FINANCE", "Assurance, banque et finance"], ["HOSPITALITY", "Barista · Haute-Garonne, Agen et Bordeaux"], ["ASV", "ASV et métiers animaliers"], ["RECRUITERS", "Pages recruteurs (cliniques, refuges, employeurs)"]];
 
 export function DesktopPanel() {
   const [status, setStatus] = useState<Status>();

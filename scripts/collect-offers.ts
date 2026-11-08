@@ -6,7 +6,7 @@ import { getSourceConnectors } from "../src/server/ingest/sources";
 import type { SourceConnector } from "../src/server/ingest/sources/types";
 import { PublicBoardConnector } from "../src/server/ingest/sources/public-boards";
 import { getHttpFailures, resetHttpState } from "../src/server/ingest/http";
-import { isTechOffer } from "../src/server/ingest/scope";
+import { classifyJob, isInScope } from "../src/server/ingest/job-classifier";
 import { normalizeOffer, rawOfferSchema, type RawOffer } from "../src/server/ingest/normalize";
 import { computeDedupHash } from "../src/server/ingest/dedup";
 
@@ -43,10 +43,10 @@ async function main(): Promise<void> {
       let accepted = 0;
       for (const raw of fetched) {
         const parsed = rawOfferSchema.safeParse(raw);
-        if (!parsed.success || (!connector.personal && !isTechOffer(parsed.data.title, parsed.data.description))) continue;
+        if (!parsed.success) continue;
         try {
           const normalized = normalizeOffer(parsed.data, { personal: connector.personal, acceptedContracts: connector.acceptedContracts });
-          if (normalized.countryCode !== "FR") continue;
+          if (normalized.countryCode !== "FR" || !isInScope(classifyJob(normalized.title, normalized.description), normalized.contractType, normalized).ok) continue;
           const hash = computeDedupHash(
             normalized.title,
             normalized.companyName,
@@ -100,7 +100,7 @@ async function main(): Promise<void> {
     JSON.stringify(
       {
         collectedAt: new Date().toISOString(),
-        scope: "France / Commerce, Marketing, ASV (ou sources historiques sélectionnées)",
+        scope: "France / Tech, Commerce, Assurance, Banque, Finance et ASV",
         results,
         offers: [...offers.values()],
       },

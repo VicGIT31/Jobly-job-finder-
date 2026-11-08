@@ -3,18 +3,22 @@
  * synonymes de recherche et heuristiques d'expérience. La classification d'une
  * offre elle-même vit côté serveur dans `server/ingest/job-classifier.ts`.
  */
-export const UNIVERSES = ["TECH", "COMMERCE", "ASV"] as const;
+export const UNIVERSES = ["TECH", "COMMERCE", "FINANCE", "HOSPITALITY", "ASV"] as const;
 export type JobUniverse = (typeof UNIVERSES)[number];
 
 export const UNIVERSE_LABELS: Record<JobUniverse, string> = {
   TECH: "Tech & informatique",
   COMMERCE: "Commerce, marketing & communication",
+  FINANCE: "Assurance, banque & finance",
+  HOSPITALITY: "Café & barista",
   ASV: "Vétérinaire & animalier",
 };
 
 export const UNIVERSE_SHORT_LABELS: Record<JobUniverse, string> = {
   TECH: "Tech",
   COMMERCE: "Commerce & marketing",
+  FINANCE: "Assurance & finance",
+  HOSPITALITY: "Barista",
   ASV: "ASV & animalier",
 };
 
@@ -29,6 +33,13 @@ export const FAMILY_LABELS: Record<string, string> = {
   ASV: "Auxiliaire vétérinaire (ASV)",
   VET_SUPPORT: "Accueil & gestion de clinique vétérinaire",
   ANIMAL_CARE: "Soins animaliers, refuges & animalerie",
+  INSURANCE: "Assurance · BTS Assurance",
+  BANKING: "Banque & conseil bancaire",
+  CORPORATE_FINANCE: "Finance & contrôle de gestion",
+  ACCOUNTING: "Comptabilité",
+  AUDIT_RISK: "Audit, risques & conformité",
+  FINANCIAL_MARKETS: "Marchés financiers & investissement",
+  BARISTA: "Barista & coffee shop",
   OTHER: "Autre métier",
 };
 
@@ -42,6 +53,8 @@ export const UNIVERSE_FAMILIES: Record<Exclude<JobUniverse, "TECH">, string[]> =
     "MARKETING",
     "COMMUNICATION",
   ],
+  FINANCE: ["INSURANCE", "BANKING", "CORPORATE_FINANCE", "ACCOUNTING", "AUDIT_RISK", "FINANCIAL_MARKETS"],
+  HOSPITALITY: ["BARISTA"],
   ASV: ["ASV", "VET_SUPPORT", "ANIMAL_CARE"],
 };
 
@@ -83,6 +96,13 @@ export const fold = (value: string) =>
  * « auxiliaire vétérinaire », « veterinary nurse »).
  */
 export const VOCABULARY: Record<string, string[]> = {
+  BARISTA: ["barista", "baristas", "coffee specialist", "employe coffee shop", "employee coffee shop", "preparateur cafe", "preparatrice cafe", "cafe de specialite"],
+  INSURANCE: ["assurance", "assurances", "bts assurance", "bts assurances", "assureur", "insurance", "actuariel", "actuarielle", "etudes actuarielles", "souscription", "indemnisation", "gestionnaire prestations", "gestionnaire sinistres", "gestionnaire de sinistres", "souscripteur", "souscriptrice", "actuaire", "actuariat", "courtier en assurance", "courtage assurance", "gestionnaire indemnisation", "gestionnaire de contrats assurance"],
+  BANKING: ["banque", "bancaire", "banking", "conseiller bancaire", "conseillere bancaire", "conseiller patrimonial", "conseillere patrimoniale", "gestion de patrimoine", "charge d accueil bancaire", "conseiller financier", "conseillere financiere"],
+  CORPORATE_FINANCE: ["finance", "financier", "financiere", "financial analyst", "analyste financier", "analyste financiere", "financial controller", "controle de gestion", "controleur de gestion", "controleuse de gestion", "tresorerie", "tresorier", "treasury", "fp a", "corporate finance", "fusion acquisition", "m a"],
+  ACCOUNTING: ["comptable", "comptabilite", "accountant", "accounting", "expertise comptable", "consolidation financiere"],
+  AUDIT_RISK: ["audit financier", "auditeur financier", "audit interne", "auditeur interne", "risque de credit", "risques financiers", "conformite bancaire", "compliance officer", "lutte anti blanchiment", "kyc", "aml", "risk analyst", "analyste credit", "credit analyst", "risque bancaire", "risk management"],
+  FINANCIAL_MARKETS: ["marches financiers", "asset management", "gestion d actifs", "private equity", "capital investissement", "analyste investissement", "investment analyst", "investment banking", "trading", "middle office", "back office titres", "sales trader", "portfolio manager", "gestionnaire de portefeuille"],
   ASV: [
     "asv",
     "avq",
@@ -230,6 +250,7 @@ const phrase = (text: string, term: string) => ` ${text} `.includes(` ${term} `)
 export function queryFamilies(query: string, _universe?: string): string[] {
   const text = fold(query);
   if (!text) return [];
+  if (/^(finance|assurance banque finance)$/.test(text)) return UNIVERSE_FAMILIES.FINANCE;
   if (/^(commerce|commercial|vente|sales)$/.test(text))
     return ["SALES", "BUSINESS_DEVELOPMENT", "RETAIL", "CUSTOMER_SERVICE"];
   if (/^(veterinaire|veterinary|clinique veterinaire|cabinet veterinaire)$/.test(text))

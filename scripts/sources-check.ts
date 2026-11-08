@@ -68,6 +68,9 @@ async function main(): Promise<void> {
           const body = await fetchText(endpoint, options);
           if (!body || (source.sitemapUrls.length && !/<(?:urlset|sitemapindex)\b/.test(body)))
             throw new Error("Page ou sitemap absent/illisible");
+        } else if (source.kind === "teamtailor") {
+          const xml = await fetchText(endpoint, options);
+          if (!xml || !/<rss[\s>]/i.test(xml)) throw new Error("Flux RSS absent");
         } else {
           const data = await fetchJson<Record<string, unknown> | unknown[]>(
             endpoint,
@@ -87,7 +90,7 @@ async function main(): Promise<void> {
           );
           const list = Array.isArray(data)
             ? data
-            : (data?.jobs ?? data?.jobPostings ?? data?.content);
+            : (data?.jobs ?? data?.offers ?? data?.jobPostings ?? data?.content);
           if (!Array.isArray(list)) throw new Error("Endpoint JSON absent ou format modifié");
         }
         results.push({

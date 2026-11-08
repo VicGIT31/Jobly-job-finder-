@@ -63,7 +63,7 @@ export async function POST(request: NextRequest) {
   }
   if (body?.action === "sources") {
     if (state.desktopCollecting) return NextResponse.json({ error: "Attendez la fin de la collecte avant de changer les sources." }, { status: 409 });
-    const parsed = z.array(z.string().max(120)).max(200).safeParse(body.ids);
+    const parsed = z.array(z.string().max(120)).max(5000).safeParse(body.ids);
     if (!parsed.success) return NextResponse.json({ error: "Sélection de sources invalide." }, { status: 400 });
     const ids = new Set((await getSourceEntries()).map(({ id }) => id));
     if (parsed.data.some((id) => !ids.has(id))) return NextResponse.json({ error: "Une source n’existe plus dans le catalogue." }, { status: 400 });

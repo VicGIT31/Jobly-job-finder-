@@ -25,6 +25,7 @@ export class RateLimitedError extends Error {
 }
 
 import { readCachedBody, writeCachedBody } from "./public-cache";
+import { assertPublicTarget } from "./public-network";
 import { AsyncLocalStorage } from "node:async_hooks";
 
 const requestBudget = new AsyncLocalStorage<AbortSignal>();
@@ -72,6 +73,10 @@ export function getHttpFailures(): readonly HttpFailure[] {
 }
 
 export type FetchOptions = {
+  /** Valide DNS et chaque redirection pour les URLs découvertes. */
+  publicOnly?: boolean;
+  redirectCount?: number;
+  maxBodyBytes?: number;
   headers?: Record<string, string>;
   /** Méthode HTTP. Défaut GET ; certaines API de recherche exigent POST. */
   method?: "GET" | "POST";
@@ -167,6 +172,7 @@ export async function fetchWithRetry(
   const config = { ...DEFAULTS, ...options };
   const target = typeof url === "string" ? new URL(url) : url;
   const host = target.host;
+  if (config.publicOnly) await assertPublicTarget(target);
 
   if (isHostCircuitOpen(host)) throw new RateLimitedError(host);
 
@@ -190,6 +196,7 @@ export async function fetchWithRetry(
           AbortSignal.timeout(config.timeoutMs),
           ...(requestBudget.getStore() ? [requestBudget.getStore()!] : []),
         ]),
+        redirect: config.publicOnly ? "manual" : "follow",
         cache: "no-store",
       });
     } catch {
@@ -198,6 +205,15 @@ export async function fetchWithRetry(
       response = null;
     }
 
+    if (config.publicOnly && response && [301, 302, 303, 307, 308].includes(response.status)) {
+      const location = response.headers.get("location");
+      await response.body?.cancel();
+      if (!location || (config.redirectCount ?? 0) >= 5) return null;
+      const next = new URL(location, target);
+      // Une redirection ne reçoit jamais le corps ou les secrets d'une API.
+      if (next.origin !== target.origin && (config.body || config.headers?.Authorization)) return null;
+      return fetchWithRetry(next, { ...options, redirectCount: (config.redirectCount ?? 0) + 1 });
+    }
     if (response?.ok) {
       // Un succès efface un rate-limit passé : seuls les échecs *rapprochés*
       // doivent faire tomber le disjoncteur, pas leur cumul sur tout le cycle.
@@ -261,11 +277,25 @@ export async function fetchText(
   const response = await fetchWithRetry(url, options);
   if (!response) return null;
   try {
-    const bytes = new Uint8Array(await response.arrayBuffer());
+    const limit = options.maxBodyBytes ?? 8_000_000;
+    const reader = response.body?.getReader();
+    if (!reader) return null;
+    const chunks: Uint8Array[] = [];
+    let size = 0;
+    try {
+      for (;;) {
+        const { value, done } = await reader.read();
+        if (done) break;
+        size += value.byteLength;
+        if (size > limit) { await reader.cancel(); return null; }
+        chunks.push(value);
+      }
+    } finally { reader.releaseLock(); }
+    const bytes = Buffer.concat(chunks);
     // Les sitemaps WTTJ sont des fichiers .gz, sans Content-Encoding HTTP.
     const body =
       bytes[0] === 0x1f && bytes[1] === 0x8b
-        ? (await import("node:zlib")).gunzipSync(bytes).toString("utf8")
+        ? (await import("node:zlib")).gunzipSync(bytes, { maxOutputLength: limit }).toString("utf8")
         : new TextDecoder().decode(bytes);
     if (cacheable) await writeCachedBody(key, body);
     return body;

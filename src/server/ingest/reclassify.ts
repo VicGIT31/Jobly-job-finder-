@@ -3,7 +3,7 @@ import { experienceFrom } from "@/lib/job-taxonomy";
 import { classifyJob } from "./job-classifier";
 
 /** À changer quand le classement évolue : les offres déjà en base sont alors reclassées une fois. */
-export const CLASSIFIER_VERSION = "unified-2026-11-02";
+export const CLASSIFIER_VERSION = "unified-barista-2026-11-08";
 const SETTING_KEY = "classifierVersion";
 const BATCH = 300;
 

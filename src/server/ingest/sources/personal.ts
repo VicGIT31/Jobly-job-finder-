@@ -1,3 +1,4 @@
+import { readCatalogCursor, saveCatalogCursor, selectCatalogDetails } from "../catalog-rotation";
 import { load } from "cheerio";
 import definitions from "../../../../config/personal-sources.json";
 import { classifyJob } from "../job-classifier";
@@ -19,6 +20,7 @@ export type PersonalSourceDefinition = {
   pattern?: string;
   query?: string;
   place?: string;
+  radiusKm?: number;
   priority: number;
   universe: string;
   /** Sitemap complétant un flux plafonné (Teamtailor limite son RSS à 100 offres). */
@@ -31,6 +33,9 @@ export type PersonalSourceDefinition = {
   allowQuery?: boolean;
   /** false : la date publiée par le site n'est pas fiable (valeur du jour), on la tient pour inconnue. */
   dates?: boolean;
+  maxPages?: number;
+  maxDetails?: number;
+  rotatePages?: boolean;
 };
 const ASV_LINK = /asv|auxiliaire|assistant.*v[eé]t[eé]rinaire/i;
 const ASV_FIRST = /asv|auxiliaire|assistant|soigneur|animalier|infirmi|capacitaire|toiletteu/i;
@@ -63,7 +68,7 @@ export class PersonalConnector implements SourceConnector {
   readonly label: string;
   readonly requestPrefixes: string[];
   constructor(readonly definition: PersonalSourceDefinition) {
-    this.group = definition.universe === "ASV" ? ("ASV" as const) : ("COMMERCE" as const);
+    this.group = definition.universe === "ASV" ? ("ASV" as const) : definition.universe === "FINANCE" ? ("FINANCE" as const) : definition.universe === "HOSPITALITY" ? ("HOSPITALITY" as const) : ("COMMERCE" as const);
     this.label = definition.label;
     this.sourceSite = `${new URL(definition.url).hostname.replace(/^www\./, "")}/${definition.id}`;
     this.requestPrefixes = [new URL(definition.url).origin + "/"];
@@ -191,7 +196,7 @@ export class PersonalConnector implements SourceConnector {
         ...page.content.filter(
           (entry) =>
             entry.location?.country?.toLowerCase() === "fr" &&
-            ["COMMERCE", "ASV"].includes(
+            ["COMMERCE", "ASV", "FINANCE"].includes(
               classifyJob(entry.name, "", { company: this.definition.company }).universe,
             ),
         ),
@@ -242,7 +247,12 @@ export class PersonalConnector implements SourceConnector {
   private async html(offers: RawOffer[]) {
     const { definition: source } = this;
     const links = new Map<string, string>();
-    for (let page = 1; page <= (source.kind === "jsonld-board" ? 3 : 2); page++) {
+    const pageBudget = source.maxPages ?? (source.kind === "jsonld-board" ? 3 : 2);
+    const stored = source.rotatePages ? Number(await readCatalogCursor(`${source.id}:page`)) : 2;
+    const start = Number.isInteger(stored) && stored >= 2 && stored <= 500 ? stored : 2;
+    const pages = source.rotatePages ? [1, ...Array.from({ length: pageBudget - 1 }, (_, i) => start + i)] : Array.from({ length: pageBudget }, (_, i) => i + 1);
+    let nextPage = 2;
+    for (const page of pages) {
       const url = new URL(source.url);
       if (source.kind === "france-travail") {
         url.searchParams.set("motsCles", source.query!);
@@ -250,14 +260,14 @@ export class PersonalConnector implements SourceConnector {
         url.searchParams.set("tri", "0");
         if (source.place) {
           url.searchParams.set("lieux", source.place);
-          url.searchParams.set("rayon", "100");
+          url.searchParams.set("rayon", String(source.radiusKm ?? 100));
         }
         if (page > 1) url.searchParams.set("range", `${(page - 1) * 20}-${page * 20 - 1}`);
       } else if (source.kind === "hellowork") {
         url.searchParams.set("k", source.query!);
         if (source.place) {
           url.searchParams.set("l", source.place);
-          url.searchParams.set("ray", "100");
+          url.searchParams.set("ray", String(source.radiusKm ?? 100));
         }
         url.searchParams.set("p", String(page));
       } else if (page > 1) url.searchParams.set("paged", String(page));
@@ -312,22 +322,34 @@ export class PersonalConnector implements SourceConnector {
         }
         links.set(target.href, text);
       });
-      if (links.size === previous) break;
-      if (page === 2 && source.kind !== "jsonld-board")
-        this.warnings.push("Deux pages de recherche par cycle ; couverture partielle");
+      if (links.size === previous) {
+        if (page === 1 && ["france-travail", "hellowork"].includes(source.kind) && !/aucune offre|aucun r[ée]sultat|0 offre|pas d.offre/i.test(html))
+          this.warnings.push("Recherche sans liens d’annonces : page dynamique, accès limité ou format modifié");
+        nextPage = 2; break;
+      }
+      nextPage = page + 1;
+      if (page === pages.at(-1) && source.kind !== "jsonld-board")
+        this.warnings.push(`${pageBudget} pages de recherche par cycle ; couverture partielle`);
     }
     const ordered = [...links.entries()].sort(
       (a, b) =>
         Number(/toulouse|blagnac|colomiers|lab[eè]ge|balma/i.test(b[1])) -
         Number(/toulouse|blagnac|colomiers|lab[eè]ge|balma/i.test(a[1])),
     );
-    const results = await mapPool(ordered.slice(0, 60), 3, async ([url]) => {
+    const detailBudget = source.maxDetails ?? 60;
+    const rotation = selectCatalogDetails(ordered, detailBudget, source.rotatePages ? await readCatalogCursor(`${source.id}:detail`) : "");
+    const results = await mapPool(rotation.selected, 3, async ([url]) => {
       if (source.kind === "france-travail") return this.franceTravail(url);
       return this.detail(url);
     });
     offers.push(...results.filter((offer): offer is RawOffer => !!offer));
-    if (ordered.length > 60)
-      this.warnings.push("60 détails par source et cycle ; couverture partielle");
+    if (source.rotatePages) {
+      // Tant qu'un lot de détails est incomplet, on ne saute pas aux pages suivantes.
+      await saveCatalogCursor(`${source.id}:page`, String(ordered.length > detailBudget ? start : nextPage > 500 ? 2 : nextPage));
+      await saveCatalogCursor(`${source.id}:detail`, rotation.nextCursor);
+    }
+    if (ordered.length > detailBudget)
+      this.warnings.push(`${detailBudget} détails par source et cycle ; couverture partielle`);
   }
   /** Fiche d'annonce : JSON-LD en priorité, sinon (si la source le déclare) le titre et le texte de la page. */
   private async detail(url: string, hint: { publishedAt?: string } = {}): Promise<RawOffer | null> {

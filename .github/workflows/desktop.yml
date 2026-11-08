@@ -2,6 +2,12 @@ name: Jobly desktop
 
 on:
   workflow_dispatch:
+    inputs:
+      platform:
+        description: Plateformes à construire et tester
+        type: choice
+        default: all
+        options: [all, windows]
   push:
     tags: ["v*", "desktop-v*"]
 
@@ -13,13 +19,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        include:
-          - os: macos-15
-            target: mac-arm64
-          - os: macos-15-intel
-            target: mac-x64
-          - os: windows-2025
-            target: win-x64
+        include: ${{ fromJSON(inputs.platform == 'windows' && '[{"os":"windows-2025","target":"win-x64"}]' || '[{"os":"macos-15","target":"mac-arm64"},{"os":"macos-15-intel","target":"mac-x64"},{"os":"windows-2025","target":"win-x64"}]') }}
     runs-on: ${{ matrix.os }}
     timeout-minutes: 45
     env:

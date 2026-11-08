@@ -1,3 +1,6 @@
+import { PERSONAL_CONTRACTS } from "../personal-offer";
+import { robotsAllows } from "../robots";
+import { load } from "cheerio";
 import type { RawOffer } from "../normalize";
 import { extractJobPosting, jsonLdText } from "../jsonld";
 import { extractMicrodataJobPosting } from "../structured-html";
@@ -14,7 +17,9 @@ import type { SourceDefinition } from "./catalog";
 import { franceTravailPublicDetail } from "./france-travail-public";
 import { readCatalogCursor, saveCatalogCursor, selectCatalogDetails } from "../catalog-rotation";
 
-const HTTP = { minIntervalMs: 750, timeoutMs: 20_000, retries: 1 };
+const makeBoardOffer = (input: Parameters<typeof makeStudentOffer>[0]) => makeStudentOffer(input, { baristaContracts: true });
+
+const HTTP = { publicOnly: true, minIntervalMs: 750, timeoutMs: 20_000, retries: 1 };
 const DETAIL = { ...HTTP, cacheTtlMs: 4 * 60 * 60 * 1000 };
 const SITEMAP = { ...HTTP, cacheTtlMs: 60 * 60 * 1000 };
 const text = (value: unknown): string => (typeof value === "string" ? value : "");
@@ -45,6 +50,7 @@ async function requiredJson<T>(url: string, options = HTTP): Promise<T> {
   return value;
 }
 async function requiredText(url: string, options = HTTP): Promise<string> {
+  if (!(await robotsAllows(url))) throw new Error(`Page interdite ou robots indisponible : ${url}`);
   const value = await fetchText(url, options);
   if (value === null) throw new Error(`Page publique inaccessible : ${url}`);
   return value;
@@ -63,6 +69,10 @@ export function boardEndpoint(source: SourceDefinition): string {
       return `https://api.ashbyhq.com/posting-api/job-board/${slug}`;
     case "smartrecruiters":
       return `https://api.smartrecruiters.com/v1/companies/${slug}/postings`;
+    case "recruitee":
+      return `${url.origin}/api/offers/`;
+    case "teamtailor":
+      return `${url.origin}/jobs.rss`;
     case "workday": {
       const tenant = url.hostname.split(".")[0];
       const board = parts.length > 1 ? parts[1] : parts[0];
@@ -78,6 +88,7 @@ export class PublicBoardConnector implements SourceConnector {
   readonly sourceSite: string;
   readonly label: string;
   readonly warnings: string[] = [];
+  readonly acceptedContracts = PERSONAL_CONTRACTS;
   coverage?: import("./types").CollectionCoverage;
   readonly rejectedPostings: Array<{ title: string; url: string; reason: string }> = [];
   readonly requestPrefixes: string[];
@@ -91,7 +102,7 @@ export class PublicBoardConnector implements SourceConnector {
     const parts = url.pathname.split("/").filter(Boolean);
     const board = parts.at(-1);
     this.snapshotUrlPrefixes =
-      definition.kind === "html"
+      definition.kind === "recruitee" ? [`${url.origin}/o/`] : definition.kind === "teamtailor" ? [`${url.origin}/jobs/`] : definition.kind === "html"
         ? []
         : definition.kind === "workday"
           ? ["", "fr-FR/", "en-US/"].map((locale) => `${url.origin}/${locale}${board}/job/`)
@@ -125,6 +136,9 @@ export class PublicBoardConnector implements SourceConnector {
     this.rejectedPostings.length = 0;
     try {
       switch (this.definition.kind) {
+        case "teamtailor":
+          await this.teamtailor(offers);
+          break;
         case "html":
           await this.html(offers);
           break;
@@ -160,11 +174,29 @@ export class PublicBoardConnector implements SourceConnector {
     }
   }
 
+  private async teamtailor(offers: RawOffer[]): Promise<void> {
+    const xml = await requiredText(boardEndpoint(this.definition));
+    const $ = load(xml, { xmlMode: true });
+    const items = $("item").toArray();
+    if (!/<rss[\s>]/i.test(xml)) throw new Error("Flux Teamtailor absent");
+    for (const item of items) {
+      const node = $(item);
+      const field = (name: string) => node.find("*").filter((_, element) => element.type === "tag" && element.name.replace(/^.*:/, "") === name).first().text().trim();
+      const offer = makeBoardOffer({ title: field("title"), company: this.definition.company ?? this.definition.label,
+        city: field("city"), country: field("country"), description: jsonLdText(field("description")),
+        url: field("link"), publishedAt: field("pubDate") });
+      if (offer) offers.push(offer);
+    }
+    // Le flux peut être plafonné : aucun retrait d'offre fondé sur son absence du RSS.
+    this.coverage = { mode: "RSS public", catalogTotal: items.length, listingsSeen: items.length, detailsRead: items.length, accepted: offers.length, complete: false };
+    this.warnings.push("Flux RSS potentiellement plafonné ; couverture partielle");
+  }
+
   private async simpleBoard(offers: RawOffer[]): Promise<void> {
     const source = this.definition;
     const data = await requiredJson<unknown>(boardEndpoint(source));
-    const envelope = data as { jobs?: unknown[] };
-    const jobs = Array.isArray(data) ? data : envelope?.jobs;
+    const envelope = data as { jobs?: unknown[]; offers?: unknown[] };
+    const jobs = Array.isArray(data) ? data : envelope?.jobs ?? envelope?.offers;
     if (!Array.isArray(jobs)) throw new Error("Format du board modifié : tableau d'offres absent");
     this.coverage = {
       mode: "flux public complet",
@@ -179,17 +211,20 @@ export class PublicBoardConnector implements SourceConnector {
       const category = job.categories as { location?: string; commitment?: string } | undefined;
       const location = job.location as string | { name?: string } | undefined;
       const address = job.address as { postalAddress?: { addressCountry?: string } } | undefined;
-      const raw = makeStudentOffer({
+      const raw = makeBoardOffer({
         title: text(job.title || job.text),
         company: source.company ?? source.label,
         city:
-          category?.location ?? (typeof location === "string" ? location : (location?.name ?? "")),
-        country: address?.postalAddress?.addressCountry,
-        contract: category?.commitment ?? text(job.employmentType),
+          text(job.city) || (category?.location ?? (typeof location === "string" ? location : (location?.name ?? ""))),
+        country: address?.postalAddress?.addressCountry ?? (text(job.country_code || job.country) || undefined),
+        contract: category?.commitment ?? text(job.employmentType || job.employment_type_code),
         description:
-          text(job.descriptionPlain) ||
-          jsonLdText(text(job.content || job.descriptionHtml || job.description)),
-        url: text(job.absolute_url || job.hostedUrl || job.jobUrl),
+          [text(job.descriptionPlain) || jsonLdText(text(job.content || job.descriptionHtml || job.description)),
+            ...(Array.isArray(job.lists) ? job.lists.map((list) => {
+              const section = list as { text?: string; content?: string };
+              return `${text(section.text)}\n${jsonLdText(text(section.content))}`;
+            }) : [])].join("\n\n"),
+        url: text(job.absolute_url || job.hostedUrl || job.jobUrl || job.careers_url),
         publishedAt:
           typeof job.createdAt === "number"
             ? job.createdAt
@@ -332,13 +367,13 @@ export class PublicBoardConnector implements SourceConnector {
             });
             return null;
           }
-          const offer = makeStudentOffer({
+          const offer = makeBoardOffer({
             title: info.title ?? job.title ?? "",
             company: source.company ?? source.label,
             description: jsonLdText(info.jobDescription ?? ""),
             city:
               info.jobRequisitionLocation?.descriptor ?? info.location ?? job.locationsText ?? "",
-            country: info.jobRequisitionLocation?.country?.alpha2Code ?? info.country?.descriptor,
+            country: info.jobRequisitionLocation?.country?.alpha2Code ?? info.country?.descriptor ?? (countryFacet ? "FR" : undefined),
             contract: info.workerSubType ?? info.jobType,
             url: info.externalUrl ?? `${source.url.replace(/\/$/, "")}${job.externalPath}`,
             publishedAt: info.startDate,
@@ -347,7 +382,7 @@ export class PublicBoardConnector implements SourceConnector {
             this.rejectedPostings.push({
               title: info.title ?? job.title ?? "",
               url: info.externalUrl ?? detailUrl,
-              reason: "Pays, contrat ou missions hors périmètre tech étudiant",
+              reason: "Pays, contrat ou missions hors périmètre étudiant",
             });
           return offer;
         });
@@ -407,10 +442,10 @@ export class PublicBoardConnector implements SourceConnector {
           seen.add(job.id);
           return (
             frenchLocation(job.location?.city ?? "", job.location?.country) &&
-            !!studentContract(
+            (/\bbaristas?\b/i.test(job.name ?? "") || !!studentContract(
               job.name ?? "",
               job.typeOfEmployment?.label ?? job.typeOfEmployment?.id,
-            )
+            ))
           );
         });
         this.coverage.listingsSeen = seen.size;
@@ -429,7 +464,7 @@ export class PublicBoardConnector implements SourceConnector {
             jobAd?: { sections?: Record<string, { text?: string }> };
           }>(`${endpoint}/${encodeURIComponent(job.id)}`, DETAIL);
           this.coverage!.detailsRead++;
-          return makeStudentOffer({
+          return makeBoardOffer({
             title: detail.name ?? job.name ?? "",
             company: source.company ?? detail.company?.name ?? source.label,
             city: detail.location?.city ?? job.location?.city ?? "",
@@ -509,9 +544,14 @@ export class PublicBoardConnector implements SourceConnector {
           );
         }
         const html = await requiredText(url.href);
+        const embedded = extractJobPosting(html);
+        if (embedded) {
+          const offer = jsonLdOffer(embedded, url.href, source.company, source.defaultCountry, true);
+          if (offer) offers.push(offer);
+        }
         const links = extractLinks(html, url.href, pattern);
         if (!links.length) {
-          if (page === 0 && !/noresults|aucun[e]? (?:offre|r[eé]sultat)|0 r[eé]sultat/i.test(html))
+          if (page === 0 && !embedded && !/noresults|aucun[e]? (?:offre|r[eé]sultat)|0 r[eé]sultat/i.test(html))
             this.warnings.push("Page sans liens d'offres : rendu dynamique ou format modifié");
           break;
         }
@@ -564,7 +604,7 @@ export class PublicBoardConnector implements SourceConnector {
             return null;
           }
           parsed++;
-          return jsonLdOffer(posting, url, source.company, source.defaultCountry);
+          return jsonLdOffer(posting, url, source.company, source.defaultCountry, true);
         })),
       );
     }

@@ -7,6 +7,7 @@ import communes from "../../../../config/communes-haute-garonne.json";
  * les villes inconnues sont laissées sans coordonnées (recherche géo ignorée).
  */
 const CITY_COORDS: Record<string, { lat: number; lng: number }> = {
+  agen: { lat: 44.2031, lng: 0.6164 },
   paris: { lat: 48.8566, lng: 2.3522 },
   lyon: { lat: 45.764, lng: 4.8357 },
   marseille: { lat: 43.2965, lng: 5.3698 },

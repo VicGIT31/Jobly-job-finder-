@@ -105,7 +105,7 @@ describe("rafraîchissement et indexation par lots", () => {
       sourceUrl: "https://example.com/job/1",
     };
     const result = await processIngest("internal", [
-      { ...offer, title: "Stage comptable", description: "Tenue de la comptabilité fournisseurs et clôtures mensuelles" },
+      { ...offer, title: "Stage cuisinier", description: "Préparation des repas et entretien de la cuisine" },
       { ...offer, countryCode: "GB", city: "London" },
     ]);
     expect(result.rejected).toBe(2);
