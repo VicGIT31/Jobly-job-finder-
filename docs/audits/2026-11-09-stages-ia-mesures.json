@@ -1,0 +1,275 @@
+{
+  "version": "0.4.1",
+  "commit": "831fdbb",
+  "measuredAt": "2026-11-09T14:03:25.438Z",
+  "scope": "Copie en lecture seule de la base locale, dernier cycle employeurs du 8 novembre. Fiches, pas mesure exhaustive du marché.",
+  "aiTechActive": [
+    {
+      "contractType": "STAGE",
+      "total": 1074,
+      "published5d": 160,
+      "unknown_date": 1
+    },
+    {
+      "contractType": "ALTERNANCE",
+      "total": 348,
+      "published5d": 52,
+      "unknown_date": 4
+    }
+  ],
+  "thalesActive": [
+    {
+      "specialty": "IA",
+      "contractType": "STAGE",
+      "status": "ACTIVE",
+      "total": 230,
+      "published5d": 14,
+      "unknown_date": 0
+    },
+    {
+      "specialty": "SOFTWARE",
+      "contractType": "STAGE",
+      "status": "ACTIVE",
+      "total": 135,
+      "published5d": 3,
+      "unknown_date": 0
+    },
+    {
+      "specialty": "AUTRE",
+      "contractType": "STAGE",
+      "status": "ACTIVE",
+      "total": 107,
+      "published5d": 6,
+      "unknown_date": 0
+    },
+    {
+      "specialty": "CYBERSECURITE",
+      "contractType": "STAGE",
+      "status": "ACTIVE",
+      "total": 63,
+      "published5d": 1,
+      "unknown_date": 0
+    },
+    {
+      "specialty": "DEVOPS",
+      "contractType": "STAGE",
+      "status": "ACTIVE",
+      "total": 32,
+      "published5d": 1,
+      "unknown_date": 0
+    },
+    {
+      "specialty": "RESEAUX",
+      "contractType": "STAGE",
+      "status": "ACTIVE",
+      "total": 24,
+      "published5d": 0,
+      "unknown_date": 0
+    },
+    {
+      "specialty": "WEB",
+      "contractType": "STAGE",
+      "status": "ACTIVE",
+      "total": 18,
+      "published5d": 1,
+      "unknown_date": 0
+    }
+  ],
+  "stageAiGeo": [
+    {
+      "sourceSite": "hellowork.com",
+      "total": 252,
+      "missing_geo": 2,
+      "toulouse_label": 13,
+      "toulouse_missing": 0
+    },
+    {
+      "sourceSite": "thales.wd3.myworkdayjobs.com",
+      "total": 230,
+      "missing_geo": 223,
+      "toulouse_label": 31,
+      "toulouse_missing": 31
+    },
+    {
+      "sourceSite": "fr.linkedin.com",
+      "total": 193,
+      "missing_geo": 12,
+      "toulouse_label": 22,
+      "toulouse_missing": 0
+    },
+    {
+      "sourceSite": "jobs.smartrecruiters.com",
+      "total": 181,
+      "missing_geo": 75,
+      "toulouse_label": 10,
+      "toulouse_missing": 0
+    },
+    {
+      "sourceSite": "ag.wd3.myworkdayjobs.com",
+      "total": 116,
+      "missing_geo": 93,
+      "toulouse_label": 17,
+      "toulouse_missing": 17
+    }
+  ],
+  "thalesTitleMix": [
+    {
+      "total": 230,
+      "data_bi_title_only": 24
+    }
+  ],
+  "employerRuns": [
+    {
+      "label": "Airbus",
+      "sourceSite": "ag.wd3.myworkdayjobs.com",
+      "ok": true,
+      "fetched": 258,
+      "created": 26,
+      "updated": 7,
+      "rejected": 0,
+      "durationMs": 361343,
+      "error": null,
+      "startedAt": "2026-11-08T13:44:46.293Z",
+      "coverageJson": {
+        "mode": "catalogue étudiant via facettes",
+        "expired": 0,
+        "accepted": 258,
+        "complete": true,
+        "detailsRead": 450,
+        "catalogTotal": 450,
+        "listingsSeen": 450
+      }
+    },
+    {
+      "label": "APEC",
+      "sourceSite": "apec.fr",
+      "ok": false,
+      "fetched": 0,
+      "created": 0,
+      "updated": 0,
+      "rejected": 0,
+      "durationMs": 108,
+      "error": "1 requête(s) en échec : HTTP 403",
+      "startedAt": "2026-11-08T13:38:12.479Z",
+      "coverageJson": null
+    },
+    {
+      "label": "Capgemini",
+      "sourceSite": "careers.capgemini.com",
+      "ok": true,
+      "fetched": 119,
+      "created": 6,
+      "updated": 3,
+      "rejected": 0,
+      "durationMs": 178843,
+      "error": null,
+      "startedAt": "2026-11-08T13:47:45.802Z",
+      "coverageJson": {
+        "mode": "pages publiques",
+        "expired": 0,
+        "accepted": 119,
+        "complete": true,
+        "detailsRead": 225,
+        "catalogTotal": 225,
+        "listingsSeen": 225
+      }
+    },
+    {
+      "label": "Découverte automatique des recruteurs",
+      "sourceSite": "discovery.jobly",
+      "ok": false,
+      "fetched": 0,
+      "created": 0,
+      "updated": 0,
+      "rejected": 0,
+      "durationMs": 91892,
+      "error": "Error: Annuaires Wikidata et OpenStreetMap indisponibles (HTTP 502, Réseau ou délai dépassé) ; reprise avec les employeurs connus ; https://candidat.francetravail.fr/offres/recherche?motsCles=stage%20informatique&lieux=99100 : Page non autorisée par robots.txt ou robots indisponible ; https://www.welcometothejungle.com/fr/companies/wttj : Accès public refusé sur www.welcometothejungle.com (HTTP 403) ; https://www.welcometothejungle.com/fr/get-started/job-title : Rate limit atteint sur www.welcom",
+      "startedAt": "2026-11-08T13:40:00.524Z",
+      "coverageJson": null
+    },
+    {
+      "label": "HelloWork",
+      "sourceSite": "hellowork.com",
+      "ok": true,
+      "fetched": 788,
+      "created": 0,
+      "updated": 18,
+      "rejected": 5,
+      "durationMs": 365673,
+      "error": null,
+      "startedAt": "2026-11-08T13:44:18.152Z",
+      "coverageJson": null
+    },
+    {
+      "label": "LinkedIn",
+      "sourceSite": "linkedin.com",
+      "ok": false,
+      "fetched": 240,
+      "created": 11,
+      "updated": 15,
+      "rejected": 0,
+      "durationMs": 903593,
+      "error": "Limite de pagination LinkedIn atteinte ; collecte partielle ; Budget de temps atteint ; collecte partielle conservée ; 360 requête(s) en échec : HTTP 429",
+      "startedAt": "2026-11-08T13:53:22.651Z",
+      "coverageJson": null
+    },
+    {
+      "label": "Thales",
+      "sourceSite": "thales.wd3.myworkdayjobs.com",
+      "ok": true,
+      "fetched": 610,
+      "created": 27,
+      "updated": 7,
+      "rejected": 0,
+      "durationMs": 741106,
+      "error": null,
+      "startedAt": "2026-11-08T13:52:21.631Z",
+      "coverageJson": {
+        "mode": "catalogue étudiant via facettes",
+        "expired": 0,
+        "accepted": 610,
+        "complete": true,
+        "detailsRead": 932,
+        "catalogTotal": 932,
+        "listingsSeen": 932
+      }
+    }
+  ],
+  "liveThales": {
+    "at": "2026-11-09T13:59:06.701Z",
+    "queries": [
+      {
+        "q": "",
+        "total": 931
+      },
+      {
+        "q": "intelligence artificielle",
+        "total": 118
+      },
+      {
+        "q": "machine learning",
+        "total": 62
+      },
+      {
+        "q": "IA",
+        "total": 241
+      },
+      {
+        "q": "LLM",
+        "total": 77
+      }
+    ],
+    "note": "Totaux de recherches qui se chevauchent, ne pas additionner. 20 fiches de liste maximum par recherche ; cinq détails contrôlés."
+  },
+  "liveMistral": {
+    "at": "2026-11-09T14:00:51.737Z",
+    "feed": "https://api.ashbyhq.com/posting-api/job-board/mistral.ai",
+    "catalogJobs": 235,
+    "acceptedFranceTechInternships": 3,
+    "note": "Test isolé avec les fonctions de classification existantes, aucune ingestion."
+  },
+  "existingTests": {
+    "files": 5,
+    "passed": 63
+  }
+}

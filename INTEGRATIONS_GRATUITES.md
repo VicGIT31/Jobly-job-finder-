@@ -1,5 +1,10 @@
 # Indeed, autres plateformes et sites carrière
 
+> Document historique. Voir l'[audit du 9 novembre 2026](docs/audits/2026-11-09-stages-ia.md)
+> pour les limites actuelles, les stages IA et les accès API revérifiés.
+> L'API officielle France Travail est désormais signalée en accès restreint ;
+> une inscription ne garantit pas l'obtention immédiate d'identifiants.
+
 Vérification du 5 octobre 2026. Jobly conserve les offres dans sa base locale,
 affiche leur fiche et redirige vers **l'annonce exacte** avec le bouton Postuler.
 Le périmètre public est limité à **STAGE / ALTERNANCE**, y compris pour les

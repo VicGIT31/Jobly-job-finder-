@@ -92,6 +92,7 @@ Pour le développement web local, utilisez `.env.example` et les services associ
 
 ## Documentation
 
+- [Audit des stages IA, diagnostic Thales et solutions proposées (9 novembre)](docs/audits/2026-11-09-stages-ia.md)
 - [Analyse et architecture actuelles](docs/v0.4.1/ANALYSE.md)
 - [Collecte automatique et scripts](docs/v0.4.1/COLLECTE.md)
 - [Vérifications Windows et Mac](docs/v0.4.1/VERIFICATIONS.md)
