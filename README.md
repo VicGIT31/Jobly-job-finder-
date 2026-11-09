@@ -12,6 +12,8 @@ La [version 0.5.0](https://github.com/VicGIT31/Internship-finders/releases/tag/v
 | macOS Apple Silicon | [Installateur .dmg](https://github.com/VicGIT31/Internship-finders/releases/download/v0.5.0/Jobly-0.5.0-mac-arm64.dmg) | [ZIP Mac](https://github.com/VicGIT31/Internship-finders/releases/download/v0.5.0/Jobly-0.5.0-darwin-arm64.zip) |
 | macOS Intel | [Installateur .dmg](https://github.com/VicGIT31/Internship-finders/releases/download/v0.5.0/Jobly-0.5.0-mac-x64.dmg) | [ZIP Mac Intel](https://github.com/VicGIT31/Internship-finders/releases/download/v0.5.0/Jobly-0.5.0-darwin-x64.zip) |
 
+**Déjà installé sous Windows ?** Suivez le [guide de mise à jour par commande PowerShell](docs/MISE_A_JOUR_WINDOWS.md).
+
 Le dépôt reste privé : le téléchargement sur GitHub demande un compte autorisé. Vous pouvez ensuite transmettre le ZIP ou l’installateur à votre ami. Les archives automatiques « Source code » sont destinées au développement et n’installent pas l’application.
 
 Pour une installation classique, ouvrez le `.exe` sous Windows, ou le `.dmg` sur Mac puis copiez Jobly dans Applications. Aucun Node.js, npm, Docker, PostgreSQL ou Meilisearch à installer séparément. Les paquets sont non signés ; les protections de Windows et macOS restent actives. Les plateformes effectivement validées sont détaillées dans les preuves de livraison.
