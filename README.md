@@ -1,19 +1,19 @@
-# Jobly 0.4.1
+# Jobly 0.5.0
 
 Application personnelle de recherche d’emploi, sans compte ni clé API à configurer. Les offres, favoris, recherches, candidatures, notes et CV restent sur votre ordinateur. Internet sert à actualiser les offres et à ouvrir les candidatures sur les sites d’origine.
 
 ## Télécharger et installer
 
-La [version 0.4.1](https://github.com/VicGIT31/Internship-finders/releases/tag/v0.4.1) contient les véritables installateurs et les ZIP avec guide, empreintes SHA-256 et preuves de vérification.
+La [version 0.5.0](https://github.com/VicGIT31/Internship-finders/releases/tag/v0.5.0) contient les véritables installateurs et les ZIP avec guide, empreintes SHA-256 et preuves de vérification.
 
 | Système | Installation directe | ZIP avec guide et commande |
 | --- | --- | --- |
-| Windows x64 | [Installateur .exe](https://github.com/VicGIT31/Internship-finders/releases/download/v0.4.1/Jobly-0.4.1-win-x64.exe) | [ZIP Windows](https://github.com/VicGIT31/Internship-finders/releases/download/v0.4.1/Jobly-0.4.1-win32-x64.zip) |
-| macOS Apple Silicon | [Installateur .dmg](https://github.com/VicGIT31/Internship-finders/releases/download/v0.4.1/Jobly-0.4.1-mac-arm64.dmg) | [ZIP Mac](https://github.com/VicGIT31/Internship-finders/releases/download/v0.4.1/Jobly-0.4.1-darwin-arm64.zip) |
+| Windows x64 | [Installateur .exe](https://github.com/VicGIT31/Internship-finders/releases/download/v0.5.0/Jobly-0.5.0-win-x64.exe) | [ZIP Windows](https://github.com/VicGIT31/Internship-finders/releases/download/v0.5.0/Jobly-0.5.0-win32-x64.zip) |
+| macOS Apple Silicon | [Installateur .dmg](https://github.com/VicGIT31/Internship-finders/releases/download/v0.5.0/Jobly-0.5.0-mac-arm64.dmg) | [ZIP Mac](https://github.com/VicGIT31/Internship-finders/releases/download/v0.5.0/Jobly-0.5.0-darwin-arm64.zip) |
 
 Le dépôt reste privé : le téléchargement sur GitHub demande un compte autorisé. Vous pouvez ensuite transmettre le ZIP ou l’installateur à votre ami. Les archives automatiques « Source code » sont destinées au développement et n’installent pas l’application.
 
-Pour une installation classique, ouvrez le `.exe` sous Windows, ou le `.dmg` sur Mac puis copiez Jobly dans Applications. Aucun Node.js, npm, Docker, PostgreSQL ou Meilisearch à installer séparément. Les paquets sont non signés ; les protections de Windows et macOS restent actives. Mac Intel est configuré dans la CI mais aucun paquet 0.4.1 Intel n’est proposé dans cette livraison.
+Pour une installation classique, ouvrez le `.exe` sous Windows, ou le `.dmg` sur Mac puis copiez Jobly dans Applications. Aucun Node.js, npm, Docker, PostgreSQL ou Meilisearch à installer séparément. Les paquets sont non signés ; les protections de Windows et macOS restent actives. Les plateformes effectivement validées sont détaillées dans les preuves de livraison.
 
 ## Métiers et territoires
 
@@ -42,7 +42,7 @@ Les offres déjà enregistrées sont disponibles immédiatement. Les nouvelles a
 
 L’algorithme parcourt les sources sélectionnées avec **quatre collecteurs en parallèle**, lit les listes puis les fiches, vérifie le métier, le contrat, le pays et les dates, déduplique les offres et les ajoute à la recherche. Les appels sont espacés par site pour respecter ses limites ; les délais réseau, reprises et gros catalogues rallongent le cycle. Au contrôle local du 8 novembre, un passage Airbus a pris environ **6 minutes**, Thales **12 minutes** et Capgemini **3 minutes**.
 
-La collecte ne se limite pas à France Travail. Les requêtes généralistes et locales passent actuellement avant le catalogue des employeurs : France Travail et HelloWork peuvent donc apparaître en premier, tandis qu’Airbus, Thales et les autres sites directs arrivent plus tard. L’ordre des premières offres ne représente pas la liste complète des sources. Gardez l’application ouverte et consultez **Bureau → Derniers passages des sources** pour suivre le travail. Détails : [sources, ordre et délais](docs/v0.4.1/COLLECTE.md#sources-ordre-et-délais).
+La collecte ne se limite pas à France Travail. Les sources IA, les autres métiers, la découverte et les employeurs directs alternent dès le début du cycle. Gardez l’application ouverte et consultez **Bureau → Suivi du cycle** pour distinguer attente, lecture et résultat partiel. Détails : [fonctionnement et délais](docs/v0.5.0/COLLECTE.md#délais-et-suivi).
 
 ## Découverte automatique des recruteurs
 
@@ -50,7 +50,7 @@ La découverte conserve sa progression entre les lancements. Elle part des sourc
 
 Les pages structurées JobPosting et les sitemaps complètent les flux. Les limites par hôte, les budgets, robots.txt, les refus d’accès et les reprises différées sont respectés. Une panne d’un annuaire ou un HTTP 403 n’est pas contourné. La couverture reste partielle : aucun algorithme ne garantit toutes les entreprises et toutes les offres publiées sur Internet.
 
-Détails : [analyse du projet](docs/v0.4.1/ANALYSE.md) et [fonctionnement et commandes de collecte](docs/v0.4.1/COLLECTE.md).
+Détails : [analyse du projet](docs/v0.5.0/ANALYSE.md) et [fonctionnement et commandes de collecte](docs/v0.5.0/COLLECTE.md).
 
 ## Mise à jour et sauvegardes
 
@@ -67,7 +67,7 @@ L’actualisation des offres est automatique ; la mise à jour du programme se f
 - macOS arm64 : installation du DMG, 13 contrôles d’exécutable et commande d’installation depuis le ZIP réussis.
 - Captures à 390, 768 et 1440 px ouvertes et examinées sur les deux plateformes ; recherche, favoris, CV, candidature, sauvegarde/restauration et persistance vérifiés avec des données synthétiques isolées.
 
-Les empreintes et preuves propres à chaque plateforme sont incluses dans son ZIP. Les détails et limites sont dans [VERIFICATIONS.md](docs/v0.4.1/VERIFICATIONS.md). Les tests sur runners et machines de développement ne constituent pas un contrôle sur toutes les configurations ni une validation exhaustive de l’accessibilité.
+Les empreintes et preuves propres à chaque plateforme sont incluses dans son ZIP. Les détails et limites sont dans [VERIFICATIONS.md](docs/v0.5.0/VERIFICATIONS.md). Les tests sur runners et machines de développement ne constituent pas un contrôle sur toutes les configurations ni une validation exhaustive de l’accessibilité.
 
 ## Développer et construire
 
@@ -93,13 +93,13 @@ Pour le développement web local, utilisez `.env.example` et les services associ
 ## Documentation
 
 - [Audit des stages IA, diagnostic Thales et solutions proposées (9 novembre)](docs/audits/2026-11-09-stages-ia.md)
-- [Analyse et architecture actuelles](docs/v0.4.1/ANALYSE.md)
-- [Collecte automatique et scripts](docs/v0.4.1/COLLECTE.md)
-- [Vérifications Windows et Mac](docs/v0.4.1/VERIFICATIONS.md)
-- [Publication et mise à jour des installateurs](docs/v0.4.1/PUBLICATION.md)
+- [Analyse et architecture actuelles](docs/v0.5.0/ANALYSE.md)
+- [Collecte automatique et scripts](docs/v0.5.0/COLLECTE.md)
+- [Vérifications Windows et Mac](docs/v0.5.0/VERIFICATIONS.md)
+- [Publication et mise à jour des installateurs](docs/v0.5.0/PUBLICATION.md)
 - [Guide d’installation](desktop/delivery/INSTALLER.md) et [historique des versions](CHANGELOG.md)
 
-Les documents 0.3.0, 0.4.0 et les anciens audits décrivent leurs versions respectives. Le code et les documents 0.4.1 font foi pour la version actuelle.
+Les documents 0.3.0, 0.4.0, 0.4.1 et les audits datés décrivent leurs versions respectives. Le code et les documents 0.5.0 font foi pour la version actuelle.
 
 <!-- COMMANDES-INSTALLATION -->
 ## Installation par une commande à copier-coller
@@ -109,13 +109,13 @@ Téléchargez le ZIP de votre système dans **Téléchargements**. Ces commandes
 **macOS · Apple Silicon ou Intel**
 
 ```bash
-/bin/bash -c 'a=x64; [ "$(/usr/sbin/sysctl -n hw.optional.arm64 2>/dev/null)" = 1 ] && a=arm64; z="$HOME/Downloads/Jobly-0.4.1-darwin-$a.zip"; [ -f "$z" ] || { printf "%s\n" "Téléchargez le ZIP Jobly 0.4.1 pour votre Mac dans Téléchargements, puis réessayez."; exit 1; }; d=$(mktemp -d); /usr/bin/ditto -x -k "$z" "$d" && /bin/bash "$d/Jobly-0.4.1-darwin-$a/INSTALLER-macOS.sh"; r=$?; rm -rf "$d"; exit "$r"'
+/bin/bash -c 'a=x64; [ "$(/usr/sbin/sysctl -n hw.optional.arm64 2>/dev/null)" = 1 ] && a=arm64; z="$HOME/Downloads/Jobly-0.5.0-darwin-$a.zip"; [ -f "$z" ] || { printf "%s\n" "Téléchargez le ZIP Jobly 0.5.0 pour votre Mac dans Téléchargements, puis réessayez."; exit 1; }; d=$(mktemp -d); /usr/bin/ditto -x -k "$z" "$d" && /bin/bash "$d/Jobly-0.5.0-darwin-$a/INSTALLER-macOS.sh"; r=$?; rm -rf "$d"; exit "$r"'
 ```
 
 **Windows x64 · PowerShell**
 
 ```powershell
-$zip=Join-Path $HOME 'Downloads\Jobly-0.4.1-win32-x64.zip'; if(!(Test-Path -LiteralPath $zip)){throw 'Telechargez le ZIP Windows Jobly 0.4.1 dans Telechargements puis reessayez.'}; $work=Join-Path ([IO.Path]::GetTempPath()) ('Jobly-'+[guid]::NewGuid()); try { Expand-Archive -LiteralPath $zip -DestinationPath $work; $root=Join-Path $work 'Jobly-0.4.1-win32-x64'; $name='Jobly-0.4.1-win-x64.exe'; $setup=Join-Path $root ('installateurs\'+$name); $lines=@(Get-Content -LiteralPath (Join-Path $root 'SHA256SUMS.txt') | Where-Object { $_.EndsWith('  installateurs/'+$name) }); if($lines.Count -ne 1){throw 'Empreinte absente ou ambigue.'}; $want=($lines[0] -split '\s+')[0]; $sha=[Security.Cryptography.SHA256]::Create(); try{$actual=([BitConverter]::ToString($sha.ComputeHash([IO.File]::ReadAllBytes($setup)))).Replace('-','')}finally{$sha.Dispose()}; if($want -notmatch '^[a-fA-F0-9]{64}$' -or $actual -ine $want){throw 'Integrite incorrecte : installation annulee.'}; @(Get-Process -Name Jobly -ErrorAction SilentlyContinue) | Where-Object { $_.MainWindowHandle -ne 0 } | ForEach-Object { [void]$_.CloseMainWindow(); if(!$_.WaitForExit(15000)){throw 'Fermez Jobly puis relancez la commande.'} }; $dest=if($env:JOBLY_INSTALL_DIR){$env:JOBLY_INSTALL_DIR}else{Join-Path $env:LOCALAPPDATA 'Programs\Jobly'}; $p=Start-Process -FilePath $setup -ArgumentList @('/S',('/D='+$dest)) -Wait -PassThru; if($p.ExitCode -ne 0){throw ('Installation interrompue : '+$p.ExitCode)}; if($env:JOBLY_NO_LAUNCH -ne '1'){Start-Process -FilePath (Join-Path $dest 'Jobly.exe')}; Write-Host ('Jobly installee dans '+$dest) } finally { if(Test-Path -LiteralPath $work){Remove-Item -LiteralPath $work -Recurse -Force} }
+$zip=Join-Path $HOME 'Downloads\Jobly-0.5.0-win32-x64.zip'; if(!(Test-Path -LiteralPath $zip)){throw 'Telechargez le ZIP Windows Jobly 0.5.0 dans Telechargements puis reessayez.'}; $work=Join-Path ([IO.Path]::GetTempPath()) ('Jobly-'+[guid]::NewGuid()); try { Expand-Archive -LiteralPath $zip -DestinationPath $work; $root=Join-Path $work 'Jobly-0.5.0-win32-x64'; $name='Jobly-0.5.0-win-x64.exe'; $setup=Join-Path $root ('installateurs\'+$name); $lines=@(Get-Content -LiteralPath (Join-Path $root 'SHA256SUMS.txt') | Where-Object { $_.EndsWith('  installateurs/'+$name) }); if($lines.Count -ne 1){throw 'Empreinte absente ou ambigue.'}; $want=($lines[0] -split '\s+')[0]; $sha=[Security.Cryptography.SHA256]::Create(); try{$actual=([BitConverter]::ToString($sha.ComputeHash([IO.File]::ReadAllBytes($setup)))).Replace('-','')}finally{$sha.Dispose()}; if($want -notmatch '^[a-fA-F0-9]{64}$' -or $actual -ine $want){throw 'Integrite incorrecte : installation annulee.'}; @(Get-Process -Name Jobly -ErrorAction SilentlyContinue) | Where-Object { $_.MainWindowHandle -ne 0 } | ForEach-Object { [void]$_.CloseMainWindow(); if(!$_.WaitForExit(15000)){throw 'Fermez Jobly puis relancez la commande.'} }; $dest=if($env:JOBLY_INSTALL_DIR){$env:JOBLY_INSTALL_DIR}else{Join-Path $env:LOCALAPPDATA 'Programs\Jobly'}; $p=Start-Process -FilePath $setup -ArgumentList @('/S',('/D='+$dest)) -Wait -PassThru; if($p.ExitCode -ne 0){throw ('Installation interrompue : '+$p.ExitCode)}; if($env:JOBLY_NO_LAUNCH -ne '1'){Start-Process -FilePath (Join-Path $dest 'Jobly.exe')}; Write-Host ('Jobly installee dans '+$dest) } finally { if(Test-Path -LiteralPath $work){Remove-Item -LiteralPath $work -Recurse -Force} }
 ```
 
 Les données personnelles sont conservées lors des mises à jour. Les protections du système restent actives ; une signature éditeur reconnue nécessite les certificats de publication.

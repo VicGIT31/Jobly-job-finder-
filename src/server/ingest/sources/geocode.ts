@@ -66,7 +66,7 @@ type Coords = { lat: number; lng: number };
 
 // Cache mémoire du géocodage distant (y compris les échecs, pour ne pas
 // réinterroger l'API à chaque cycle d'ingestion sur les mêmes villes).
-const remoteCache = new Map<string, Coords | null>();
+const remoteCache = new Map<string, { coords: Coords | null; at: number }>();
 // Requêtes en vol : avec l'ingestion parallèle, dix offres de la même ville
 // arrivent ensemble. Sans cette table, on lancerait dix appels identiques.
 const inFlight = new Map<string, Promise<Coords | null>>();
@@ -86,14 +86,15 @@ export async function geocodeCityFull(city: string): Promise<Coords | null> {
   if (!city) return null;
 
   const key = stripAccents(city).toLowerCase().trim();
-  if (remoteCache.has(key)) return remoteCache.get(key) ?? null;
+  const cached = remoteCache.get(key);
+  if (cached && Date.now() - cached.at < (cached.coords ? 30 * 86400000 : 5 * 60000)) return cached.coords;
 
   const pending = inFlight.get(key);
   if (pending) return pending;
 
   const request = geocodeRemote(city)
     .then((coords) => {
-      remoteCache.set(key, coords);
+      remoteCache.set(key, { coords, at: Date.now() });
       return coords;
     })
     .finally(() => inFlight.delete(key));

@@ -218,6 +218,8 @@ model JobOffer {
 
   contractType   ContractType
   city           String
+  siteLabel      String?
+  tags           String[]       @default([])
   // ISO 3166-1 alpha-2. Toutes les offres existantes (sources françaises)
   // valent "FR" par défaut — ajouté pour l'extension Europe/Asie sans
   // migration de données ni changement de comportement pour l'existant.
@@ -261,6 +263,7 @@ model JobOffer {
   applyClicks  ApplyClick[]
   applications Application[]
   origins      OfferOrigin[]
+  locations    OfferLocation[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -274,7 +277,21 @@ model JobOffer {
   @@index([countryCode, status])
   @@index([universe, status, jobFamily])
   @@index([sourceUrl])
+  @@index([tags], type: Gin)
   @@map("job_offers")
+}
+
+model OfferLocation {
+  id String @id @default(cuid())
+  offerId String
+  offer JobOffer @relation(fields: [offerId], references: [id], onDelete: Cascade)
+  city String
+  countryCode String @default("FR")
+  latitude Float?
+  longitude Float?
+  @@unique([offerId, city, countryCode])
+  @@index([latitude, longitude])
+  @@map("offer_locations")
 }
 
 model OfferOrigin {
@@ -447,6 +464,8 @@ model IngestRun {
   error      String?
   coverageJson Json?
   startedAt  DateTime @default(now())
+  completedAt DateTime @default(now())
+  cycleId String?
 
   @@index([startedAt])
   @@index([sourceSite, startedAt])

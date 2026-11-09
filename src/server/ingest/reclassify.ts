@@ -1,9 +1,11 @@
 import { prisma } from "@/lib/prisma";
 import { experienceFrom } from "@/lib/job-taxonomy";
-import { classifyJob } from "./job-classifier";
+import { classifyJob, isInScope } from "./job-classifier";
+import { aiTopics } from "./ai-topics";
+import { resolveOfferCity } from "./locations";
 
 /** À changer quand le classement évolue : les offres déjà en base sont alors reclassées une fois. */
-export const CLASSIFIER_VERSION = "unified-barista-2026-11-08";
+export const CLASSIFIER_VERSION = "ai-locations-2026-11-09";
 const SETTING_KEY = "classifierVersion";
 const BATCH = 300;
 
@@ -34,13 +36,20 @@ export async function ensureClassification(): Promise<{ reclassified: number } |
         contract: offer.contractType,
       });
       if (job.universe === "OTHER") continue;
+      const resolved = offer.status === "ACTIVE" && (offer.latitude == null || offer.longitude == null)
+        ? await resolveOfferCity(offer.city, offer.sourceUrl) : null;
+      const tags = [...new Set([...job.tags, ...(job.universe === "TECH" ? aiTopics(offer.title, offer.description) : [])])];
       const data = {
+        tags,
+        ...(resolved ? { city: resolved.city, latitude: resolved.lat, longitude: resolved.lng, locationPrecise: true, siteLabel: offer.siteLabel ?? offer.city } : {}),
+        ...(!isInScope(job, offer.contractType, offer).ok && offer.status === "ACTIVE" ? { status: "EXPIRED" as const } : {}),
         universe: job.universe,
         jobFamily: job.family,
         experienceLevel: experienceFrom(offer.title, offer.description),
         ...(job.universe === "TECH" ? { specialty: job.specialty } : {}),
       };
       const unchanged =
+        !resolved && !("status" in data) && JSON.stringify(offer.tags) === JSON.stringify(tags) &&
         offer.universe === data.universe &&
         offer.jobFamily === data.jobFamily &&
         offer.experienceLevel === data.experienceLevel &&

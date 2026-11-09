@@ -17,6 +17,7 @@ export const discoveryStateSchema = z.object({
         url: z.string().url(),
         label: z.string().max(200),
         depth: z.number().int().min(0).max(3),
+        priority: z.number().int().min(0).max(10).default(0),
         listingUrl: z.string().url().optional(),
         nextAt: z.number().nonnegative(),
         failures: z.number().int().nonnegative(),
@@ -75,19 +76,22 @@ export function enqueueDiscovery(
   label: string,
   depth = 0,
   listingUrl?: string,
+  priority = 0,
 ): boolean {
   const url = publicHttpUrl(value);
   if (
     !url ||
     depth > 3 ||
-    state.frontier.some((entry) => entry.url === url.href) ||
     state.frontier.length >= 10000
   )
     return false;
+  const existing = state.frontier.find((entry) => entry.url === url.href);
+  if (existing) { existing.priority = Math.max(existing.priority ?? 0, priority); return false; }
   state.frontier.push({
     url: url.href,
     label: label.slice(0, 200),
     depth,
+    priority,
     listingUrl,
     nextAt: 0,
     failures: 0,

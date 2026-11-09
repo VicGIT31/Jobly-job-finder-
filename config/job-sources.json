@@ -1,6 +1,7 @@
 [
   {
     "id": "airbus",
+    "priority": "AI",
     "label": "Airbus",
     "company": "Airbus",
     "kind": "workday",
@@ -10,6 +11,7 @@
   },
   {
     "id": "thales",
+    "priority": "AI",
     "label": "Thales",
     "company": "Thales",
     "kind": "workday",

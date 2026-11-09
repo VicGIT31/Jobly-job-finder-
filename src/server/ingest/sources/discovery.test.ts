@@ -30,6 +30,12 @@ afterEach(async () => {
 });
 
 describe("découverte autonome persistante", () => {
+  it("découvre Workable et Inria sans deviner de slugs et refuse le lien Workable générique", () => {
+    expect(detectBoard("https://apply.workable.com/huggingface/")?.kind).toBe("workable");
+    expect(detectBoard("https://apply.workable.com/j/ABC")).toBeNull();
+    expect(detectBoard("https://jobs.inria.fr/public/classic/fr/offres/2026-10662")?.url).toContain("filtre=stage-recherche");
+    expect(discoveryLinks('<a href="https://jobs.ashbyhq.com/mistral.ai">Apply now</a>', "https://mistral.ai/careers/")).toContain("https://jobs.ashbyhq.com/mistral.ai");
+  });
   it("normalise un lien d'annonce ATS, y compris Workday sans locale", () => {
     expect(detectBoard("https://jobs.lever.co/acme/123?source=site")?.url).toBe(
       "https://jobs.lever.co/acme",

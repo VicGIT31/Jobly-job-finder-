@@ -68,6 +68,29 @@ describe("catalogue et endpoints gratuits", () => {
 });
 
 describe("collecteurs publics", () => {
+  it("lit la commune Workday et transmet un lot avant la page suivante", async () => {
+    let published = false;
+    vi.mocked(fetchJson).mockImplementation(async (url, options) => {
+      if (!String(url).endsWith("/jobs")) return { jobPostingInfo: { title: "Stage IA", jobDescription: "Développer des modèles de machine learning.", location: "Toulouse", jobRequisitionLocation: { descriptor: "Toulouse Basso Cambo", country: { alpha2Code: "FR" } } } };
+      const offset = JSON.parse(options!.body!).offset;
+      if (offset > 0) { expect(published).toBe(true); return { total: 0, jobPostings: [] }; }
+      return { total: 40, jobPostings: [{ title: "Stage IA", externalPath: "/job/Toulouse/stage-ia" }] };
+    });
+    const connector = new PublicBoardConnector({ ...definition(), id: "test-stream-only" });
+    const offers = await connector.fetchOffers({ onBatch: async (batch) => { expect(batch[0]).toMatchObject({ city: "Toulouse", siteLabel: "Toulouse Basso Cambo" }); published = true; } });
+    expect(offers).toHaveLength(1); expect(published).toBe(true); expect(connector.coverage?.complete).toBe(false);
+  });
+  it("retient une implantation française secondaire sur un board mondial", async () => {
+    vi.mocked(fetchJson).mockResolvedValue({ jobs: [{ title: "Machine Learning Intern", employmentType: "Intern", location: "London", address: { postalAddress: { addressCountry: "GB" } }, secondaryLocations: [{ location: "Paris", address: { postalAddress: { addressCountry: "FR" } } }, { location: "Toulouse", address: { postalAddress: { addressCountry: "FR" } } }], descriptionPlain: "Train machine learning models for computer vision.", jobUrl: "https://jobs.ashbyhq.com/test/one" }] });
+    const [offer] = await new PublicBoardConnector(definition("ashby")).fetchOffers();
+    expect(offer).toMatchObject({ city: "Paris", countryCode: "FR", contractType: "stage" }); expect(offer.locations).toHaveLength(2);
+  });
+  it("utilise le flux Workable public et distingue un stage d'un CDI", async () => {
+    const source = sourceDefinitionSchema.parse({ id: "test-workable", label: "Employeur", kind: "workable", url: "https://apply.workable.com/acme/" });
+    expect(boardEndpoint(source)).toBe("https://www.workable.com/api/accounts/acme?details=true");
+    vi.mocked(fetchJson).mockResolvedValue({ name: "Acme", jobs: [{ title: "Stage IA", employment_type: "Internship", location: { city: "Paris", country_code: "FR" }, description: "Développer des modèles de machine learning.", url: "https://apply.workable.com/j/one" }, { title: "Machine Learning Engineer", employment_type: "Full-time", location: { city: "Paris", country_code: "FR" }, description: "Développer des modèles de machine learning.", url: "https://apply.workable.com/j/two" }] });
+    const offers = await new PublicBoardConnector(source).fetchOffers(); expect(offers).toHaveLength(1); expect(offers[0].companyName).toBe("Acme");
+  });
   it("lit les annonces au slug générique d'un sitemap avant de filtrer le métier", async () => {
     vi.mocked(fetchText).mockImplementation(async (url) => {
       if (String(url).endsWith("sitemap.xml"))

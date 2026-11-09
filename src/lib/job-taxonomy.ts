@@ -66,7 +66,9 @@ export const EXPERIENCE_LABELS: Record<string, string> = {
 };
 
 /** Attributs déduits du texte de l'offre : jamais une certitude, un indice lisible. */
+import { AI_TOPIC_LABELS } from "./ai-topics";
 export const TAG_LABELS: Record<string, string> = {
+  ...AI_TOPIC_LABELS,
   DEBUTANT_ACCEPTE: "Débutant accepté",
   ALTERNANCE_POSSIBLE: "Alternance possible",
   WEEKEND_GARDE: "Week-end, garde ou astreinte",

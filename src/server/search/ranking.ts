@@ -16,6 +16,11 @@ export type RankContext = {
 const DAY = 86_400_000;
 const days = (value: number) => Math.round(value);
 
+export function offerDistance(offer: OfferDocument, center: Point): number | null {
+  const points = [offer._geo, ...(offer.locations ?? []).filter((p) => p.lat != null && p.lng != null).map((p) => ({ lat: p.lat!, lng: p.lng! }))].filter((p): p is Point => !!p);
+  return points.length ? Math.min(...points.map((point) => distanceKm(center, point))) : null;
+}
+
 /**
  * Classement explicable, de 0 à ~110 : chaque point vient d'une raison affichée.
  *
@@ -29,7 +34,7 @@ const days = (value: number) => Math.round(value);
  */
 export function rankOffer(offer: OfferDocument, context: RankContext) {
   const now = context.now ?? Date.now();
-  const distance = context.center && offer._geo ? distanceKm(context.center, offer._geo) : null;
+  const distance = context.center ? offerDistance(offer, context.center) : null;
   const reasons: string[] = [];
   let score = 40;
 

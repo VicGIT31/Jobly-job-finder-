@@ -8,9 +8,11 @@ import type { RawOffer } from "@/server/ingest/normalize";
  * (seuls stage et alternance sont conservés).
  */
 export type SourceGroup = "TECH" | "COMMERCE" | "FINANCE" | "HOSPITALITY" | "ASV" | "RECRUITERS";
+export type CollectionOptions = { onBatch?: (offers: RawOffer[]) => Promise<void> };
 
 export interface SourceConnector {
   readonly personal?: boolean;
+  readonly priority?: "AI" | "DEFAULT";
   /** Domaine affiché au Bureau pour regrouper les sources. Absent = tech. */
   readonly group?: SourceGroup;
   /** Domaine identifiant la source (ex. "francetravail.fr"), stocké sur l'offre. */
@@ -20,7 +22,7 @@ export interface SourceConnector {
   /** True si la source est configurée (clés présentes) et peut être appelée. */
   isEnabled(): boolean;
   /** Récupère les offres brutes tech de la source. */
-  fetchOffers(): Promise<RawOffer[]>;
+  fetchOffers(options?: CollectionOptions): Promise<RawOffer[]>;
   /**
    * Périmètre de contrats accepté pour cette source. Absent = stage/alternance
    * uniquement (comportement historique des connecteurs français). Les

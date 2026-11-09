@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { parseOfferSearchParams } from "@/lib/search-params";
 
-const mocks = vi.hoisted(() => ({ search: vi.fn(), findMany: vi.fn(), origins: vi.fn() }));
+const mocks = vi.hoisted(() => ({ search: vi.fn(), findMany: vi.fn(), origins: vi.fn(), locations: vi.fn() }));
 vi.mock("@/lib/meilisearch", () => ({
   OFFERS_INDEX: "job_offers",
   getMeili: () => ({ index: () => ({ search: mocks.search }) }),
@@ -12,6 +12,7 @@ vi.mock("@/lib/prisma", () => ({
     hiddenOffer: { findMany: async () => [] },
     savedOffer: { findMany: async () => [] },
     offerOrigin: { findMany: mocks.origins },
+    offerLocation: { findMany: mocks.locations },
   },
 }));
 vi.mock("@/server/personal/profile", () => ({ getPersonalProfile: async () => ({ id: "local" }) }));
@@ -55,9 +56,22 @@ beforeEach(() => {
   });
   mocks.findMany.mockResolvedValue([offer]);
   mocks.origins.mockResolvedValue([]);
+  mocks.locations.mockResolvedValue([]);
 });
 
 describe("Recherche unifiée", () => {
+  it("retrouve les thèmes IA hybrides sans imposer la spécialité principale", async () => {
+    await searchOffers(parseOfferSearchParams({ q: "LLM", contrat: "STAGE" }));
+    expect(mocks.search.mock.calls[0][0]).toBe(""); expect(meiliFilter()).toContain('tags IN ["AI_LLM"]');
+    mocks.search.mockClear();
+    await searchOffers(parseOfferSearchParams({ specialite: "IA" })); expect(meiliFilter()).toContain('tags IN ["AI_ML"]');
+  });
+  it("inclut un lieu secondaire dans le rayon et calcule la distance de ce lieu", async () => {
+    mocks.locations.mockResolvedValue([{ offerId: "one", latitude: 43.6045, longitude: 1.444 }]);
+    mocks.search.mockResolvedValue({ hits: [{ ...offer, _geo: { lat: 48.85, lng: 2.35 }, locations: [{ city: "Toulouse", countryCode: "FR", lat: 43.6045, lng: 1.444 }] }], totalHits: 1 });
+    const result = await searchOffers(parseOfferSearchParams({ ville: "Toulouse", rayon: "30" }));
+    expect(meiliFilter()).toContain('OR id IN ["one"]'); expect(result.hits[0].distanceKm).toBe(0);
+  });
   it("mélange tous les domaines par défaut, en France et sur les offres actives", async () => {
     await searchOffers(parseOfferSearchParams({}));
     const filter = meiliFilter();

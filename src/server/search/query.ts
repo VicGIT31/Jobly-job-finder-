@@ -14,7 +14,8 @@ import { companySlugsForCollection } from "@/server/companies/collections";
 import type { CollectionKey } from "@/lib/company-collections";
 import { getPersonalProfile } from "@/server/personal/profile";
 import { offerToDocument, type OfferDocument } from "./sync";
-import { rankOffer, type RankContext } from "./ranking";
+import { rankOffer, offerDistance, type RankContext } from "./ranking";
+import { aiQueryTopic } from "@/lib/ai-topics";
 
 export type FacetCounts = Record<string, Record<string, number>>;
 
@@ -64,6 +65,7 @@ const SLIM_FIELDS = [
   "qualificationText",
   "jobConfidence",
   "jobEvidence",
+  "locations",
   ...FACETS,
 ];
 
@@ -78,6 +80,8 @@ type Plan = {
   query: string;
   /** Métiers imposés par une requête connue (« ASV », « commercial », « marketing »). */
   impliedFamilies: string[];
+  aiTopic: string | null;
+  secondaryGeoIds: string[];
   rank: RankContext;
 };
 
@@ -131,6 +135,14 @@ async function buildPlan(input: OfferSearchInput): Promise<Plan | null> {
   // Un intitulé connu (« ASV », « veterinary nurse », « commercial ») s'appuie sur
   // la classification : une exigence textuelle exclurait les équivalents français/anglais.
   const known = !!input.q && isKnownJobQuery(input.q) && implied.length > 0;
+  const aiTopic = aiQueryTopic(input.q);
+  const secondaryGeoIds: string[] = [];
+  if (center) {
+    const lat = (input.rayon ?? 30) / 111;
+    const lng = lat / Math.cos(center.lat * Math.PI / 180);
+    const locations = await prisma.offerLocation.findMany({ where: { countryCode: "FR", latitude: { gte: center.lat-lat, lte: center.lat+lat }, longitude: { gte: center.lng-lng, lte: center.lng+lng } }, select: { offerId: true, latitude: true, longitude: true } });
+    secondaryGeoIds.push(...new Set(locations.filter((location) => location.latitude != null && location.longitude != null && distanceKm(center, { lat: location.latitude, lng: location.longitude }) <= (input.rayon ?? 30)).map((location) => location.offerId)));
+  }
   return {
     input,
     statuses: input.incertaines === "1" ? ["ACTIVE", "UNCERTAIN"] : ["ACTIVE"],
@@ -138,7 +150,9 @@ async function buildPlan(input: OfferSearchInput): Promise<Plan | null> {
     profileId: profile.id,
     hiddenIds: hidden.map(({ offerId }) => offerId),
     categorySlugs,
-    query: known ? "" : input.q,
+    query: known || aiTopic ? "" : input.q,
+    aiTopic,
+    secondaryGeoIds,
     impliedFamilies: known ? implied : [],
     rank: {
       center,
@@ -185,9 +199,11 @@ function meiliFilter(plan: Plan): string {
   const job = [
     input.metier.length ? inList("jobFamily", input.metier) : "",
     input.specialite.length ? inList("specialty", input.specialite) : "",
+    input.specialite.includes("IA") ? 'tags IN ["AI_ML"]' : "",
   ].filter(Boolean);
   if (job.length) filters.push(job.length > 1 ? `(${job.join(" OR ")})` : job[0]);
   if (plan.impliedFamilies.length) filters.push(inList("jobFamily", plan.impliedFamilies));
+  if (plan.aiTopic) filters.push(inList("tags", [plan.aiTopic]));
   if (input.contrat.length) filters.push(inList("contractType", input.contrat));
   if (input.remote.length) filters.push(inList("remotePolicy", input.remote));
   if (input.niveau.length) filters.push(inList("educationLevel", input.niveau));
@@ -212,8 +228,8 @@ function meiliFilter(plan: Plan): string {
   if (input.ville) {
     filters.push(
       plan.center
-        ? `_geoRadius(${plan.center.lat}, ${plan.center.lng}, ${(input.rayon ?? 30) * 1000})`
-        : `city = ${quoted(input.ville)}`,
+        ? `(_geoRadius(${plan.center.lat}, ${plan.center.lng}, ${(input.rayon ?? 30) * 1000})${plan.secondaryGeoIds.length ? ` OR ${inList("id", plan.secondaryGeoIds)}` : ""})`
+        : `(city = ${quoted(input.ville)} OR locationCities = ${quoted(input.ville)})`,
     );
   }
   return filters.join(" AND ");
@@ -275,7 +291,7 @@ async function searchWithMeilisearch(plan: Plan): Promise<OfferSearchResult> {
 /** Critères que l'index ne sait pas exprimer, et garde-fous après un repli PostgreSQL. */
 function passes(doc: OfferDocument, plan: Plan): boolean {
   const { input, center } = plan;
-  if (center && (!doc._geo || distanceKm(center, doc._geo) > (input.rayon ?? 30))) return false;
+  if (center) { const distance = offerDistance(doc, center); if (distance == null || distance > (input.rayon ?? 30)) return false; }
   if (input.tag.length && !input.tag.some((tag) => doc.tags?.includes(tag))) return false;
   if (
     input.qualification &&
@@ -409,8 +425,11 @@ function buildWhere(plan: Plan): Prisma.JobOfferWhereInput {
   const job: Prisma.JobOfferWhereInput[] = [];
   if (input.metier.length) job.push({ jobFamily: { in: input.metier } });
   if (input.specialite.length) job.push({ specialty: { in: input.specialite } });
+  if (input.specialite.includes("IA")) job.push({ tags: { has: "AI_ML" } });
   if (job.length) and.push({ OR: job });
   if (plan.impliedFamilies.length) and.push({ jobFamily: { in: plan.impliedFamilies } });
+  if (plan.aiTopic) and.push({ tags: { has: plan.aiTopic } });
+  if (input.tag.length) and.push({ tags: { hasSome: input.tag } });
   if (plan.query) {
     for (const term of plan.query.split(/\s+/).filter(Boolean)) {
       and.push({
@@ -445,9 +464,11 @@ function buildWhere(plan: Plan): Prisma.JobOfferWhereInput {
       const radius = input.rayon ?? 30;
       const dLat = radius / 111;
       const dLng = radius / (111 * Math.cos((plan.center.lat * Math.PI) / 180));
-      where.latitude = { gte: plan.center.lat - dLat, lte: plan.center.lat + dLat };
-      where.longitude = { gte: plan.center.lng - dLng, lte: plan.center.lng + dLng };
-    } else where.city = { equals: input.ville, mode: "insensitive" };
+      and.push({ OR: [
+        { latitude: { gte: plan.center.lat - dLat, lte: plan.center.lat + dLat }, longitude: { gte: plan.center.lng - dLng, lte: plan.center.lng + dLng } },
+        ...(plan.secondaryGeoIds.length ? [{ id: { in: plan.secondaryGeoIds } }] : []),
+      ] });
+    } else and.push({ OR: [{ city: { equals: input.ville, mode: "insensitive" } }, { locations: { some: { city: { equals: input.ville, mode: "insensitive" } } } }] });
   }
   if (and.length) where.AND = and;
   return where;
@@ -456,7 +477,7 @@ function buildWhere(plan: Plan): Prisma.JobOfferWhereInput {
 async function searchWithPostgres(plan: Plan): Promise<OfferSearchResult> {
   const offers = await prisma.jobOffer.findMany({
     where: buildWhere(plan),
-    include: { company: true },
+    include: { company: true, locations: true },
     orderBy: { lastSeenAt: "desc" },
     take: CANDIDATE_LIMIT,
   });

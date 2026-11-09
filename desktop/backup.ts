@@ -3,7 +3,7 @@ import { readFile, readdir, mkdir, writeFile, stat, rename, rm } from "node:fs/p
 import { join, resolve, sep } from "node:path";
 import type { Client } from "pg";
 
-export const TABLES = ["companies", "users", "accounts", "sessions", "verification_tokens", "job_offers", "saved_offers", "hidden_offers", "saved_searches", "apply_clicks", "applications", "application_status_history", "site_settings", "audit_logs", "ingest_runs", "ingest_logs", "offer_origins"] as const;
+export const TABLES = ["companies", "users", "accounts", "sessions", "verification_tokens", "job_offers", "saved_offers", "hidden_offers", "saved_searches", "apply_clicks", "applications", "application_status_history", "site_settings", "audit_logs", "ingest_runs", "ingest_logs", "offer_origins", "offer_locations"] as const;
 type Backup = { format: "jobly-backup"; version: 1; createdAt: string; tables: Record<string, unknown[]>; files: Record<string, string> };
 async function filesFrom(root: string, relative = ""): Promise<Record<string, string>> {
   const files: Record<string, string> = {};
@@ -29,7 +29,7 @@ export async function createBackup(client: Client, filesRoot: string, destinatio
 export async function restoreBackup(client: Client, filesRoot: string, source: string) {
   if ((await stat(source)).size > 512 * 1024 * 1024) throw new Error("Sauvegarde trop volumineuse (512 Mo maximum).");
   const backup = JSON.parse(gunzipSync(await readFile(source), { maxOutputLength: 1024 * 1024 * 1024 }).toString("utf8")) as Backup;
-  if (backup.format !== "jobly-backup" || backup.version !== 1 || !backup.tables || !backup.files || TABLES.some((name) => name !== "offer_origins" && !Array.isArray(backup.tables[name]))) throw new Error("Ce fichier n’est pas une sauvegarde Jobly compatible.");
+  if (backup.format !== "jobly-backup" || backup.version !== 1 || !backup.tables || !backup.files || TABLES.some((name) => !["offer_origins", "offer_locations"].includes(name) && !Array.isArray(backup.tables[name]))) throw new Error("Ce fichier n’est pas une sauvegarde Jobly compatible.");
   const staging = `${filesRoot}.restore`;
   await rm(staging, { recursive: true, force: true }); await mkdir(staging, { recursive: true });
   for (const [key, value] of Object.entries(backup.files)) {

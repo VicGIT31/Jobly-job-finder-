@@ -18,7 +18,8 @@ export const sourceDefinitionSchema = z
   .object({
     id: z.string().regex(/^[a-z0-9][a-z0-9-]*$/),
     label: z.string().min(1),
-    kind: z.enum(["html", "workday", "greenhouse", "lever", "ashby", "smartrecruiters", "recruitee", "teamtailor"]),
+    kind: z.enum(["html", "workday", "greenhouse", "lever", "ashby", "smartrecruiters", "recruitee", "teamtailor", "workable", "inria"]),
+    priority: z.enum(["AI", "DEFAULT"]).default("DEFAULT"),
     url: urlSchema,
     company: z.string().optional(),
     enabled: z.boolean().default(true),
@@ -49,6 +50,8 @@ export const sourceDefinitionSchema = z
       smartrecruiters: /^careers\.smartrecruiters\.com$/,
       recruitee: /^[a-z0-9-]+\.recruitee\.com$/,
       teamtailor: /^[a-z0-9-]+\.teamtailor\.com$/,
+      workable: /^apply\.workable\.com$/,
+      inria: /^(?:jobs|recrutement)\.inria\.fr$/,
     };
     if (expected[source.kind] && !expected[source.kind]!.test(host)) {
       context.addIssue({ code: "custom", message: `Domaine incompatible avec ${source.kind}` });

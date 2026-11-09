@@ -10,7 +10,8 @@ import {
   jsonLdText,
 } from "@/server/ingest/jsonld";
 import { geocodeCityFull } from "./geocode";
-import { TECH_KEYWORDS, TECH_SECTOR, type SourceConnector } from "./types";
+import { TECH_KEYWORDS, TECH_SECTOR, type SourceConnector, type CollectionOptions } from "./types";
+import { rotatedKeywords } from "../keyword-rotation";
 
 /**
  * Connecteur HelloWork (ex RegionsJob) — premier job board généraliste français
@@ -111,13 +112,14 @@ export class HelloWorkConnector implements SourceConnector {
     return true; // Pages publiques : aucune clé requise.
   }
 
-  async fetchOffers(): Promise<RawOffer[]> {
+  async fetchOffers(options: CollectionOptions = {}): Promise<RawOffer[]> {
     this.warnings.length = 0;
     const offers: RawOffer[] = [];
     const seen = new Set<string>();
+    const queries = await rotatedKeywords(this.sourceSite, QUERIES);
 
-    for (let i = 0; i < QUERIES.length; i += QUERY_BATCH) {
-      const batch = QUERIES.slice(i, i + QUERY_BATCH);
+    for (let i = 0; i < queries.length; i += QUERY_BATCH) {
+      const batch = queries.slice(i, i + QUERY_BATCH);
 
       let listings: Listing[];
       try {
@@ -127,7 +129,9 @@ export class HelloWorkConnector implements SourceConnector {
         throw err;
       }
 
-      offers.push(...(await mapPool(listings, DETAIL_CONCURRENCY, (l) => toRawOffer(l))));
+      const mapped = await mapPool(listings, DETAIL_CONCURRENCY, (l) => toRawOffer(l));
+      offers.push(...mapped);
+      if (mapped.length) await options.onBatch?.(mapped);
 
       if (isHostCircuitOpen(HOST)) {
         console.warn(

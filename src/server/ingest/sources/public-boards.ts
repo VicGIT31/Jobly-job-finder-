@@ -12,10 +12,11 @@ import {
   publicUrl,
   studentContract,
 } from "../scope";
-import type { SourceConnector } from "./types";
+import type { SourceConnector, CollectionOptions } from "./types";
 import type { SourceDefinition } from "./catalog";
 import { franceTravailPublicDetail } from "./france-travail-public";
 import { readCatalogCursor, saveCatalogCursor, selectCatalogDetails } from "../catalog-rotation";
+import { inriaOffer } from "./research-page";
 
 const makeBoardOffer = (input: Parameters<typeof makeStudentOffer>[0]) => makeStudentOffer(input, { baristaContracts: true });
 
@@ -67,6 +68,8 @@ export function boardEndpoint(source: SourceDefinition): string {
       return `https://${url.hostname.includes(".eu.") ? "api.eu.lever.co" : "api.lever.co"}/v0/postings/${slug}?mode=json`;
     case "ashby":
       return `https://api.ashbyhq.com/posting-api/job-board/${slug}`;
+    case "workable":
+      return `https://www.workable.com/api/accounts/${slug}?details=true`;
     case "smartrecruiters":
       return `https://api.smartrecruiters.com/v1/companies/${slug}/postings`;
     case "recruitee":
@@ -93,7 +96,10 @@ export class PublicBoardConnector implements SourceConnector {
   readonly rejectedPostings: Array<{ title: string; url: string; reason: string }> = [];
   readonly requestPrefixes: string[];
   readonly snapshotUrlPrefixes: string[];
+  readonly priority: "AI" | "DEFAULT";
+  private onBatch?: CollectionOptions["onBatch"];
   constructor(readonly definition: SourceDefinition) {
+    this.priority = definition.priority;
     this.sourceSite = new URL(definition.url).hostname.replace(/^www\./, "");
     this.label = definition.label;
     this.requestPrefixes = [boardEndpoint(definition).split("?")[0]];
@@ -129,13 +135,17 @@ export class PublicBoardConnector implements SourceConnector {
     });
   }
 
-  async fetchOffers(): Promise<RawOffer[]> {
+  async fetchOffers(options: CollectionOptions = {}): Promise<RawOffer[]> {
+    this.onBatch = options.onBatch;
     const offers: RawOffer[] = [];
     this.warnings.length = 0;
     this.coverage = undefined;
     this.rejectedPostings.length = 0;
     try {
       switch (this.definition.kind) {
+        case "inria":
+          await this.inria(offers);
+          break;
         case "teamtailor":
           await this.teamtailor(offers);
           break;
@@ -158,6 +168,13 @@ export class PublicBoardConnector implements SourceConnector {
     const unique = new Map(offers.map((offer) => [offer.sourceUrl, offer]));
     this.finalizeCoverage(unique.size);
     return [...unique.values()].slice(0, this.definition.maxOffers);
+  }
+
+  private async append(offers: RawOffer[], batch: RawOffer[]): Promise<void> {
+    const room = Math.max(0, this.definition.maxOffers - offers.length);
+    const kept = batch.slice(0, room);
+    offers.push(...kept);
+    if (kept.length) await this.onBatch?.(kept);
   }
 
   private finalizeCoverage(count: number): void {
@@ -185,11 +202,45 @@ export class PublicBoardConnector implements SourceConnector {
       const offer = makeBoardOffer({ title: field("title"), company: this.definition.company ?? this.definition.label,
         city: field("city"), country: field("country"), description: jsonLdText(field("description")),
         url: field("link"), publishedAt: field("pubDate") });
-      if (offer) offers.push(offer);
+      if (offer) await this.append(offers, [offer]);
     }
     // Le flux peut être plafonné : aucun retrait d'offre fondé sur son absence du RSS.
     this.coverage = { mode: "RSS public", catalogTotal: items.length, listingsSeen: items.length, detailsRead: items.length, accepted: offers.length, complete: false };
     this.warnings.push("Flux RSS potentiellement plafonné ; couverture partielle");
+  }
+
+  private async inria(offers: RawOffer[]): Promise<void> {
+    let next: string | undefined = this.definition.url;
+    const seenPages = new Set<string>(), seenJobs = new Set<string>();
+    this.coverage = { mode: "Stages recherche Inria", catalogTotal: 0, listingsSeen: 0, detailsRead: 0, accepted: 0, complete: false };
+    for (let page = 0; next && page < this.definition.maxPages; page++) {
+      if (seenPages.has(next)) { this.warnings.push("Pagination recherche répétée"); break; }
+      seenPages.add(next);
+      if (!await robotsAllows(next)) throw new Error("Page de recherche non autorisée");
+      const html = await requiredText(next, SITEMAP);
+      const links = extractLinks(html, next, /\/public\/classic\/fr\/offres\/\d{4}-\d+$/).filter((url) => !seenJobs.has(url));
+      const $ = load(html);
+      const total = /([\d\s]+) offres? en cours/i.exec($("main").text())?.[1]?.replace(/\s/g, "");
+      if (total) this.coverage.catalogTotal = Number(total);
+      if (!links.length && page === 0 && this.coverage.catalogTotal !== 0) this.warnings.push("Liste recherche sans liens exploitables");
+      for (let i = 0; i < links.length; i += 10) {
+        const batch = links.slice(i, i + 10); batch.forEach((url) => seenJobs.add(url));
+        this.coverage.listingsSeen = seenJobs.size;
+        await this.append(offers, await this.mapDetails(batch, async (url) => {
+          if (!await robotsAllows(url)) throw new Error("Fiche recherche non autorisée");
+          const detail = await requiredText(url, DETAIL); this.coverage!.detailsRead++;
+          const offer = inriaOffer(detail, url);
+          if (!offer) this.rejectedPostings.push({ title: url, url, reason: "Lieu, contrat, échéance ou missions hors périmètre" });
+          return offer;
+        }));
+        if (offers.length >= this.definition.maxOffers) { this.warnings.push("Budget d'offres recherche atteint"); return; }
+      }
+      const more = $("a[rel=next], a").filter((_, e) => /suivant|next/i.test($(e).text()) || $(e).attr("rel") === "next").first().attr("href");
+      next = more ? publicUrl(more, next) ?? undefined : undefined;
+      if (next && new URL(next).hostname !== new URL(this.definition.url).hostname) next = undefined;
+      if (next && page + 1 === this.definition.maxPages) this.warnings.push("Budget de pages recherche atteint");
+    }
+    if (!this.coverage.catalogTotal) this.coverage.catalogTotal = seenJobs.size;
   }
 
   private async simpleBoard(offers: RawOffer[]): Promise<void> {
@@ -209,33 +260,41 @@ export class PublicBoardConnector implements SourceConnector {
     for (const item of jobs) {
       const job = item as Record<string, unknown>;
       const category = job.categories as { location?: string; commitment?: string } | undefined;
-      const location = job.location as string | { name?: string } | undefined;
+      const location = job.location as string | { name?: string; city?: string; country_code?: string } | undefined;
       const address = job.address as { postalAddress?: { addressCountry?: string } } | undefined;
+      const secondary = (Array.isArray(job.secondaryLocations) ? job.secondaryLocations : Array.isArray(job.locations) ? job.locations : []) as Array<{ location?: string; city?: string; country_code?: string; country?: string; address?: { postalAddress?: { addressCountry?: string } } }>;
+      const primaryCity = text(job.city) || (category?.location ?? (typeof location === "string" ? location : (location?.city ?? location?.name ?? "")));
+      const primaryCountry = address?.postalAddress?.addressCountry ?? (typeof location === "object" ? location.country_code : undefined) ?? (text(job.country_code || job.country) || undefined);
+      const frenchSecondary = secondary.filter((item) => frenchLocation(item.city ?? item.location ?? "", item.country_code ?? item.country ?? item.address?.postalAddress?.addressCountry));
+      const fallback = !frenchLocation(primaryCity, primaryCountry) ? frenchSecondary[0] : undefined;
       const raw = makeBoardOffer({
         title: text(job.title || job.text),
-        company: source.company ?? source.label,
-        city:
-          text(job.city) || (category?.location ?? (typeof location === "string" ? location : (location?.name ?? ""))),
-        country: address?.postalAddress?.addressCountry ?? (text(job.country_code || job.country) || undefined),
-        contract: category?.commitment ?? text(job.employmentType || job.employment_type_code),
+        company: (source.company ?? (source.kind === "workable" ? text((data as { name?: string }).name) : "")) || source.label,
+        city: fallback ? fallback.city ?? fallback.location ?? primaryCity : primaryCity,
+        country: fallback ? "FR" : primaryCountry,
+        contract: category?.commitment ?? text(job.employmentType || job.employment_type_code || job.employment_type),
         description:
           [text(job.descriptionPlain) || jsonLdText(text(job.content || job.descriptionHtml || job.description)),
             ...(Array.isArray(job.lists) ? job.lists.map((list) => {
               const section = list as { text?: string; content?: string };
               return `${text(section.text)}\n${jsonLdText(text(section.content))}`;
             }) : [])].join("\n\n"),
-        url: text(job.absolute_url || job.hostedUrl || job.jobUrl || job.careers_url),
+        url: text(job.absolute_url || job.hostedUrl || job.jobUrl || job.careers_url || job.url),
         publishedAt:
           typeof job.createdAt === "number"
             ? job.createdAt
-            : text(job.first_published || job.publishedAt) || undefined,
+            : text(job.first_published || job.publishedAt || job.created_at) || undefined,
         ...(job.workplaceType === "Remote"
           ? { remote: "remote" }
           : job.workplaceType === "Hybrid"
             ? { remote: "hybride" }
             : {}),
       });
-      if (raw) offers.push(raw);
+      if (raw) {
+        raw.locations = frenchSecondary.map((item) => ({ city: (item.city ?? item.location ?? "").slice(0, 120), countryCode: "FR" }));
+        await this.append(offers, [raw]);
+      }
+      if (offers.length >= source.maxOffers) { if (jobs.length > source.maxOffers) this.warnings.push("Budget d'offres atteint ; couverture partielle"); break; }
     }
   }
 
@@ -246,6 +305,8 @@ export class PublicBoardConnector implements SourceConnector {
     let countryFacet: string | undefined;
     let studentFacets: Record<string, string[]> = {};
     let resolvedFacets = false;
+    const cursorKey = `${source.id}:workday`;
+    const resumePage = this.onBatch ? Math.max(0, Math.min(source.maxPages - 1, Number(await readCatalogCursor(cursorKey)) || 0)) : 0;
     type Posting = { title?: string; externalPath?: string; locationsText?: string };
     type Facet = { facetParameter?: string; descriptor?: string; id?: string; values?: Facet[] };
     type Page = { total?: number; jobPostings?: Posting[]; facets?: Facet[] };
@@ -346,6 +407,7 @@ export class PublicBoardConnector implements SourceConnector {
               title?: string;
               jobDescription?: string;
               location?: string;
+              additionalLocations?: string[];
               startDate?: string;
               workerSubType?: string;
               jobType?: string;
@@ -372,12 +434,16 @@ export class PublicBoardConnector implements SourceConnector {
             company: source.company ?? source.label,
             description: jsonLdText(info.jobDescription ?? ""),
             city:
-              info.jobRequisitionLocation?.descriptor ?? info.location ?? job.locationsText ?? "",
+              info.location ?? info.jobRequisitionLocation?.descriptor ?? job.locationsText ?? "",
             country: info.jobRequisitionLocation?.country?.alpha2Code ?? info.country?.descriptor ?? (countryFacet ? "FR" : undefined),
             contract: info.workerSubType ?? info.jobType,
             url: info.externalUrl ?? `${source.url.replace(/\/$/, "")}${job.externalPath}`,
             publishedAt: info.startDate,
           });
+          if (offer) {
+            offer.siteLabel = info.jobRequisitionLocation?.descriptor?.slice(0, 200);
+            offer.locations = (info.additionalLocations ?? []).filter((city) => frenchLocation(city)).map((city) => ({ city: city.slice(0, 120), countryCode: "FR" }));
+          }
           if (!offer)
             this.rejectedPostings.push({
               title: info.title ?? job.title ?? "",
@@ -386,7 +452,8 @@ export class PublicBoardConnector implements SourceConnector {
             });
           return offer;
         });
-        offers.push(...mapped);
+        await this.append(offers, mapped);
+        if (this.onBatch) await saveCatalogCursor(cursorKey, String(page === 0 && resumePage > 1 ? resumePage : page + 1));
         if (offers.length >= source.maxOffers) {
           this.warnings.push("Budget d'offres atteint ; couverture partielle");
           return;
@@ -395,9 +462,10 @@ export class PublicBoardConnector implements SourceConnector {
           !result.jobPostings.length ||
           (queryTotal !== undefined && (page + 1) * 20 >= queryTotal)
         )
-          break;
+          { if (this.onBatch) await saveCatalogCursor(cursorKey, "0"); break; }
         if (page + 1 === source.maxPages)
           this.warnings.push(`Budget de pages atteint pour « ${query} »`);
+        if (page === 0 && resumePage > 1) page = resumePage - 1;
       }
       // La recherche vide couvre toutes les annonces françaises. Les mots-clés
       // ne servent de repli que si ce parcours a été limité par le budget.
@@ -477,7 +545,7 @@ export class PublicBoardConnector implements SourceConnector {
             publishedAt: detail.releasedDate,
           });
         });
-        offers.push(...mapped);
+        await this.append(offers, mapped);
         if (offers.length >= source.maxOffers) {
           this.warnings.push("Budget d'offres atteint ; couverture partielle");
           return;
@@ -547,7 +615,7 @@ export class PublicBoardConnector implements SourceConnector {
         const embedded = extractJobPosting(html);
         if (embedded) {
           const offer = jsonLdOffer(embedded, url.href, source.company, source.defaultCountry, true);
-          if (offer) offers.push(offer);
+          if (offer) await this.append(offers, [offer]);
         }
         const links = extractLinks(html, url.href, pattern);
         if (!links.length) {
@@ -588,8 +656,8 @@ export class PublicBoardConnector implements SourceConnector {
     let parsed = 0;
     for (let i = 0; i < selected.length; i += 20) {
       const batch = selected.slice(i, i + 20);
-      offers.push(
-        ...(await this.mapDetails(batch, async ([url]) => {
+      await this.append(offers,
+        await this.mapDetails(batch, async ([url]) => {
           const html = await requiredText(url, DETAIL);
           this.coverage!.listingsSeen++;
           this.coverage!.detailsRead++;
@@ -605,7 +673,7 @@ export class PublicBoardConnector implements SourceConnector {
           }
           parsed++;
           return jsonLdOffer(posting, url, source.company, source.defaultCountry, true);
-        })),
+        }),
       );
     }
     await saveCatalogCursor(source.id, nextCursor);

@@ -3,6 +3,7 @@ import { personalContract } from "./personal-offer";
 import { classifyJob, isInScope } from "./job-classifier";
 import { classifySpecialty } from "./classify";
 import { offerMissionText } from "./offer-text";
+import { aiTopics } from "./ai-topics";
 import type { RawOffer } from "./normalize";
 import { inferContractType, inferEducationLevel, inferRemotePolicy } from "./enrich";
 import { nonStudentContractEvidence } from "./contract-evidence";
@@ -31,11 +32,12 @@ const SUPPORT_ROLE =
   /\b(ressources humaines|human resources|rh|hr|talent development|community manager|community management|merchandis\w*|controleur de gestion|fp&a|recrutement|recruit\w*|sales|commercial\w*|commerce|marketing|communication|douane|export\w*|legal|juridique|comptab\w*|services? et experience client|conseiller\w*|vendeu\w*|vente)\b/;
 export function isTechOffer(title: string, description = ""): boolean {
   const text = foldText(title);
+  if (/\b(?:licensing|intellectual property|propriete intellectuelle|juriste)\b/.test(text) && !TECH_ROLE.test(text)) return false;
   if (/\bbusiness develop\w*\b/.test(text)) return false;
   if (SUPPORT_ROLE.test(text) && !TECH_ROLE.test(text)) return false;
   if (classifySpecialty(title) !== "AUTRE" || TECH.test(text)) return true;
   if (NON_TECH.test(text)) return false;
-  return TECH_TASK.test(offerMissionText(description));
+  return TECH_TASK.test(offerMissionText(description)) || aiTopics(title, description).includes("AI_ML");
 }
 
 /** Le titre et le contrat structuré priment sur le vocabulaire du pied de page. */

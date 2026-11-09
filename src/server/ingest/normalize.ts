@@ -8,6 +8,8 @@ export const rawOfferSchema = z.object({
   title: z.string().min(3).max(200),
   companyName: z.string().min(1).max(120),
   city: z.string().min(1).max(120),
+  siteLabel: z.string().max(200).optional(),
+  locations: z.array(z.object({ city: z.string().min(1).max(120), countryCode: z.string().length(2).default("FR") })).max(20).optional(),
   description: z.string().min(20),
   descriptionIsExcerpt: z.boolean().optional(),
   contractType: z.string(),

@@ -1,0 +1,12 @@
+[
+  { "label": "Mistral AI", "url": "https://mistral.ai/careers/" },
+  { "label": "Hugging Face", "url": "https://huggingface.co/" },
+  { "label": "Inria", "url": "https://jobs.inria.fr/public/classic/fr/offres?filtre=stage-recherche" },
+  { "label": "CEA", "url": "https://www.cea.fr/recrutement/Pages/je-cherche/un-stage.aspx" },
+  { "label": "CEA List", "url": "https://kalisteo.cea.fr/index.php/offres-demploi/" },
+  { "label": "CNRS", "url": "https://emploi.cnrs.fr/Offres/Recherche.aspx" },
+  { "label": "Crédit Agricole", "url": "https://groupecreditagricole.jobs/fr/" },
+  { "label": "Safran", "url": "https://www.safran-group.com/fr/offres" },
+  { "label": "Dataiku", "url": "https://www.dataiku.com/careers/" },
+  { "label": "Photoroom", "url": "https://www.photoroom.com/careers" }
+]

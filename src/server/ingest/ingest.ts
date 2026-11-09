@@ -14,6 +14,9 @@ import { getSettings } from "@/lib/settings";
 import { samePersonalOffer } from "./personal-dedup";
 import { fold } from "@/lib/job-taxonomy";
 import { classifyJob, isInScope, type JobClassification } from "./job-classifier";
+import { aiTopics } from "./ai-topics";
+import { resolveOfferCity } from "./locations";
+import { recruiterRank } from "./source-preference";
 
 export type IngestSummary = {
   received: number;
@@ -103,6 +106,15 @@ export async function processIngest(
           throw new NormalizationError("Observation périmée ou future", "scrapedAt");
         if (normalized.countryCode !== "FR")
           throw new NormalizationError("Offre hors périmètre : France uniquement", "scope");
+        if (normalized.latitude == null || normalized.longitude == null) {
+          const resolved = await resolveOfferCity(normalized.city, normalized.sourceUrl);
+          if (resolved) {
+            normalized.city = resolved.city;
+            normalized.latitude = resolved.lat;
+            normalized.longitude = resolved.lng;
+            normalized.locationPrecise = true;
+          }
+        }
         // Une seule règle pour tout le catalogue : la tech reste en stage ou
         // alternance, le commerce, la communication et l'ASV acceptent tous les contrats.
         classification = classifyJob(normalized.title, normalized.description, {
@@ -131,9 +143,12 @@ export async function processIngest(
       // Domaine, métier et spécialité déduits ici plutôt que dans chaque
       // connecteur : toute source, présente ou future, est classée de la même façon.
       const specialty = classification.specialty;
+      const rawLocations = parsed.data.locations;
       // Attribution : la source portée par l'offre prime (agrégateur multi-sites).
       const offerSourceSite = normalized.sourceSite ?? sourceSite;
       const personalFields = {
+        tags: [...new Set([...classification.tags, ...(classification.universe === "TECH" ? aiTopics(normalized.title, normalized.description) : [])])],
+        ...(parsed.data.siteLabel ? { siteLabel: parsed.data.siteLabel } : {}),
         universe: classification.universe,
         jobFamily: classification.family,
         experienceLevel: normalized.experienceLevel,
@@ -160,8 +175,23 @@ export async function processIngest(
       async function recordOrigin(offerId: string) {
         if (normalized.descriptionIsExcerpt) return;
         await prisma.offerOrigin.upsert({ where: { sourceUrl: normalized.sourceUrl }, update: { offerId, lastVerifiedAt: normalized.scrapedAt, status: "ACTIVE" }, create: { offerId, sourceUrl: normalized.sourceUrl, sourceSite: offerSourceSite, lastVerifiedAt: normalized.scrapedAt } });
+        // Replace the current source's location snapshot only when it supplied one.
+        if (rawLocations) {
+          const locations = new Map<string, { city: string; countryCode: string; latitude: number | null; longitude: number | null }>();
+          for (const item of [{ city: normalized.city, countryCode: "FR" }, ...rawLocations]) {
+            if (item.countryCode !== "FR") continue;
+            const resolved = await resolveOfferCity(item.city, "https://example.com/");
+            const city = resolved?.city ?? item.city;
+            locations.set(city.toLowerCase(), { city, countryCode: "FR", latitude: resolved?.lat ?? null, longitude: resolved?.lng ?? null });
+          }
+          await prisma.$transaction([
+            prisma.offerLocation.deleteMany({ where: { offerId } }),
+            prisma.offerLocation.createMany({ data: [...locations.values()].map((location) => ({ ...location, offerId })) }),
+          ]);
+        }
       }
       if (existing) {
+        const keepRecruiter = existing.status === "ACTIVE" && recruiterRank(existing.sourceUrl) > recruiterRank(normalized.sourceUrl);
         // Le logo de l'entreprise peut arriver après la création de la fiche.
         if (normalized.companyLogoUrl) {
           await prisma.company.update({
@@ -175,7 +205,7 @@ export async function processIngest(
           data: normalized.descriptionIsExcerpt
             ? {}
             : {
-                dedupHash,
+                dedupHash: keepRecruiter ? existing.dedupHash : dedupHash,
                 lastSeenAt: normalized.scrapedAt,
                 scrapedAt: normalized.scrapedAt,
                 specialty,
@@ -191,8 +221,8 @@ export async function processIngest(
                 educationLevel: normalized.educationLevel,
                 // La modération reste prioritaire sur le retour de l'annonce à la source.
                 ...(existing.blockedAt ? {} : { status: "ACTIVE" as const }),
-                sourceUrl: normalized.sourceUrl,
-                sourceSite: offerSourceSite,
+                sourceUrl: keepRecruiter ? existing.sourceUrl : normalized.sourceUrl,
+                sourceSite: keepRecruiter ? existing.sourceSite : offerSourceSite,
                 ...(normalized.publishedAt ? { publishedAt: normalized.publishedAt } : {}),
                 validThrough: normalized.validThrough,
                 ...(normalized.salaryMin != null ? { salaryMin: normalized.salaryMin } : {}),

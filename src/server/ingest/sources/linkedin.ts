@@ -3,7 +3,8 @@ import { load } from "cheerio";
 import { makeStudentOffer, frenchLocation } from "../scope";
 import { RateLimitedError, fetchText, isHostCircuitOpen, mapPool } from "@/server/ingest/http";
 import { geocodeCityFull } from "./geocode";
-import { TECH_KEYWORDS, type SourceConnector } from "./types";
+import { TECH_KEYWORDS, type SourceConnector, type CollectionOptions } from "./types";
+import { rotatedKeywords } from "../keyword-rotation";
 
 /**
  * Connecteur LinkedIn — endpoint public « invité » (jobs-guest), celui qui
@@ -25,12 +26,6 @@ const DETAIL_URL = "https://www.linkedin.com/jobs-guest/jobs/api/jobPosting";
 // Requêtes ciblées tech FR, générées depuis TECH_KEYWORDS pour maximiser le
 // volume. f_JT=I = Internship (stage) ; l'alternance n'a pas de type LinkedIn
 // dédié → ciblée par mot-clé (le pipeline rejette ensuite le hors périmètre).
-const QUERIES: Array<{ keywords: string; internshipType: boolean }> = TECH_KEYWORDS.flatMap(
-  (kw) => [
-    { keywords: `stage ${kw}`, internshipType: true },
-    { keywords: `alternance ${kw}`, internshipType: false },
-  ],
-);
 const PAGES_PER_QUERY = 40;
 const PAGE_SIZE = 25;
 /** Descriptions récupérées de front. Au-delà, LinkedIn rate-limite vite. */
@@ -157,19 +152,22 @@ export class LinkedInConnector implements SourceConnector {
     return true; // Endpoint invité public : aucune clé requise.
   }
 
-  async fetchOffers(): Promise<RawOffer[]> {
+  async fetchOffers(options: CollectionOptions = {}): Promise<RawOffer[]> {
     const offers: RawOffer[] = [];
     const seen = new Set<string>();
     this.warnings.length = 0;
     this.exhaustedQueries.clear();
     this.lastPages.clear();
+    const queries = (await rotatedKeywords(this.sourceSite, TECH_KEYWORDS)).flatMap((kw) => [
+      { keywords: `stage ${kw}`, internshipType: true }, { keywords: `alternance ${kw}`, internshipType: false },
+    ]);
 
     // Alternance recherche → descriptions, lot par lot (voir QUERY_BATCH).
     pages: for (let page = 0; page < PAGES_PER_QUERY; page++) {
-      for (let i = 0; i < QUERIES.length; i += QUERY_BATCH) {
+      for (let i = 0; i < queries.length; i += QUERY_BATCH) {
         let cards: Array<Card & { alternance: boolean }>;
         try {
-          cards = await this.collectCards(QUERIES.slice(i, i + QUERY_BATCH), seen, page);
+          cards = await this.collectCards(queries.slice(i, i + QUERY_BATCH), seen, page);
         } catch (err) {
           if (err instanceof RateLimitedError) {
             this.warnings.push("Accès LinkedIn limité ; collecte partielle");
@@ -180,7 +178,9 @@ export class LinkedInConnector implements SourceConnector {
 
         // Descriptions + géocodage en parallèle borné. `mapPool` interrompt tout
         // le pool si LinkedIn coupe, et renvoie ce qui a déjà été construit.
-        offers.push(...(await mapPool(cards, DETAIL_CONCURRENCY, (card) => this.toOffer(card))));
+        const mapped = await mapPool(cards, DETAIL_CONCURRENCY, (card) => this.toOffer(card));
+        offers.push(...mapped);
+        if (mapped.length) await options.onBatch?.(mapped);
 
         // Hôte coupé : les lots suivants ne rendraient plus rien.
         if (isHostCircuitOpen(HOST)) {
@@ -191,7 +191,7 @@ export class LinkedInConnector implements SourceConnector {
           break pages;
         }
       }
-      if (this.exhaustedQueries.size === QUERIES.length) break;
+      if (this.exhaustedQueries.size === queries.length) break;
       if (offers.length >= 5000) {
         this.warnings.push("Budget d'offres LinkedIn atteint ; collecte partielle");
         break;
@@ -235,7 +235,7 @@ export class LinkedInConnector implements SourceConnector {
    * qui conserve les offres déjà construites.
    */
   private async collectCards(
-    queries: typeof QUERIES,
+    queries: Array<{ keywords: string; internshipType: boolean }>,
     seen: Set<string>,
     requestedPage: number,
   ): Promise<Array<Card & { alternance: boolean }>> {

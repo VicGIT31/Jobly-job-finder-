@@ -11,6 +11,7 @@ vi.mock("@/lib/prisma", () => ({ prisma: { ingestRun: { create: mocks.record } }
 vi.mock("@/lib/redis", () => ({ getRedis: () => ({ set: mocks.set, eval: mocks.eval }) }));
 vi.mock("./sources", () => ({ getSourceConnectors: mocks.sources }));
 vi.mock("./ingest", () => ({ processIngest: mocks.process }));
+vi.mock("./verify-links", () => ({ verifyKnownOfferLinks: async () => ({ checked: 0 }) }));
 import { IngestionAlreadyRunningError, runIngestion } from "./run-ingestion";
 
 beforeEach(() => {
@@ -24,6 +25,13 @@ beforeEach(() => {
 afterEach(() => vi.restoreAllMocks());
 
 describe("coordination des collectes automatiques", () => {
+  it("indexe un lot avant la fin de la source et ne le traite pas deux fois", async () => {
+    const offer = { title: "Stage IA", description: "Entraîner des modèles de machine learning.", sourceUrl: "https://employer.fr/jobs/one", city: "Paris", companyName: "Employeur", contractType: "stage", sector: "Tech" };
+    mocks.process.mockResolvedValue({ received: 1, created: 1, updated: 0, duplicates: 0, rejected: 0, errors: [], indexingErrors: 0 });
+    mocks.sources.mockResolvedValue([{ label: "Employeur", sourceSite: "employer.fr", isEnabled: () => true, fetchOffers: async (options: import("./sources/types").CollectionOptions) => { await options.onBatch!([offer]); expect(mocks.process).toHaveBeenCalledOnce(); return [offer]; } }]);
+    const [run] = await runIngestion(); expect(mocks.process).toHaveBeenCalledOnce(); expect(run.summary?.created).toBe(1);
+    const recorded = mocks.record.mock.calls[0][0].data; expect(recorded.startedAt.getTime()).toBeLessThanOrEqual(recorded.completedAt.getTime()); expect(recorded.cycleId).toBeTruthy();
+  });
   it("signale un budget dépassé même si un ancien connecteur rend ses résultats partiels", async () => {
     vi.spyOn(AbortSignal, "timeout").mockReturnValueOnce(AbortSignal.abort());
     mocks.sources.mockResolvedValue([

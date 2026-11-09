@@ -30,7 +30,7 @@ export function canonicalOfferUrl(value: string): string {
   if (/(^|\.)linkedin\.com$/.test(url.hostname) && linkedInId)
     return `https://www.linkedin.com/jobs/view/${linkedInId}/`;
   // Le même numéro de réquisition Workday peut être publié dans plusieurs langues.
-  const workdayId = /_(JR\d+)(?:[/?]|$)/i.exec(url.pathname)?.[1];
+  const workdayId = /_((?:JR|R)\d+)(?:-\d+)?(?:[/?]|$)/i.exec(url.pathname)?.[1];
   if (/\.myworkdayjobs\.com$/.test(url.hostname) && workdayId)
     return `${url.origin}/requisition/${workdayId.toUpperCase()}`;
   return url.href.replace(/\/$/, "");

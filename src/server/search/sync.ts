@@ -1,15 +1,21 @@
-import type { Company, JobOffer } from "@prisma/client";
+import type { Company, JobOffer, OfferLocation } from "@prisma/client";
 import { getMeili, OFFERS_INDEX } from "@/lib/meilisearch";
 import { confirmSearchTask } from "./task";
 import { classifyJob } from "@/server/ingest/job-classifier";
+import { aiTopics } from "@/server/ingest/ai-topics";
+import { offerMissionText } from "@/server/ingest/offer-text";
+import { prisma } from "@/lib/prisma";
 
-export type OfferWithCompany = JobOffer & { company: Company };
+export type OfferWithCompany = JobOffer & { company: Company; locations?: OfferLocation[] };
 
 export type OfferDocument = {
   id: string;
   title: string;
   slug: string;
   descriptionText: string;
+  missionText?: string;
+  locations?: Array<{ city: string; countryCode: string; lat?: number; lng?: number }>;
+  locationCities?: string[];
   companyName: string;
   companySlug: string;
   companyLogo: string | null;
@@ -74,7 +80,10 @@ export function offerToDocument(offer: OfferWithCompany): OfferDocument {
     id: offer.id,
     title: offer.title,
     slug: offer.slug,
-    descriptionText: stripMarkdown(offer.description).slice(0, 2000),
+    descriptionText: stripMarkdown(offer.description).slice(0, 16000),
+    missionText: offerMissionText(offer.description),
+    locations: offer.locations?.map((location) => ({ city: location.city, countryCode: location.countryCode, ...(location.latitude != null && location.longitude != null ? { lat: location.latitude, lng: location.longitude } : {}) })),
+    locationCities: [...new Set([offer.city, ...(offer.locations?.map((location) => location.city) ?? [])])],
     companyName: offer.company.name,
     companySlug: offer.company.slug,
     companyLogo: offer.company.logoUrl,
@@ -95,7 +104,7 @@ export function offerToDocument(offer: OfferWithCompany): OfferDocument {
     salaryPeriod: offer.salaryPeriod ?? "UNKNOWN", publicationKnown: offer.publicationKnown ?? false,
     verifiedAtTs: offer.lastSeenAt.getTime(), firstSeenAtTs: offer.createdAt?.getTime() ?? offer.scrapedAt.getTime(),
     locationPrecise: offer.locationPrecise ?? false, remoteKnown: offer.remoteKnown ?? false,
-    tags: insight.tags,
+    tags: [...new Set([...insight.tags, ...(offer.universe === "TECH" ? aiTopics(offer.title, offer.description) : [])])],
     jobConfidence: insight.confidence,
     jobEvidence: insight.evidence,
     sourceUrl: offer.sourceUrl,
@@ -109,9 +118,10 @@ export function offerToDocument(offer: OfferWithCompany): OfferDocument {
 export async function syncOffersToSearch(offers: OfferWithCompany[]): Promise<void> {
   if (offers.length === 0) return;
   const meili = getMeili();
+  const locations = await prisma.offerLocation.findMany({ where: { offerId: { in: offers.map(({ id }) => id) } } });
   const task = await meili
     .index(OFFERS_INDEX)
-    .addDocuments(offers.map(offerToDocument), { primaryKey: "id" });
+    .addDocuments(offers.map((offer) => offerToDocument({ ...offer, locations: locations.filter((location) => location.offerId === offer.id) })), { primaryKey: "id" });
   await confirmSearchTask(task);
 }
 

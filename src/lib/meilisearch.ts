@@ -25,15 +25,18 @@ export async function configureOffersIndex(): Promise<void> {
   const task = await index.updateSettings({
     searchableAttributes: [
       "title",
+      "missionText",
       "jobFamily",
       "tags",
       "qualificationText",
       "companyName",
       "sector",
       "city",
+      "locationCities",
       "descriptionText",
     ],
     filterableAttributes: [
+      "locationCities",
       "id",
       "contractType",
       "city",

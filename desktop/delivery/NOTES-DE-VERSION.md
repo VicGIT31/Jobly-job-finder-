@@ -1,4 +1,14 @@
-# Jobly 0.4.1
+# Jobly 0.5.0
+
+- Stages IA : lieux Workday corrigés, réparation des anciennes fiches et implantations secondaires.
+- Thèmes IA complémentaires, recherche FR/EN et indexation des missions longues.
+- Lots visibles pendant la collecte, reprise Workday et rotation des recherches, priorité équitable.
+- Découverte depuis les liens officiels, flux Workable et stages de recherche Inria.
+- Recherche Tavily officielle sans clé et plafonnée ; clé personnelle facultative.
+- Suivi de toutes les sources du cycle ; dates de début/fin distinctes et sauvegarde des nouveaux lieux.
+- Filtre cinq jours réversible ; les annonces ouvertes plus anciennes restent conservées.
+
+## Fonctions précédentes conservées
 
 - Windows x64 : construction native, installation testée et ZIP avec commande PowerShell.
 - Barista et coffee shops : Haute-Garonne, Toulouse, Agen et Bordeaux, tous contrats.

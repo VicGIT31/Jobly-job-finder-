@@ -33,7 +33,7 @@ export async function expireStaleOffers(now = new Date()): Promise<number> {
   if (stale.length === 0) return 0;
 
   let expired = 0;
-  const personalUnknown = stale.filter((offer) => ["COMMERCE", "ASV", "FINANCE", "HOSPITALITY"].includes(offer.universe) && !(offer.validThrough && offer.validThrough <= now));
+  const personalUnknown = stale.filter((offer) => ["TECH", "COMMERCE", "ASV", "FINANCE", "HOSPITALITY"].includes(offer.universe) && !(offer.validThrough && offer.validThrough <= now));
   const uncertainIds = new Set(personalUnknown.map(({ id }) => id));
   const confirmed = stale.filter(({ id }) => !uncertainIds.has(id));
   for (const [group, status] of [[confirmed, "EXPIRED"], [personalUnknown, "UNCERTAIN"]] as const) {

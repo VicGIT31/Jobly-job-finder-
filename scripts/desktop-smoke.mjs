@@ -64,8 +64,19 @@ try {
     ["asv-far", "ASV nationale — vérification", "CDI", "ASV", "ASV", "Paris",48.8566,2.3522],
   ];
   for (const [id,title,contract,universe,family,city,lat,lng] of fixtures) await db.query(`INSERT INTO job_offers (id,title,slug,description,"companyId","contractType",city,"remotePolicy","educationLevel",sector,specialty,"sourceUrl","sourceSite","scrapedAt","lastSeenAt","dedupHash","updatedAt","publishedAt",universe,"jobFamily",latitude,longitude,"publicationKnown") VALUES ($1,$2,$1,'Description synthétique pour vérifier les fonctions de recherche, sauvegarde et candidature.','desktop-qa-company',$3,$4,'UNKNOWN','INDIFFERENT','Personnel','AUTRE','https://example.com/careers','example.com',$5,$5,$1,$5,$5,$6,$7,$8,$9,true) ON CONFLICT (id) DO UPDATE SET status='ACTIVE',"lastSeenAt"=$5`, [`desktop-qa-${id}`, title, contract, city, now, universe, family, lat, lng]);
+  for (const [id,title,city,url,description] of [
+    ['legacy-ai','Stage ingénieur IA validation — vérification','Toulouse Basso Cambo','https://thales.wd3.myworkdayjobs.com/Careers/job/Toulouse/Stage-IA_R0999999','Vos missions\nDévelopper des modèles de machine learning avec PyTorch.'],
+    ['hybrid-ai','Stage automatisation de tests logiciels LLM — vérification','Paris','https://example.com/careers/llm','Vos missions\nDévelopper et automatiser les tests logiciels avec des LLMs.'],
+  ]) await db.query(`INSERT INTO job_offers(id,title,slug,description,"companyId","contractType",city,sector,specialty,"sourceUrl","sourceSite","scrapedAt","lastSeenAt","dedupHash","updatedAt","publishedAt",universe,"jobFamily") VALUES ($1,$2,$1,$3,'desktop-qa-company','STAGE',$4,'Tech','SOFTWARE',$5,'test-employer',$6,$6,$1,$6,$6,'TECH','TECH') ON CONFLICT(id) DO NOTHING`,[`desktop-qa-${id}`,title,description,city,url,now]);
+  await db.query(`INSERT INTO offer_locations(id,"offerId",city,latitude,longitude) VALUES ('desktop-qa-secondary','desktop-qa-hybrid-ai','Toulouse',43.6047,1.4442) ON CONFLICT(id) DO NOTHING`);
+  await db.query(`DELETE FROM site_settings WHERE key='classifierVersion'`);
   await db.end();
   await page.evaluate(() => window.joblyDesktop.repair());
+  const ai = await page.evaluate(async () => (await fetch('/api/search?contrat=STAGE&specialite=IA&ville=Toulouse&rayon=30&tri=date')).json());
+  assert.equal(ai.totalHits,2); assert.ok(ai.hits.some(offer=>offer.id==='desktop-qa-legacy-ai'&&offer.city==='Toulouse')); assert.ok(ai.hits.some(offer=>offer.id==='desktop-qa-hybrid-ai'&&offer.specialty==='SOFTWARE'));
+  const llm = await page.evaluate(async () => (await fetch('/api/search?q=LLM&contrat=STAGE&ville=Toulouse&rayon=30&tri=date')).json());
+  assert.equal(llm.totalHits,1); assert.equal(llm.hits[0].id,'desktop-qa-hybrid-ai');
+  checks.push('Réparation du campus Thales en commune ; stage IA hybride et lieu secondaire retrouvés dans le rayon, sans changer sa spécialité principale');
   await page.goto(origin + "/offres?ville=Toulouse&rayon=30&tri=pertinence");
   await page.getByRole("link", { name: "Commercial CDI — vérification", exact: true }).waitFor();
   const local = await page.evaluate(async () => (await fetch("/api/search?univers=COMMERCE&ville=Toulouse&rayon=30")).json());
@@ -121,6 +132,13 @@ try {
   await page.goto(origin + "/offres?univers=ASV&national=1&contrat=CDI"); await page.getByRole("link", { name: "ASV nationale — vérification", exact: true }).waitFor();
   checks.push("Erreur réseau de recherche compréhensible et derniers résultats conservés");
   await page.goto(origin + "/bureau"); await page.getByRole("heading", { name: "Actualisation & données", exact: true }).waitFor();
+  await page.evaluate(() => window.joblyDesktop.sources(["local-job-alerts"]));
+  await page.evaluate(() => window.joblyDesktop.collect());
+  for(let attempt=0;attempt<100;attempt++){if(!(await page.evaluate(()=>window.joblyDesktop.status())).collecting)break;await pause(150);}
+  await page.reload(); await page.getByText(/Suivi du cycle/).waitFor();
+  await page.getByText(/Suivi du cycle/).click();
+  for(const width of [390,768,1440]){await page.setViewportSize({width,height:1000});await page.screenshot({path:join(artifacts,`bureau-${width}.png`),fullPage:true});assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth<=document.documentElement.clientWidth+1),true);}
+  checks.push('Suivi réel des sources et lots dans le Bureau, contrôlé à 390, 768 et 1440 px');
   await page.evaluate(() => window.joblyDesktop.sources(["anicura-asv"]));
   const backupPath = join(artifacts,"smoke.jobly");
   await app.evaluate(({ dialog }, destination) => { dialog.showSaveDialog = async () => ({ canceled: false, filePath: destination }); },backupPath);

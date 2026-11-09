@@ -15,6 +15,7 @@ import { isPathAllowed, parseRobots } from "../robots";
 import type { RawOffer } from "../normalize";
 import { boardEndpoint } from "./public-boards";
 import { sourceDefinitionSchema, type SourceDefinition } from "./catalog";
+import { searchDiscoverySeeds } from "./search-discovery";
 import {
   discoveryId,
   drainObservedEmployers,
@@ -54,7 +55,11 @@ export function detectBoard(value: string, label?: string): SourceDefinition | n
       url.pathname = `/${parts[0]}`;
     }
   } else {
-    kind = /^(?:boards|job-boards)(?:\.eu)?\.greenhouse\.io$/.test(url.hostname)
+    kind = /^(?:jobs|recrutement)\.inria\.fr$/.test(url.hostname)
+      ? "inria"
+      : url.hostname === "apply.workable.com" && parts[0] !== "j"
+      ? "workable"
+      : /^(?:boards|job-boards)(?:\.eu)?\.greenhouse\.io$/.test(url.hostname)
       ? "greenhouse"
       : /^jobs(?:\.eu)?\.lever\.co$/.test(url.hostname)
         ? "lever"
@@ -68,7 +73,10 @@ export function detectBoard(value: string, label?: string): SourceDefinition | n
                 ? "teamtailor"
                 : "html";
     if (kind === "html") return null;
-    if (["recruitee", "teamtailor"].includes(kind)) {
+    if (kind === "inria") {
+      url.pathname = "/public/classic/fr/offres";
+      url.search = "?filtre=stage-recherche";
+    } else if (["recruitee", "teamtailor"].includes(kind)) {
       url.pathname = "/";
     } else {
       if (!parts[0] || /^(?:embed|embed\.js)$/i.test(parts[0])) return null;
@@ -76,7 +84,7 @@ export function detectBoard(value: string, label?: string): SourceDefinition | n
       url.pathname = `/${parts[0]}`;
     }
   }
-  url.search = "";
+  if (kind !== "inria") url.search = "";
   const parsed = sourceDefinitionSchema.safeParse({
     id: discoveryId(url.href),
     kind,
@@ -201,6 +209,8 @@ export async function discoverSources(
     maxPages?: number;
     directory?: boolean;
     seeds?: string[];
+    prioritySeeds?: Array<{ url: string; label: string }>;
+    search?: boolean;
   } = {},
 ): Promise<DiscoveryReport> {
   const state = await readDiscoveryState();
@@ -226,12 +236,18 @@ export async function discoverSources(
     enqueueDiscovery(state, source.url, source.label);
   for (const [url, label] of drainObservedEmployers()) enqueueDiscovery(state, url, label);
   for (const url of options.seeds ?? []) enqueueDiscovery(state, url, new URL(url).hostname);
+  for (const seed of options.prioritySeeds ?? []) enqueueDiscovery(state, seed.url, seed.label, 0, undefined, 5);
   const robots = new Map<
     string,
     { rules: ReturnType<typeof parseRobots>; sitemaps: string[] } | null
   >();
   try {
-    if (options.directory !== false) {
+    if (options.search) {
+      const search = await searchDiscoverySeeds();
+      report.warnings.push(...search.warnings);
+      for (const seed of search.seeds) enqueueDiscovery(state, seed.url, seed.label, 0, undefined, 4);
+    }
+    if (options.directory !== false && !state.frontier.some((entry) => (entry.priority ?? 0) > 0 && entry.nextAt <= Date.now())) {
       try {
         report.directoryEmployers = await directoryPage(state);
       } catch (error) {
@@ -241,23 +257,29 @@ export async function discoverSources(
     }
     const maxPages = Math.min(200, Math.max(1, options.maxPages ?? 24));
     const visited = new Set<string>();
+    let priorityPages = 0;
     while (report.pages < maxPages) {
       assertCollectionBudget();
       // Les liens carrières d'une entreprise viennent avant les nouvelles pages d'accueil.
-      const next = state.frontier
-        .filter((entry) => entry.nextAt <= Date.now() && !visited.has(entry.url))
-        .sort((a, b) => b.depth - a.depth || a.nextAt - b.nextAt)[0];
+      const due = state.frontier.filter((entry) => entry.nextAt <= Date.now() && !visited.has(entry.url));
+      const ordinary = priorityPages >= Math.floor(maxPages * 0.75) ? due.filter((entry) => !(entry.priority > 0)) : [];
+      const next = (ordinary.length ? ordinary : due)
+        .sort((a, b) => (b.priority ?? 0) - (a.priority ?? 0) || b.depth - a.depth || a.nextAt - b.nextAt)[0];
       if (!next) break;
       visited.add(next.url);
+      if (next.priority > 0) priorityPages++;
       report.pages++;
       try {
         const board = detectBoard(next.url, next.label);
         if (board) {
+          if ((next.priority ?? 0) > 0) board.priority = "AI";
           const endpoint = boardEndpoint(board);
           // Catalogue embarqué déjà vérifié par son connecteur habituel.
           if (!known.has(endpoint)) {
             const data =
-              board.kind === "teamtailor"
+              board.kind === "inria"
+                ? { jobs: /\/offres\/\d{4}-\d+/.test((await fetchText(endpoint, HTTP)) ?? "") ? [{ title: "Stages recherche Inria" }] : [] }
+                : board.kind === "teamtailor"
                 ? {
                     jobs: (await fetchText(endpoint, HTTP))?.includes("<item")
                       ? [{ title: "RSS public" }]
@@ -265,6 +287,8 @@ export async function discoverSources(
                   }
                 : await fetchJson<Record<string, unknown> | unknown[]>(endpoint, {
                     ...HTTP,
+                    // Ashby publishes full descriptions in its catalogue; some valid feeds exceed 2 MB.
+                    maxBodyBytes: 8_000_000,
                     ...(board.kind === "workday"
                       ? {
                           method: "POST" as const,
@@ -359,6 +383,7 @@ export async function discoverSources(
               maxOffers: 500,
               maxSitemaps: 10,
               maxPages: 10,
+              priority: (next.priority ?? 0) > 0 ? "AI" : "DEFAULT",
             });
             state.sources.push({ definition, evidence: url.href, verifiedAt: Date.now() });
             report.sources.push(definition);
@@ -372,6 +397,7 @@ export async function discoverSources(
                 next.label,
                 next.depth + 1,
                 next.listingUrl ?? url.href,
+                next.priority,
               );
         }
         next.failures = 0;

@@ -35,7 +35,7 @@ export const EDUCATION_LEVELS = [
  */
 export const SPECIALTIES = ["IA", "CYBERSECURITE", "WEB", "DEVOPS", "SOFTWARE", "RESEAUX"] as const;
 
-export const DATE_RANGES = ["24h", "7j", "30j"] as const;
+export const DATE_RANGES = ["24h", "5j", "7j", "30j"] as const;
 export const SORTS = ["pertinence", "date"] as const;
 export const RADII = [5, 10, 20, 25, 30, 50, 100] as const;
 
@@ -185,6 +185,7 @@ export const SPECIALTY_ICONS: Record<(typeof SPECIALTIES)[number], string> = {
 
 export const DATE_RANGE_LABELS: Record<(typeof DATE_RANGES)[number], string> = {
   "24h": "Dernières 24 h",
+  "5j": "5 derniers jours",
   "7j": "7 derniers jours",
   "30j": "30 derniers jours",
 };
@@ -268,7 +269,7 @@ export function dateRangeToTimestamp(
   range: (typeof DATE_RANGES)[number],
   now = Date.now(),
 ): number {
-  const hours = range === "24h" ? 24 : range === "7j" ? 24 * 7 : 24 * 30;
+  const hours = range === "24h" ? 24 : range === "5j" ? 24 * 5 : range === "7j" ? 24 * 7 : 24 * 30;
   return now - hours * 3600 * 1000;
 }
 

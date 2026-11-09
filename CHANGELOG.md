@@ -1,5 +1,14 @@
 # Historique des versions
 
+## 0.5.0 — Stages IA et collecte progressive
+
+Option B mise en œuvre : correction commune/campus et réparation du catalogue, lieux secondaires, thèmes IA complémentaires sans changer les métiers principaux, missions indexées, collecte par lots et rotation persistante, sources IA servies dès le départ avec les autres métiers. Découverte des liens officiels et adaptateurs Workable/Inria.
+
+Option C intégrée par l’accès Tavily officiel sans clé (plafond local 10/jour, 300/mois), avec repli automatique vers B ; clé personnelle facultative. Suivi complet du cycle et filtre cinq jours sans suppression. Migration compatible des données locales et sauvegarde des implantations.
+
+Voir [collecte et configuration](docs/v0.5.0/COLLECTE.md) et [vérifications](docs/v0.5.0/VERIFICATIONS.md).
+
+
 ## 0.4.1 — 8 novembre 2026
 
 - Installateur Windows x64 construit et testé sur un runner natif : installation NSIS, fonctionnement et commande PowerShell utilisant le ZIP validés.

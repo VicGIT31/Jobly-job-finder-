@@ -13,7 +13,8 @@ export function offerMissionText(description: string): string {
     /\b(?:vous (?:integrez|integrerez|rejoignez|rejoindrez|interviendrez|aurez pour)|au sein de (?:l'equipe|notre equipe)|dans le cadre de (?:ce|votre) stage)\b/.exec(
       body,
     );
-  const start = heading?.index ?? introductionEnd?.index ?? 0;
+  const englishHeading = /(?:^|\n)\s*(?:#{1,6}\s*)?(?:about the role|the role|your responsibilities|what you(?:'ll| will) work on)\s*[:：]?/im.exec(body);
+  const start = heading?.index ?? englishHeading?.index ?? introductionEnd?.index ?? 0;
   const mission = body.slice(start);
   const end =
     /(?:^|\n)\s*(?:#{1,6}\s*)?(?:votre profil|profil recherche|qualifications|a propos de nous|nos avantages|pourquoi nous rejoindre|about (?:us|the company)|benefits|equal opportunit)/im.exec(

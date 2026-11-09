@@ -12,6 +12,7 @@ import { runIngestion, IngestionAlreadyRunningError } from "@/server/ingest/run-
 import { expireStaleOffers } from "@/server/ingest/freshness";
 import { sendDailyAlerts } from "@/server/alerts/send";
 import { reconcileSearchIndex } from "@/server/search/reconcile";
+import { getIngestionProgress } from "@/server/ingest/progress";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -39,7 +40,7 @@ export async function GET(request: NextRequest) {
   }));
   const sources = (await getSourceEntries()).map(({ id, connector }) => ({ id, label: connector.label, group: connector.group ?? "TECH" }));
   const selected = await prisma.siteSetting.findUnique({ where: { key: "desktopSources" } });
-  return NextResponse.json({ ready: true, configured: true, offers, runs, settings, sources, selectedSources: selected?.value ?? [], collecting: !!state.desktopCollecting, error: state.desktopError ?? null, messages: messages.filter(Boolean) });
+  return NextResponse.json({ ready: true, configured: true, offers, runs, settings, sources, progress: getIngestionProgress(), selectedSources: selected?.value ?? [], collecting: !!state.desktopCollecting, error: state.desktopError ?? null, messages: messages.filter(Boolean) });
 }
 
 export async function POST(request: NextRequest) {
