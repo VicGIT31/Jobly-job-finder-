@@ -1,0 +1,37 @@
+{
+  "version": "0.5.0",
+  "applicationCommit": "38ebde659c48a182998c004d99d0275ca578dd18",
+  "unitTests": {
+    "files": 50,
+    "passed": 399
+  },
+  "nativeRun": "https://github.com/VicGIT31/Internship-finders/actions/runs/42638328603",
+  "nativePlatforms": [
+    "win32-x64",
+    "darwin-arm64",
+    "darwin-x64"
+  ],
+  "checksPerNativeInstall": 15,
+  "commandInstallTested": true,
+  "publicSourceProbe": {
+    "mistralFrenchInternships": 3,
+    "inriaResearchInternships": 8,
+    "huggingFaceInternships": 0,
+    "writesToPersonalDatabase": false
+  },
+  "tavilyKeyless": {
+    "httpStatus": 200,
+    "defaultLocalDailyLimit": 10,
+    "defaultLocalMonthlyLimit": 300
+  },
+  "thalesToulouseRepair": {
+    "oldRecordsMissingGeo": 31,
+    "resolvedIn30Km": 31,
+    "verifiedInInstalledApplication": true
+  },
+  "sourceDigests": {
+    "mac": "d28d2cdfdfd349b9d4a574d52c67d729c91cce90b43a7b45482bde2cac312dac",
+    "windows": "c20eedd6520891c4bb3aa646b8198c270c6f6408ab0f86113f5c15971f04a71b",
+    "windowsDifferenceReproducedByCRLFCheckout": true
+  }
+}

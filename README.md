@@ -10,6 +10,7 @@ La [version 0.5.0](https://github.com/VicGIT31/Internship-finders/releases/tag/v
 | --- | --- | --- |
 | Windows x64 | [Installateur .exe](https://github.com/VicGIT31/Internship-finders/releases/download/v0.5.0/Jobly-0.5.0-win-x64.exe) | [ZIP Windows](https://github.com/VicGIT31/Internship-finders/releases/download/v0.5.0/Jobly-0.5.0-win32-x64.zip) |
 | macOS Apple Silicon | [Installateur .dmg](https://github.com/VicGIT31/Internship-finders/releases/download/v0.5.0/Jobly-0.5.0-mac-arm64.dmg) | [ZIP Mac](https://github.com/VicGIT31/Internship-finders/releases/download/v0.5.0/Jobly-0.5.0-darwin-arm64.zip) |
+| macOS Intel | [Installateur .dmg](https://github.com/VicGIT31/Internship-finders/releases/download/v0.5.0/Jobly-0.5.0-mac-x64.dmg) | [ZIP Mac Intel](https://github.com/VicGIT31/Internship-finders/releases/download/v0.5.0/Jobly-0.5.0-darwin-x64.zip) |
 
 Le dépôt reste privé : le téléchargement sur GitHub demande un compte autorisé. Vous pouvez ensuite transmettre le ZIP ou l’installateur à votre ami. Les archives automatiques « Source code » sont destinées au développement et n’installent pas l’application.
 
