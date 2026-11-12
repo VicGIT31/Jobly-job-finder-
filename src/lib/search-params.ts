@@ -63,9 +63,9 @@ export const PAGE_SIZE = 12;
 /**
  * Pays des offres indexées (JobOffer.countryCode). "FR" reste le défaut
  * historique (non affiché comme un badge distinctif, voir offer-card.tsx) ;
- * les autres viennent des sources internationales — voir
- * SOURCES_EUROPE_ASIA.md et CONTEXTE_AI_WORK.md §2.7. "XX" = pays non résolu
- * par l'heuristique de localisation des connecteurs ATS.
+ * les autres sont conservés pour les données internationales historiques.
+ * "XX" = pays non résolu. Le périmètre de collecte courant est décrit dans
+ * docs/v0.5.0/COLLECTE.md.
  */
 export const COUNTRY_LABELS: Record<string, string> = {
   FR: "France",
@@ -105,10 +105,8 @@ export const COUNTRY_LABELS: Record<string, string> = {
 export const COUNTRIES = Object.keys(COUNTRY_LABELS);
 
 /**
- * Pays européens mis en avant sur l'accueil (§"focus Europe et France").
- * Sous-ensemble de COUNTRY_LABELS : une mise en avant éditoriale, pas une
- * restriction technique — le filtre `/offres?pays=` reste ouvert à tous les
- * pays indexés (voir SOURCES_EUROPE_ASIA.md pour le reste, notamment Asie).
+ * Sous-ensemble européen de COUNTRY_LABELS conservé pour les consultations
+ * historiques. Cette liste ne définit pas le périmètre de collecte courant.
  */
 export const EUROPEAN_COUNTRIES = [
   "FR",
@@ -131,7 +129,7 @@ export const EUROPEAN_COUNTRIES = [
 ];
 
 // Couvre tout l'enum Prisma : d'anciennes offres hors périmètre peuvent
-// subsister en base (admin) même si seuls stage/alternance sont exposés.
+// subsister en base. Les contrats exposés dépendent des règles du métier.
 export const CONTRACT_LABELS: Record<ContractType, string> = {
   UNKNOWN: "Contrat non précisé",
   INTERIM: "Intérim",
@@ -140,8 +138,7 @@ export const CONTRACT_LABELS: Record<ContractType, string> = {
   STAGE: "Stage",
   ALTERNANCE: "Alternance",
   VIE: "VIE",
-  // Sources internationales (SOURCES_EUROPE_ASIA.md) — hors périmètre
-  // stage/alternance strict des sources françaises.
+  // Contrats génériques et historiques ; le périmètre est vérifié par métier.
   FULL_TIME: "Temps plein",
   PART_TIME: "Temps partiel",
   CONTRACT: "Contrat",
@@ -274,8 +271,8 @@ export function dateRangeToTimestamp(
 }
 
 /**
- * Drapeaux des pays couverts par les sources internationales (Europe/Asie —
- * voir SOURCES_EUROPE_ASIA.md). "FR" n'y figure pas : c'est le défaut
+ * Drapeaux des pays des offres internationales historiques.
+ * "FR" n'y figure pas : c'est le défaut
  * historique, jamais affiché comme un badge distinctif sur les cartes.
  */
 export const COUNTRY_FLAGS: Record<string, string> = {

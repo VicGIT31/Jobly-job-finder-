@@ -1,15 +1,9 @@
 /**
- * Abstraction de fournisseur IA (spec §41, §69 : « build the integration
- * abstraction; implement a development adapter/mock; clearly mark the
- * required environment variable; keep the rest of the feature functional;
- * do not pretend the external call succeeded »).
- *
- * Aucune clé n'est configurée dans ce dépôt (voir CONTEXTE_AI_WORK.md) :
- * `getAiProvider()` retombe sur `MockProvider`, dont la sortie n'est
- * JAMAIS présentée comme « générée par IA » dans l'UI (spec §56 : « "AI"
- * labels with no AI » est un piège explicitement interdit) — voir
- * `isRealAi` ci-dessous, que les composants doivent lire avant d'afficher
- * un libellé « IA ».
+ * Abstraction des brouillons de candidature. Sans ANTHROPIC_API_KEY,
+ * `getAiProvider()` utilise le gabarit déterministe `MockProvider`.
+ * Les composants vérifient `isRealAi` avant d'afficher un libellé « IA » ;
+ * une erreur d'appel réel doit rester explicite. Configuration et limites :
+ * docs/v0.5.0/ANALYSE.md et README.md.
  */
 
 export type Tone = "concise" | "professional" | "enthusiastic" | "technical" | "conversational";

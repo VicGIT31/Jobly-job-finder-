@@ -65,7 +65,7 @@ L’actualisation des offres est automatique ; la mise à jour du programme se f
 
 ## Vérifications de cette livraison
 
-- 373 tests Vitest dans 46 fichiers ; contrôle TypeScript et lint réussis.
+- 399 tests Vitest dans 50 fichiers ; contrôle TypeScript et lint réussis.
 - Windows x64 : compilation native, installation NSIS, 13 contrôles d’exécutable et commande PowerShell sur le véritable ZIP réussis. [Build Windows](https://github.com/VicGIT31/Internship-finders/actions/runs/42486479883).
 - macOS arm64 : installation du DMG, 13 contrôles d’exécutable et commande d’installation depuis le ZIP réussis.
 - Captures à 390, 768 et 1440 px ouvertes et examinées sur les deux plateformes ; recherche, favoris, CV, candidature, sauvegarde/restauration et persistance vérifiés avec des données synthétiques isolées.
@@ -93,6 +93,35 @@ Le [workflow natif](.github/workflows/desktop.yml) permet une construction Windo
 
 Pour le développement web local, utilisez `.env.example` et les services associés. Cette édition personnelle sans authentification doit rester sur loopback ; le backend empaqueté est protégé par un jeton éphémère local.
 
+### Développement web local
+
+Le [Docker Compose](docker-compose.yml) fournit PostgreSQL, Redis, Meilisearch et MinIO. `docker compose up --build` démarre aussi l'application et son worker, applique les migrations, prépare le profil personnel et synchronise la recherche. Le site est accessible sur `http://127.0.0.1:3000`. `docker compose down` arrête les services en conservant leurs volumes.
+
+Pour exécuter Node.js sur l'hôte, démarrez seulement les services d'infrastructure, puis renseignez un `.env` local à partir de [.env.example](.env.example). Si ce fichier existe déjà, conservez-le. Les identifiants PostgreSQL, MinIO et Meilisearch doivent correspondre à ceux des services ; les valeurs d'exemple `.env.example` et Docker Compose ne sont pas toutes identiques.
+
+```sh
+docker compose up -d postgres redis meilisearch minio minio-init
+npm ci
+npx prisma migrate deploy
+npm run db:seed
+npm run dev
+```
+
+Le seed prépare uniquement le profil personnel, sans compte de démonstration ni offre fictive. `npm run dev` et `npm start` lancent déjà Next.js et le worker BullMQ : ne lancez pas un deuxième worker. `dev:web` et `start:web` servent aux vérifications du serveur seul. Les commandes de diagnostic et de réparation sont documentées dans [COLLECTE.md](docs/v0.5.0/COLLECTE.md#commandes-de-diagnostic-et-de-maintenance).
+
+| Configuration web locale | Usage |
+| --- | --- |
+| `DATABASE_URL`, `REDIS_URL` | Données PostgreSQL, verrous et tâches BullMQ |
+| `MEILISEARCH_HOST`, `MEILISEARCH_API_KEY` | Recherche et protection de l'index local |
+| `S3_ENDPOINT`, `S3_REGION`, `S3_ACCESS_KEY`, `S3_SECRET_KEY`, `S3_BUCKET_CV` | Stockage des CV dans MinIO ; le bureau utilise ses fichiers locaux |
+| `INGEST_API_KEY` | Protection de la route d'ingestion de développement |
+| `INGESTION_INTERVAL_MINUTES`, `INGEST_SOURCE_TIMEOUT_SECONDS` | Intervalle des cycles et budget réseau par source |
+| `INGEST_SOURCES`, `JOB_SOURCES_FILE`, `INGEST_CACHE_DIR`, `JOB_ALERTS_DIR` | Sélection des sources, catalogue personnalisé, cache et alertes `.eml` |
+| `EMAIL_PROVIDER`, `EMAIL_FROM`, `RESEND_API_KEY` | Emails en console par défaut ; Resend facultatif en mode web |
+| `ANTHROPIC_API_KEY` | Brouillons IA facultatifs en mode web ; sans clé, gabarit local explicitement identifié |
+
+Le mode personnel n'utilise ni OAuth, ni mot de passe administrateur, ni `AUTH_SECRET`. Les anciens connecteurs JSearch et France Travail OAuth ne sont plus actifs. La collecte directe ne nécessite pas leurs clés. Le complément de découverte Tavily a sa [configuration distincte](docs/v0.5.0/COLLECTE.md#désactiver-ou-configurer-le-complément).
+
 ## Documentation
 
 - [Audit des stages IA, diagnostic Thales et solutions proposées (9 novembre)](docs/audits/2026-11-09-stages-ia.md)
@@ -101,8 +130,11 @@ Pour le développement web local, utilisez `.env.example` et les services associ
 - [Vérifications Windows et Mac](docs/v0.5.0/VERIFICATIONS.md)
 - [Publication et mise à jour des installateurs](docs/v0.5.0/PUBLICATION.md)
 - [Guide d’installation](desktop/delivery/INSTALLER.md) et [historique des versions](CHANGELOG.md)
+- [Architecture du bureau, sécurité et construction native](desktop/README.md)
 
 Les documents 0.3.0, 0.4.0, 0.4.1 et les audits datés décrivent leurs versions respectives. Le code et les documents 0.5.0 font foi pour la version actuelle.
+
+Les anciens documents de contexte, guides web, audits d'octobre et cahier des charges Europe/Asie ont été retirés de l'arborescence courante après consolidation des informations utiles ici, dans l'analyse actuelle et dans le guide de collecte. Ils restent consultables dans [l'état historique du dépôt](https://github.com/VicGIT31/Internship-finders/tree/c6a7be1a03086788a3a52f9844958444f77e3857) ; ce cahier des charges décrit des intentions anciennes, pas des fonctionnalités garanties.
 
 <!-- COMMANDES-INSTALLATION -->
 ## Installation par une commande à copier-coller

@@ -93,9 +93,8 @@ const CONTRACT_MAP: Record<string, ContractType> = {
   "contrat pro": "ALTERNANCE",
   vie: "VIE",
   "volontariat international": "VIE",
-  // Clés dédiées aux connecteurs internationaux (sources/arbetsformedlingen.ts,
-  // sources/ats-boards.ts…) : volontairement distinctes des clés françaises
-  // ci-dessus pour ne jamais changer le classement d'une source existante.
+  // Clés génériques conservées pour les imports et données historiques,
+  // distinctes des clés françaises pour préserver leur interprétation.
   employment_full_time: "FULL_TIME",
   employment_part_time: "PART_TIME",
   employment_contract: "CONTRACT",

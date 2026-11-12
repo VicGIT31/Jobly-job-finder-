@@ -22,11 +22,9 @@ enum ContractType {
   STAGE
   ALTERNANCE
   VIE
-  // Types employeur génériques utilisés par les sources internationales
-  // (spec europe_asia_ai_job_platform_mvp_prompt.md §7). Le périmètre
-  // stage/alternance strict (`ACCEPTED_CONTRACTS` dans normalize.ts) reste
-  // inchangé pour les sources françaises existantes — ces valeurs ne sont
-  // acceptées que pour les connecteurs qui le demandent explicitement.
+  // Types employeur génériques conservés pour les données historiques et
+  // les métiers qui les acceptent. Les règles de chaque univers sont
+  // appliquées à l'ingestion (voir docs/v0.5.0/COLLECTE.md).
   FULL_TIME
   PART_TIME
   CONTRACT
@@ -131,7 +129,7 @@ model User {
   cvUploadedAt    DateTime?
   // Texte brut extrait du PDF à l'upload (src/server/cv/extract-text.ts),
   // pour la comparaison de mots-clés avec une offre (src/server/cv/analyze.ts).
-  // Jamais analysé par IA — voir CONTEXTE_AI_WORK.md.
+  // Comparaison lexicale locale, sans envoi du CV à un modèle IA.
   cvText          String?
 
   accounts      Account[]

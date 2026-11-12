@@ -9,6 +9,7 @@ export async function sourceFingerprint() {
     for (const entry of await readdir(path, { withFileTypes: true })) {
       if (entry.isSymbolicLink() || path === "desktop" && entry.name === "assets") continue;
       const child = join(path, entry.name);
+      if (child.replaceAll("\\", "/") === "scripts/brand-logos/contact-sheet.html") continue;
       if (entry.isDirectory()) await visit(child);
       else if (entry.isFile() && entry.name !== ".DS_Store") files.push(child);
     }

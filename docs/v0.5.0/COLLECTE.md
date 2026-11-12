@@ -65,3 +65,58 @@ En mode web, `TAVILY_API_KEY` ou `JOBLY_DISCOVERY_CONFIG` configurent la clé ; 
 Les annuaires et amorces ne recensent pas tous les recruteurs français. Les documents PDF de laboratoires ne sont pas automatiquement transformés en offres. Les ATS non reconnus peuvent exiger un adaptateur ; les sites refusant l'accès ne sont pas contournés. Il n'y a ni couverture exhaustive, ni gain exponentiel démontré, ni classement sémantique par modèle local dans cette version.
 
 Les flux Workable utilisant un lien générique `/j/...` ne permettent pas un retrait par préfixe propre à l'employeur : ils suivent la fraîcheur et les vérifications disponibles. Les lieux secondaires ambigus ne reçoivent pas de coordonnées inventées. Le rapprochement intersites reste conservateur afin de préserver des sujets de stage distincts.
+
+## Catalogues et ajout de sources
+
+`config/job-sources.json` contient le catalogue employeurs ; `config/personal-sources.json` les recherches personnelles. Les modules finance et barista génèrent leurs recherches dédiées. APEC, HelloWork, Free-Work, LinkedIn invité, The Muse et les alertes locales complètent ces sources. `src/server/ingest/sources/index.ts` assemble les connecteurs actifs. Les anciens connecteurs suédois et ATS internationaux non enregistrés ont été retirés ; les adaptateurs ATS du catalogue courant sont conservés.
+
+Les formats pris en charge comprennent Workday, Greenhouse, Lever, Ashby, SmartRecruiters, Recruitee, Teamtailor, Workable, Inria et les pages HTML/sitemaps avec données structurées. Les endpoints et budgets effectifs sont définis dans le catalogue et `sources/public-boards.ts`. Une entrée activée ou un endpoint HTTP 200 ne garantit ni une collecte complète, ni une offre correspondant au métier et au contrat recherchés.
+
+`JOB_SOURCES_FILE` remplace le catalogue employeurs embarqué ; les définitions découvertes validées peuvent toujours le compléter. `INGEST_SOURCES` sélectionne des identifiants connus (par exemple `airbus`, `thales`, `hellowork.com`, `local-job-alerts`). Sans sélection, toutes les sources activées sont proposées. Sur le bureau, la sélection persistante de **Bureau → Sources de la collecte** s'applique aussi.
+
+Pour ajouter un employeur, partez de son site carrière officiel, vérifiez les liens trouvés et testez les détails d'une offre avant activation. Les pistes de `config/france-career-candidates.json` ne sont pas activées par le seul fait qu'un endpoint répond. `maxPages`, `maxOffers`, `maxSitemaps` et les requêtes bornent chaque connecteur.
+
+## Commandes de diagnostic et de maintenance
+
+Depuis les sources, avec les dépendances installées et la configuration locale préparée :
+
+```sh
+npm run sources:list
+npm run sources:check -- --sources airbus,thales --collect --limit 10 --pages 2
+npm run collect:offers -- --sources airbus,thales --limit 20 --pages 2
+npm run sources:discover -- https://entreprise.fr/carrieres
+npm run sources:expand -- --output reports/france-career-expansion.json
+```
+
+`sources:list` et `sources:check` portent sur le catalogue employeurs ; `collect:offers` utilise l'ensemble des connecteurs sélectionnés et exporte par défaut `reports/collected-offers.json` sans importer dans la base. La découverte manuelle produit des propositions dans `reports/discovered-sources.json`, à vérifier avant activation. `sources:check --include-disabled --collect --sources identifiant` permet de tester une entrée désactivée ajoutée à son catalogue de travail.
+
+Les commandes suivantes modifient la base locale ou l'index :
+
+```sh
+npm run ingest:now
+npm run ingest:file -- reports/collected-offers.json
+npm run search:sync
+npm run offers:refresh
+```
+
+`search:sync` reconstruit l'index depuis PostgreSQL. `offers:refresh` applique les règles de fraîcheur et répare la recherche, sans purge définitive. Pour auditer ou corriger les anciennes classifications :
+
+```sh
+npm run offers:audit
+npm run specialty:backfill -- --dry-run
+```
+
+Après examen des rapports et sauvegarde, `offers:audit -- --apply` et `specialty:backfill` appliquent leurs corrections. `geo:backfill` et `contract:backfill` restent disponibles pour les anciennes données ; ils ne sont pas requis pour démarrer l'application. Les rapports sont écrits dans `reports/`, ignoré par Git.
+
+En mode web, le worker collecte au démarrage puis toutes les deux heures par défaut, entretient la fraîcheur toutes les quinze minutes, réconcilie la recherche chaque heure, traite les alertes à 8 h et lance la purge des vieilles offres à 3 h. Les paramètres de durée de vie se règlent dans `/admin/parametres`. La purge préserve les offres associées à des favoris, masquages ou candidatures. Le bureau ne lance pas cette purge définitive : il conserve les données personnelles et applique la fraîcheur lors de son entretien. Une source partielle ne justifie pas le retrait de tout son catalogue.
+
+## Alertes email locales
+
+Les emails d'alertes peuvent être exportés au format `.eml` dans `data/job-alerts/` ou le dossier défini par `JOB_ALERTS_DIR`. L'arrivée des fichiers reste à organiser dans le client mail : Jobly ne se connecte pas à une boîte Gmail ou Outlook et ne crée pas d'alertes chez un fournisseur. Docker monte le dossier en lecture seule. Si une sélection explicite de sources est utilisée, inclure `local-job-alerts` pour le traitement automatique.
+
+```sh
+npm run alerts:import -- data/job-alerts --export reports/email-offers.json
+npm run alerts:import -- data/job-alerts
+```
+
+La première commande exporte pour inspection ; la seconde importe dans la base. Le parseur utilise le contenu des messages sans charger leurs pixels, images ou redirections. Les champs absents ne sont pas inventés, la date du mail ne devient pas une date de publication et une alerte ne prouve pas que le poste est encore ouvert. Les formats tiers peuvent varier : les tests sur messages synthétiques ne valident pas chaque modèle réel d'alerte. Les emails et exports restent hors Git.
