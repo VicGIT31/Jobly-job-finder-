@@ -3,14 +3,30 @@
  * synonymes de recherche et heuristiques d'expérience. La classification d'une
  * offre elle-même vit côté serveur dans `server/ingest/job-classifier.ts`.
  */
-export const UNIVERSES = ["TECH", "COMMERCE", "FINANCE", "HOSPITALITY", "ASV"] as const;
+export const NATIONAL_DOMAINS = {
+  HEALTH: "Santé & social",
+  CONSTRUCTION: "Bâtiment & travaux publics",
+  INDUSTRY: "Industrie & maintenance",
+  TRANSPORT: "Transport & logistique",
+  EDUCATION: "Éducation & formation",
+  AGRICULTURE: "Agriculture & environnement",
+  PUBLIC_ADMIN: "Administration & droit",
+  CULTURE: "Culture, sport & création",
+  SERVICES: "Services & sécurité",
+  OTHER: "Autres métiers",
+} as const;
+export const UNIVERSES = ["TECH", "COMMERCE", "FINANCE", "HOSPITALITY", "ASV",
+  "HEALTH", "CONSTRUCTION", "INDUSTRY", "TRANSPORT", "EDUCATION", "AGRICULTURE",
+  "PUBLIC_ADMIN", "CULTURE", "SERVICES", "OTHER",
+] as const;
 export type JobUniverse = (typeof UNIVERSES)[number];
 
 export const UNIVERSE_LABELS: Record<JobUniverse, string> = {
   TECH: "Tech & informatique",
   COMMERCE: "Commerce, marketing & communication",
   FINANCE: "Assurance, banque & finance",
-  HOSPITALITY: "Café & barista",
+  HOSPITALITY: "Hôtellerie & restauration",
+  ...NATIONAL_DOMAINS,
   ASV: "Vétérinaire & animalier",
 };
 
@@ -18,7 +34,8 @@ export const UNIVERSE_SHORT_LABELS: Record<JobUniverse, string> = {
   TECH: "Tech",
   COMMERCE: "Commerce & marketing",
   FINANCE: "Assurance & finance",
-  HOSPITALITY: "Barista",
+  HOSPITALITY: "Hôtellerie & restauration",
+  ...NATIONAL_DOMAINS,
   ASV: "ASV & animalier",
 };
 
@@ -29,6 +46,7 @@ export const FAMILY_LABELS: Record<string, string> = {
   CUSTOMER_SERVICE: "Relation client",
   RETAIL: "Commerce en magasin",
   MARKETING: "Marketing & digital",
+  CATEGORY_MANAGER: "Category Manager",
   COMMUNICATION: "Communication",
   ASV: "Auxiliaire vétérinaire (ASV)",
   VET_SUPPORT: "Accueil & gestion de clinique vétérinaire",
@@ -40,6 +58,8 @@ export const FAMILY_LABELS: Record<string, string> = {
   AUDIT_RISK: "Audit, risques & conformité",
   FINANCIAL_MARKETS: "Marchés financiers & investissement",
   BARISTA: "Barista & coffee shop",
+  HOSPITALITY: "Hôtellerie & restauration",
+  ...NATIONAL_DOMAINS,
   OTHER: "Autre métier",
 };
 
@@ -51,10 +71,14 @@ export const UNIVERSE_FAMILIES: Record<Exclude<JobUniverse, "TECH">, string[]> =
     "RETAIL",
     "CUSTOMER_SERVICE",
     "MARKETING",
+    "CATEGORY_MANAGER",
     "COMMUNICATION",
   ],
   FINANCE: ["INSURANCE", "BANKING", "CORPORATE_FINANCE", "ACCOUNTING", "AUDIT_RISK", "FINANCIAL_MARKETS"],
-  HOSPITALITY: ["BARISTA"],
+  HOSPITALITY: ["BARISTA", "HOSPITALITY"],
+  HEALTH: ["HEALTH"], CONSTRUCTION: ["CONSTRUCTION"], INDUSTRY: ["INDUSTRY"],
+  TRANSPORT: ["TRANSPORT"], EDUCATION: ["EDUCATION"], AGRICULTURE: ["AGRICULTURE"],
+  PUBLIC_ADMIN: ["PUBLIC_ADMIN"], CULTURE: ["CULTURE"], SERVICES: ["SERVICES"], OTHER: ["OTHER"],
   ASV: ["ASV", "VET_SUPPORT", "ANIMAL_CARE"],
 };
 
@@ -211,7 +235,12 @@ export const VOCABULARY: Record<string, string[]> = {
     "crm manager",
     "e commerce",
     "ecommerce",
-    "category manager",
+
+  ],
+  CATEGORY_MANAGER: [
+    "category manager", "categorie manager", "category management", "category lead",
+    "chef de categorie", "cheffe de categorie", "responsable de categorie",
+    "gestionnaire de categorie", "gestionnaire de categories", "manager de categorie",
   ],
   COMMUNICATION: [
     "charge de communication",
@@ -257,6 +286,7 @@ export function queryFamilies(query: string, _universe?: string): string[] {
     return ["SALES", "BUSINESS_DEVELOPMENT", "RETAIL", "CUSTOMER_SERVICE"];
   if (/^(veterinaire|veterinary|clinique veterinaire|cabinet veterinaire)$/.test(text))
     return ["ASV", "VET_SUPPORT", "ANIMAL_CARE"];
+  if (VOCABULARY.CATEGORY_MANAGER.some((term) => phrase(text, term))) return ["CATEGORY_MANAGER"];
   if (VOCABULARY.ASV.some((term) => phrase(text, term))) return ["ASV"];
   return Object.entries(VOCABULARY)
     .filter(([family, words]) => family !== "ASV" && words.some((term) => phrase(text, term)))
