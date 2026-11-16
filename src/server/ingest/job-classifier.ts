@@ -330,6 +330,10 @@ export function classifyJob(
 ): JobClassification {
   const heading = fold(cleanTitle(title));
   const input = { title, description, company: context.company };
+  if (VOCABULARY.CATEGORY_MANAGER.some((term) => phrase(heading, term))) {
+    return build("COMMERCE", "CATEGORY_MANAGER", 0.97, "Gestion de catégorie",
+      ["Métier de Category Manager dans l’intitulé"], input);
+  }
   const missions = description ? fold(offerMissionText(description)) : "";
   const company = fold(`${context.company ?? ""} ${context.sector ?? ""}`);
   const intro = description ? fold(htmlToText(description)).slice(0, 700) : "";
@@ -461,7 +465,6 @@ export function classifyJob(
   const commerceByTitle = COMMERCE_ORDER.filter((family) =>
     VOCABULARY[family].some((term) => phrase(heading, term)),
   );
-  const retailCategory = /\b(acheteur|achats)\b.*\bcategory manager\b/.test(heading);
   const student = !context.contract || ["STAGE", "ALTERNANCE"].includes(context.contract);
   const salesDeveloper = DEV_COMMERCIAL.test(heading);
   const tech = !salesDeveloper && isTechOffer(title, description);
@@ -479,16 +482,6 @@ export function classifyJob(
       { ...input, specialty },
     );
   }
-
-  if (retailCategory)
-    return build(
-      "COMMERCE",
-      "RETAIL",
-      0.95,
-      "Achats et gestion de catégorie en distribution",
-      ["Achats et gestion de catégorie"],
-      input,
-    );
 
   if (salesDeveloper && !commerceByTitle.length)
     return build(

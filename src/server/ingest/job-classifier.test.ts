@@ -109,7 +109,10 @@ describe("Commerce, marketing et communication", () => {
     ["Account manager", "SALES"],
     ["Community manager", "COMMUNICATION"],
     ["Chargé de communication", "COMMUNICATION"],
-    ["Acheteur category manager", "RETAIL"],
+    ["Acheteur category manager", "CATEGORY_MANAGER"],
+    ["Cheffe de catégorie e-commerce (CDI)", "CATEGORY_MANAGER"],
+    ["Responsable de catégorie produits", "CATEGORY_MANAGER"],
+    ["Stage Category Manager Data et assortiment", "CATEGORY_MANAGER"],
   ])("classe %s", (title, expected) => expect(family(title)).toBe(`COMMERCE/${expected}`));
 
   it("tient « développeur commercial » pour un poste de vente, pas de logiciel", () => {
