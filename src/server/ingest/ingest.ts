@@ -1,3 +1,4 @@
+import { nationalDomain } from "./national-taxonomy";
 import { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { slugifyFr } from "@/lib/slug";
@@ -122,8 +123,10 @@ export async function processIngest(
           sector: normalized.sector,
           contract: normalized.contractType,
         });
-        const scope = isInScope(classification, normalized.contractType, normalized);
-        if (!scope.ok) throw new NormalizationError(scope.reason, "scope");
+        if (!options.national) {
+          const scope = isInScope(classification, normalized.contractType, normalized);
+          if (!scope.ok) throw new NormalizationError(scope.reason, "scope");
+        }
       } catch (err) {
         const reason = err instanceof NormalizationError ? err.message : "Normalisation impossible";
         summary.rejected++;
@@ -142,6 +145,11 @@ export async function processIngest(
       );
       // Domaine, métier et spécialité déduits ici plutôt que dans chaque
       // connecteur : toute source, présente ou future, est classée de la même façon.
+      const inferredDomain = options.national
+        ? nationalDomain(normalized.title, normalized.sector) ?? options.nationalDomains?.get(index)
+        : undefined;
+      const universe = classification.universe === "OTHER" ? inferredDomain ?? "OTHER" : classification.universe;
+      const family = classification.universe === "OTHER" ? universe : classification.family;
       const specialty = classification.specialty;
       const rawLocations = parsed.data.locations;
       // Attribution : la source portée par l'offre prime (agrégateur multi-sites).
@@ -149,8 +157,8 @@ export async function processIngest(
       const personalFields = {
         tags: [...new Set([...classification.tags, ...(classification.universe === "TECH" ? aiTopics(normalized.title, normalized.description) : [])])],
         ...(parsed.data.siteLabel ? { siteLabel: parsed.data.siteLabel } : {}),
-        universe: classification.universe,
-        jobFamily: classification.family,
+        universe,
+        jobFamily: family,
         experienceLevel: normalized.experienceLevel,
         qualificationText: normalized.qualificationText,
         salaryPeriod: normalized.salaryPeriod,
@@ -279,8 +287,8 @@ export async function processIngest(
                 : "Annonce vérifiée, contenu inchangé",
           },
         });
-        await queueSearch(updated);
         await recordOrigin(updated.id);
+        await queueSearch(updated);
         continue;
       }
 
@@ -341,8 +349,8 @@ export async function processIngest(
             rawTitle: normalized.title,
           },
         });
-        await queueSearch(created);
         await recordOrigin(created.id);
+        await queueSearch(created);
       } catch (err) {
         // Course concurrente : le hash unique a été inséré entre-temps → doublon
         if (err instanceof Prisma.PrismaClientKnownRequestError && err.code === "P2002") {

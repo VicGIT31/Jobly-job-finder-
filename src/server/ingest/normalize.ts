@@ -181,6 +181,8 @@ export type NormalizeOptions = {
   /** Périmètre de contrats accepté par la source appelante. Défaut : stage/alternance uniquement. */
   acceptedContracts?: ReadonlySet<ContractType>;
   personal?: boolean;
+  national?: boolean;
+  nationalDomains?: ReadonlyMap<number, import("@/lib/job-taxonomy").JobUniverse>;
 };
 
 /**

@@ -71,6 +71,7 @@ export type PersonalOfferInput = {
   logo?: string;
   salaryMin?: number;
   salaryMax?: number;
+  sector?: string;
   salaryPeriod?: "YEAR" | "MONTH" | "HOUR" | "UNKNOWN";
 };
 
@@ -96,7 +97,7 @@ const roundCents = (value: number) => Math.round(value * 100) / 100;
  * `null` hors périmètre (métier non suivi, hors France) : la géolocalisation,
  * réseau compris, n'est tentée qu'après le classement.
  */
-export async function makePersonalOffer(input: PersonalOfferInput): Promise<RawOffer | null> {
+export async function makePersonalOffer(input: PersonalOfferInput, { national = false } = {}): Promise<RawOffer | null> {
   const description = htmlToText(input.description);
   if ((input.country && !/^(fr|france)$/i.test(input.country)) || description.length < 20)
     return null;
@@ -105,7 +106,7 @@ export async function makePersonalOffer(input: PersonalOfferInput): Promise<RawO
     company: input.company,
     contract: contractKey.toUpperCase(),
   });
-  if (!isInScope(classification, contractKey.toUpperCase()).ok) return null;
+  if (!national && !isInScope(classification, contractKey.toUpperCase()).ok) return null;
 
   const city = (input.city ?? "Localisation non précisée").replace(/\s*\(\d{2,5}\)\s*$/, "").trim();
   const geo =
@@ -115,7 +116,7 @@ export async function makePersonalOffer(input: PersonalOfferInput): Promise<RawO
     Number.isFinite(input.lng)
       ? { lat: input.lat, lng: input.lng }
       : await geocodeCityFull(city);
-  if (!isInScope(classification, contractKey.toUpperCase(), { city, latitude: geo?.lat, longitude: geo?.lng }).ok) return null;
+  if (!national && !isInScope(classification, contractKey.toUpperCase(), { city, latitude: geo?.lat, longitude: geo?.lng }).ok) return null;
   const dates: { publishedAt?: Date; validThrough?: Date } = {};
   for (const field of ["publishedAt", "validThrough"] as const) {
     const value = input[field];
@@ -133,7 +134,7 @@ export async function makePersonalOffer(input: PersonalOfferInput): Promise<RawO
     description,
     city: city.slice(0, 120),
     countryCode: "FR",
-    sector: SECTORS[classification.universe as keyof typeof SECTORS],
+    sector: input.sector ?? SECTORS[classification.universe as keyof typeof SECTORS] ?? "Non renseigné",
     contractType: contractKey,
     remotePolicy: remote,
     educationLevel: inferEducationLevel(input.title, description),
