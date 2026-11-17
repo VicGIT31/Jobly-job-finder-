@@ -25,22 +25,21 @@ export async function expireStaleOffers(now = new Date()): Promise<number> {
 
   const stale = await prisma.jobOffer.findMany({
     where: {
-      status: "ACTIVE",
-      OR: [{ lastSeenAt: { lt: threshold } }, { validThrough: { lte: now } }],
+      OR: [{ status: "ACTIVE", lastSeenAt: { lt: threshold } }, { status: { in: ["ACTIVE", "UNCERTAIN"] }, validThrough: { lte: now } }],
     },
-    select: { id: true, universe: true, validThrough: true },
+    select: { id: true, validThrough: true },
   });
   if (stale.length === 0) return 0;
 
   let expired = 0;
-  const personalUnknown = stale.filter((offer) => ["TECH", "COMMERCE", "ASV", "FINANCE", "HOSPITALITY"].includes(offer.universe) && !(offer.validThrough && offer.validThrough <= now));
+  const personalUnknown = stale.filter((offer) => !(offer.validThrough && offer.validThrough <= now));
   const uncertainIds = new Set(personalUnknown.map(({ id }) => id));
   const confirmed = stale.filter(({ id }) => !uncertainIds.has(id));
   for (const [group, status] of [[confirmed, "EXPIRED"], [personalUnknown, "UNCERTAIN"]] as const) {
     for (let offset = 0; offset < group.length; offset += 500) {
       const ids = group.slice(offset, offset + 500).map((offer) => offer.id);
       const result = await prisma.jobOffer.updateMany({
-        where: { id: { in: ids }, status: "ACTIVE", OR: [{ lastSeenAt: { lt: threshold } }, { validThrough: { lte: now } }] },
+        where: { id: { in: ids }, ...(status === "EXPIRED" ? { status: { in: ["ACTIVE", "UNCERTAIN"] }, validThrough: { lte: now } } : { status: "ACTIVE", lastSeenAt: { lt: threshold }, OR: [{ validThrough: null }, { validThrough: { gt: now } }] }) },
         data: { status },
       });
       expired += result.count;

@@ -22,10 +22,8 @@ describe("expiration automatique", () => {
     expect(await expireStaleOffers(now)).toBe(1);
     expect(mocks.update.mock.calls[0][0].where).toMatchObject({
       status: "ACTIVE",
-      OR: [
-        { lastSeenAt: { lt: new Date("2026-10-14T12:00:00Z") } },
-        { validThrough: { lte: now } },
-      ],
+      lastSeenAt: { lt: new Date("2026-10-14T12:00:00Z") },
+      OR: [{ validThrough: null }, { validThrough: { gt: now } }],
     });
     expect(mocks.sync).toHaveBeenCalledOnce();
   });
@@ -34,6 +32,16 @@ describe("expiration automatique", () => {
     mocks.update.mockResolvedValue({ count: 1 });
     await expireStaleOffers();
     expect(mocks.update.mock.calls[0][0].data.status).toBe("UNCERTAIN");
+  });
+  it("expire aussi une offre incertaine dont la date limite est dépassée", async () => {
+    const now = new Date("2026-10-21T12:00:00Z");
+    mocks.find.mockResolvedValueOnce([{ id: "expired", validThrough: new Date(now.getTime() - 1000) }]).mockResolvedValueOnce([]);
+    mocks.update.mockResolvedValue({ count: 1 });
+    expect(await expireStaleOffers(now)).toBe(1);
+    expect(mocks.update.mock.calls[0][0]).toMatchObject({
+      where: { status: { in: ["ACTIVE", "UNCERTAIN"] }, validThrough: { lte: now } },
+      data: { status: "EXPIRED" },
+    });
   });
   it("n'écrit rien lorsque toutes les annonces sont fraîches", async () => {
     mocks.find.mockResolvedValue([]);
