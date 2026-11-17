@@ -1,3 +1,4 @@
+import { NationalConnector } from "./national";
 import { AutoDiscoveryConnector } from "./auto-discovery";
 import { baristaConnectors } from "./barista";
 import { financeConnectors } from "./finance";
@@ -36,6 +37,7 @@ export async function getSourceEntries(): Promise<SourceEntry[]> {
       ? await (await import("@/server/personal/search-area")).getSearchArea()
       : undefined;
   return [
+    { id: "national", connector: new NationalConnector() },
     ...personalConnectors(area),
     ...baristaConnectors(),
     ...financeConnectors(),

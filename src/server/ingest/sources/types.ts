@@ -7,11 +7,12 @@ import type { RawOffer } from "@/server/ingest/normalize";
  * charge de la normalisation, de la déduplication et du rejet hors périmètre
  * (seuls stage et alternance sont conservés).
  */
-export type SourceGroup = "TECH" | "COMMERCE" | "FINANCE" | "HOSPITALITY" | "ASV" | "RECRUITERS";
+export type SourceGroup = "TECH" | "COMMERCE" | "FINANCE" | "HOSPITALITY" | "ASV" | "RECRUITERS" | "NATIONAL";
 export type CollectionOptions = { onBatch?: (offers: RawOffer[]) => Promise<void> };
 
 export interface SourceConnector {
   readonly personal?: boolean;
+  readonly national?: boolean;
   readonly priority?: "AI" | "DEFAULT";
   /** Domaine affiché au Bureau pour regrouper les sources. Absent = tech. */
   readonly group?: SourceGroup;

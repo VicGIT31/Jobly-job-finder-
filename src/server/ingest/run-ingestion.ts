@@ -114,9 +114,15 @@ async function runConnector(connector: SourceConnector, signal?: AbortSignal, cy
   const seen = new Set<string>();
   const summary: IngestSummary = { received: 0, created: 0, updated: 0, duplicates: 0, rejected: 0, errors: [], indexingErrors: 0 };
   const onBatch = async (batch: import("./normalize").RawOffer[]) => {
-    const offers = batch.filter((offer) => !seen.has(offer.sourceUrl) && (offer.countryCode ?? "FR").toUpperCase() === "FR" && (connector.personal || classifyJob(offer.title, offer.description).universe !== "OTHER"));
+    const offers = batch.filter((offer) => !seen.has(offer.sourceUrl) && (offer.countryCode ?? "FR").toUpperCase() === "FR" && (connector.national || connector.personal || classifyJob(offer.title, offer.description).universe !== "OTHER"));
     if (!offers.length) return;
-    const part = await processIngest(connector.sourceSite, offers, { acceptedContracts: connector.acceptedContracts, personal: connector.personal });
+    const nationalDomains = connector.national
+      ? await (await import("./national-ai")).enrichNationalBatch(offers, signal)
+      : undefined;
+    const part = await processIngest(connector.sourceSite, offers, {
+      acceptedContracts: connector.acceptedContracts, personal: connector.personal,
+      national: connector.national, nationalDomains,
+    });
     for (const key of ["received", "created", "updated", "duplicates", "rejected", "indexingErrors"] as const) summary[key] += part[key] ?? 0;
     summary.errors.push(...(part.errors ?? []).slice(0, 100 - summary.errors.length));
     offers.forEach((offer) => seen.add(offer.sourceUrl));
@@ -143,7 +149,7 @@ async function runConnector(connector: SourceConnector, signal?: AbortSignal, cy
     const offers = fetched.filter(
       (offer) =>
         (offer.countryCode ?? "FR").toUpperCase() === "FR" &&
-        (connector.personal || classifyJob(offer.title, offer.description).universe !== "OTHER"),
+        (connector.national || connector.personal || classifyJob(offer.title, offer.description).universe !== "OTHER"),
     );
     const prefixes = connector.requestPrefixes ?? [
       `https://www.${connector.sourceSite}/`,
