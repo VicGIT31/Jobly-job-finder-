@@ -1,4 +1,5 @@
 [
+  {"id": "hellowork-category-manager", "label": "HelloWork · Category Manager · France", "kind": "hellowork-category", "url": "https://www.hellowork.com/fr-fr/emploi/metier_category-manager.html", "priority": 0, "universe": "COMMERCE", "maxPages": 1, "maxDetails": 20},
   {"id": "anicura-asv", "label": "AniCura France", "kind": "teamtailor", "url": "https://emplois.anicura.fr/jobs.rss", "company": "AniCura", "priority": 1, "universe": "ASV"},
   {"id": "ft-commerce-toulouse", "label": "France Travail · commerce Toulouse", "kind": "france-travail", "url": "https://candidat.francetravail.fr/offres/recherche", "query": "commercial", "place": "31555", "priority": 2, "universe": "COMMERCE"},
   {"id": "ft-marketing-toulouse", "label": "France Travail · marketing Toulouse", "kind": "france-travail", "url": "https://candidat.francetravail.fr/offres/recherche", "query": "marketing", "place": "31555", "priority": 2, "universe": "COMMERCE"},

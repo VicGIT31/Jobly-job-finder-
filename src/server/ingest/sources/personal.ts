@@ -271,7 +271,12 @@ export class PersonalConnector implements SourceConnector {
         }
         url.searchParams.set("p", String(page));
       } else if (page > 1) url.searchParams.set("paged", String(page));
-      const html = await fetchText(url, { ...HTTP, cacheTtlMs: 10 * 60000 });
+      const category = source.kind === "hellowork-category";
+      if (category && !(await robotsAllows(url))) {
+        this.warnings.push("Liste exclue par robots.txt");
+        break;
+      }
+      const html = await fetchText(url, { ...HTTP, publicOnly: category, cacheTtlMs: 10 * 60000 });
       if (!html) {
         this.warnings.push("Page de recherche inaccessible");
         break;
@@ -302,7 +307,7 @@ export class PersonalConnector implements SourceConnector {
         const pattern =
           source.kind === "france-travail"
             ? /\/offres\/recherche\/detail\/[A-Z0-9]+$/i
-            : source.kind === "hellowork"
+            : (source.kind === "hellowork" || category)
               ? /\/fr-fr\/emplois\/\d+\.html/
               : new RegExp(source.pattern!);
         if (
@@ -340,7 +345,10 @@ export class PersonalConnector implements SourceConnector {
     const rotation = selectCatalogDetails(ordered, detailBudget, source.rotatePages ? await readCatalogCursor(`${source.id}:detail`) : "");
     const results = await mapPool(rotation.selected, 3, async ([url]) => {
       if (source.kind === "france-travail") return this.franceTravail(url);
-      return this.detail(url);
+      const offer = await this.detail(url);
+      if (source.kind !== "hellowork-category" || !offer) return offer;
+      if (classifyJob(offer.title, offer.description).family !== "CATEGORY_MANAGER") return null;
+      return { ...offer, sourceSite: this.sourceSite };
     });
     offers.push(...results.filter((offer): offer is RawOffer => !!offer));
     if (source.rotatePages) {
@@ -355,7 +363,7 @@ export class PersonalConnector implements SourceConnector {
   private async detail(url: string, hint: { publishedAt?: string } = {}): Promise<RawOffer | null> {
     const { definition: source } = this;
     if (source.kind !== "hellowork" && !(await robotsAllows(url))) return null;
-    const html = await fetchText(url, { ...HTTP, cacheTtlMs: 60 * 60000 });
+    const html = await fetchText(url, { ...HTTP, publicOnly: source.kind === "hellowork-category", cacheTtlMs: 60 * 60000 });
     if (!html) return null;
     const $ = load(html);
     const posting = extractJobPosting(html);
