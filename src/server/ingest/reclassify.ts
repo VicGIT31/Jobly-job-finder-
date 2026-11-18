@@ -42,7 +42,7 @@ export async function ensureClassification(): Promise<{ reclassified: number } |
       const data = {
         tags,
         ...(resolved ? { city: resolved.city, latitude: resolved.lat, longitude: resolved.lng, locationPrecise: true, siteLabel: offer.siteLabel ?? offer.city } : {}),
-        ...(!isInScope(job, offer.contractType, offer).ok && offer.status === "ACTIVE" ? { status: "EXPIRED" as const } : {}),
+        ...(!offer.sourceSite.startsWith("francetravail.fr/national") && !isInScope(job, offer.contractType, offer).ok && offer.status === "ACTIVE" ? { status: "EXPIRED" as const } : {}),
         universe: job.universe,
         jobFamily: job.family,
         experienceLevel: experienceFrom(offer.title, offer.description),
