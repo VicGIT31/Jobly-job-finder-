@@ -1,3 +1,4 @@
+import { isSearchRebuilding } from "./reconcile";
 import type { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { getMeili, OFFERS_INDEX } from "@/lib/meilisearch";
@@ -172,6 +173,7 @@ async function buildPlan(input: OfferSearchInput): Promise<Plan | null> {
 export async function searchOffers(input: OfferSearchInput): Promise<OfferSearchResult> {
   const plan = await buildPlan(input);
   if (!plan) return EMPTY_RESULT;
+  if (isSearchRebuilding()) return searchWithPostgres(plan);
   try {
     return await searchWithMeilisearch(plan);
   } catch (err) {

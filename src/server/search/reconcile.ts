@@ -3,8 +3,19 @@ import { getMeili, configureOffersIndex, OFFERS_INDEX } from "@/lib/meilisearch"
 import { removeOffersFromSearch, syncOffersToSearch } from "./sync";
 import { ensureClassification } from "@/server/ingest/reclassify";
 
+type Reconciliation = Promise<{ indexed: number; removed: number }>;
+const state = globalThis as typeof globalThis & { joblyReconciliation?: Reconciliation };
+export const isSearchRebuilding = () => Boolean(state.joblyReconciliation);
+
 /** Répare aussi les échecs d'indexation d'un cycle précédent. */
 export async function reconcileSearchIndex(): Promise<{ indexed: number; removed: number }> {
+  if (!state.joblyReconciliation) {
+    state.joblyReconciliation = rebuild().finally(() => { state.joblyReconciliation = undefined; });
+  }
+  return state.joblyReconciliation;
+}
+
+async function rebuild() {
   // Le classement d'abord : l'index est reconstruit depuis des offres déjà reclassées.
   await ensureClassification();
   await configureOffersIndex();
