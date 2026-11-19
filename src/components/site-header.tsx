@@ -25,7 +25,7 @@ export async function SiteHeader() {
           <JoblyLogo size="md" />
         </Link>
         <SiteNav
-          isAdmin
+          isAdmin={process.env.JOBLY_DESKTOP === "1"}
           isLoggedIn={Boolean(user)}
           userName={user?.name ?? user?.email ?? null}
         />

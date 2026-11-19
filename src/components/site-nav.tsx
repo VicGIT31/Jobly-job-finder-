@@ -8,7 +8,8 @@ import { ThemeToggle } from "@/components/theme-toggle";
 import { CommandMenu } from "@/components/command-menu";
 
 const LINKS = [
-  { href: "/offres", label: "Offres" },
+  { href: "/offres", label: "Trouver un emploi" },
+  { href: "/assistant", label: "Assistant" },
   { href: "/entreprises", label: "Entreprises" },
 ] as const;
 

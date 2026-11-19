@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { version } from "../../package.json";
+import pkg from "../../package.json";
 import { JoblyLogo } from "@/components/brand/jobly-logo";
 
 const COLUMNS = [
@@ -7,10 +7,10 @@ const COLUMNS = [
     title: "Explorer",
     links: [
       { href: "/offres", label: "Toutes les offres" },
-      { href: "/offres?univers=TECH", label: "Tech · stages & alternances" },
+      { href: "/offres?univers=TECH", label: "Tech & informatique" },
       { href: "/offres?univers=COMMERCE", label: "Commerce, marketing & com" },
       { href: "/offres?univers=FINANCE&national=1", label: "Assurance, banque & finance" },
-      { href: "/offres?univers=HOSPITALITY&national=1", label: "Café & barista" },
+      { href: "/offres?metier=BARISTA", label: "Café & barista" },
       { href: "/offres?univers=ASV", label: "ASV & métiers animaliers" },
     ],
   },
@@ -23,9 +23,9 @@ const COLUMNS = [
     ],
   },
   {
-    title: `Jobly ${version}`,
+    title: `Jobly ${pkg.version}`,
     links: [
-      { href: "/bureau", label: "Actualisation & données" },
+      { href: "/assistant", label: "Assistant de collecte" },
       { href: "/mon-espace", label: "Profil & CV" },
       { href: "/mon-espace/confidentialite", label: "Confidentialité" },
     ],
@@ -35,10 +35,10 @@ const COLUMNS = [
 export async function SiteFooter() {
   // Accroche modifiable depuis `/admin/parametres`.
   const tagline =
-    "Votre recherche personnelle d’emploi : tech, commerce, assurance, banque, finance, barista, marketing et métiers animaliers.";
+    "Votre recherche d’emploi, partout en France.";
 
   return (
-    <footer className="relative mt-24 overflow-hidden border-t border-line bg-paper">
+    <footer className="relative mt-16 overflow-hidden border-t border-line bg-paper">
       <div className="container-page grid grid-cols-1 gap-12 py-14 lg:grid-cols-[1.2fr_2fr]">
         <div>
           <JoblyLogo size="md" />
@@ -73,12 +73,6 @@ export async function SiteFooter() {
         </p>
       </div>
 
-      {/* Pseudo-élément : texte décoratif hors de l'arbre d'accessibilité. */}
-      <div
-        aria-hidden="true"
-        data-word="jobly"
-        className="pointer-events-none -mb-[0.3em] select-none text-center font-sans text-[26vw] font-semibold leading-[0.8] tracking-[-0.08em] text-ink/[0.04] before:content-[attr(data-word)]"
-      />
     </footer>
   );
 }
