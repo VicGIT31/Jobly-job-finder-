@@ -20,7 +20,7 @@ export const seoSettingsSchema = z.object({
     .trim()
     .min(1)
     .max(140)
-    .default("Jobly — Le job board des étudiants et jeunes diplômés"),
+    .default("Jobly — Offres d’emploi en France"),
   titleTemplate: z.string().trim().min(1).max(80).default("%s · Jobly"),
   description: z
     .string()
@@ -28,9 +28,9 @@ export const seoSettingsSchema = z.object({
     .min(1)
     .max(320)
     .default(
-      "Stages et alternances : Jobly agrège les meilleures offres pour étudiants et jeunes diplômés et vous redirige directement vers la source.",
+      "Jobly rassemble des offres d’emploi, de stage et d’alternance en France et vous redirige vers les annonces d’origine.",
     ),
-  keywords: z.string().trim().max(400).default("stage, alternance, tech, informatique, France"),
+  keywords: z.string().trim().max(400).default("emploi, stage, alternance, France"),
   /** Domaine canonique public (vide = `NEXT_PUBLIC_APP_URL`). */
   canonicalUrl: z.string().trim().max(200).default(""),
   /** `false` → `noindex, nofollow` global + robots.txt fermé (pré-production). */
