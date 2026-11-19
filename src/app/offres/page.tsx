@@ -8,9 +8,9 @@ import { SearchClient } from "@/components/offers/search-client";
 export const dynamic = "force-dynamic";
 
 export const metadata: Metadata = {
-  title: "Offres : tech, commerce, assurance, finance, barista & ASV",
+  title: "Offres d’emploi en France",
   description:
-    "Recherchez parmi les offres de stage, d'alternance et d'emploi : tech, commerce, assurance, banque, finance, marketing, communication, barista, auxiliaires vétérinaires et métiers animaliers. Filtres par domaine, métier, ville, rayon, contrat et expérience.",
+    "Explorez les offres d’emploi, de stage et d’alternance en France, par domaine, métier, ville et contrat.",
 };
 
 /**
@@ -34,19 +34,11 @@ export default async function OffresPage({
 
   return (
     <div className="container-page pb-8 pt-8 sm:pt-12">
-      <header className="flex flex-wrap items-end justify-between gap-x-10 gap-y-3">
-        <div>
-          <p className="eyebrow">Catalogue · tech, commerce, assurance, finance, barista &amp; ASV</p>
-          <h1 className="mt-3 text-display-sm font-semibold">
-            Trouvez votre <span className="serif-accent text-accent">prochain poste</span>.
-          </h1>
-        </div>
-        <p className="max-w-sm text-sm leading-relaxed text-ink/60">
-          Recherchez un métier, une entreprise ou une ville, puis postulez directement sur
-          l&apos;annonce d&apos;origine. La couverture n&apos;est jamais exhaustive.
-        </p>
+      <header className="mb-6">
+        <h1 className="text-3xl font-semibold sm:text-4xl">Offres d’emploi en France</h1>
+        <p className="mt-2 text-ink/70">Recherchez parmi les annonces collectées par Jobly.</p>
       </header>
-      <div className="mt-6">
+      <div>
         <SearchClient
           initialResult={initialResult}
           isLoggedIn

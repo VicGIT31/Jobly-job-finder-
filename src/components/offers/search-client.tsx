@@ -42,6 +42,7 @@ import {
 import { DURATION, SPRING } from "@/components/motion/tokens";
 import { Segmented } from "@/components/ui/segmented";
 import { OfferCard } from "./offer-card";
+import { OfferWorkspace } from "./offer-workspace";
 import { ResultsSkeleton } from "./skeletons";
 import { FacetPanel, type FacetKey } from "./facet-panel";
 import { CollectionBar } from "./collection-bar";
@@ -93,6 +94,8 @@ export function SearchClient({
 }) {
   const [state, setState] = useQueryStates(searchStateParsers, { history: "replace" });
   const [filtersOpen, setFiltersOpen] = useState(false);
+  const filterTrigger = useRef<HTMLButtonElement>(null);
+  const filterDialog = useRef<HTMLDivElement>(null);
   const searchInputRef = useRef<HTMLInputElement>(null);
   const resultsTopRef = useRef<HTMLDivElement>(null);
 
@@ -296,7 +299,7 @@ export function SearchClient({
   useEffect(() => {
     function onKey(e: KeyboardEvent) {
       const target = e.target as HTMLElement;
-      if (e.key !== "/" || e.metaKey || e.ctrlKey) return;
+      if (e.key !== "/" || e.metaKey || e.ctrlKey || filterDialog.current) return;
       if (target.closest("input, textarea, select, [contenteditable]")) return;
       e.preventDefault();
       searchInputRef.current?.focus();
@@ -308,12 +311,28 @@ export function SearchClient({
   // Tiroir de filtres mobile : Échap pour fermer, défilement de fond bloqué.
   useEffect(() => {
     if (!filtersOpen) return;
-    const onKey = (e: KeyboardEvent) => e.key === "Escape" && setFiltersOpen(false);
+    const trigger = filterTrigger.current;
+    const onKey = (event: KeyboardEvent) => {
+      if (event.key === "Escape") { event.preventDefault(); setFiltersOpen(false); return; }
+      if (event.key !== "Tab") return;
+      const controls = [...(filterDialog.current?.querySelectorAll<HTMLElement>(
+        'button:not([disabled]), input:not([disabled]), select:not([disabled]), summary, a[href]',
+      ) ?? [])].filter((control) => control.getClientRects().length > 0);
+      const first = controls[0];
+      const last = controls.at(-1);
+      if (!first || !last) return;
+      if (event.shiftKey && (document.activeElement === first || !filterDialog.current?.contains(document.activeElement))) {
+        event.preventDefault(); last.focus();
+      } else if (!event.shiftKey && (document.activeElement === last || !filterDialog.current?.contains(document.activeElement))) {
+        event.preventDefault(); first.focus();
+      }
+    };
     document.addEventListener("keydown", onKey);
     document.body.style.overflow = "hidden";
     return () => {
       document.removeEventListener("keydown", onKey);
       document.body.style.overflow = "";
+      trigger?.focus();
     };
   }, [filtersOpen]);
 
@@ -379,7 +398,7 @@ export function SearchClient({
     <MotionProvider>
       <div>
         {/* Barre de recherche collante : le point d'entrée principal du catalogue. */}
-        <div className="sticky top-[var(--header-h)] z-30 -mx-4 bg-canvas/85 px-4 py-3 backdrop-blur-xl backdrop-saturate-150 sm:-mx-6 sm:px-6 lg:-mx-8 lg:px-8">
+        <div className="sticky top-[var(--header-h)] z-30 -mx-4 border-b border-line bg-canvas px-4 py-3 sm:-mx-6 sm:px-6 lg:-mx-8 lg:px-8">
           <search role="search" aria-label="Recherche d'offres" className="flex gap-2">
             <div className="flex min-w-0 flex-1 flex-col rounded-xl border border-line bg-paper shadow-card transition-[border-color,box-shadow] duration-base focus-within:border-accent focus-within:shadow-ring sm:flex-row sm:items-stretch">
               <div className="relative min-w-0 flex-1">
@@ -422,6 +441,7 @@ export function SearchClient({
               type="button"
               className="relative grid w-12 shrink-0 place-items-center self-start rounded-xl border border-line bg-paper shadow-card transition-colors hover:border-ink/25 lg:hidden"
               style={{ height: 48 }}
+              ref={filterTrigger}
               aria-expanded={filtersOpen}
               aria-controls="filtres-mobile"
               onClick={() => setFiltersOpen(true)}
@@ -437,7 +457,7 @@ export function SearchClient({
           </search>
         </div>
 
-        <div className="mt-6 grid grid-cols-1 gap-10 lg:grid-cols-[264px_minmax(0,1fr)]">
+        <div className="mt-6 grid grid-cols-1 gap-6 lg:grid-cols-[218px_minmax(0,1fr)] xl:gap-8">
           <div className="hidden lg:block">
             <div className="scrollbar-none sticky top-[calc(var(--header-h)+88px)] max-h-[calc(100vh-var(--header-h)-108px)] overflow-y-auto pb-6 pr-1">
               {facetPanel}
@@ -633,9 +653,13 @@ export function SearchClient({
                   />
                 )
               ) : (
+                <>
+                <div className={isPlaceholderData ? "pointer-events-none opacity-50" : ""}>
+                  <OfferWorkspace offers={result.hits} />
+                </div>
                 <div
                   key={listKey}
-                  className={`grid grid-cols-1 gap-3 transition-opacity duration-base ${
+                  className={`grid grid-cols-1 gap-3 transition-opacity duration-base xl:hidden ${
                     isPlaceholderData ? "pointer-events-none opacity-50" : ""
                   }`}
                   aria-busy={isPlaceholderData}
@@ -651,6 +675,7 @@ export function SearchClient({
                     </div>
                   ))}
                 </div>
+                </>
               )}
             </div>
 
@@ -673,6 +698,7 @@ export function SearchClient({
                 onClick={() => setFiltersOpen(false)}
               />
               <m.div
+                ref={filterDialog}
                 id="filtres-mobile"
                 role="dialog"
                 aria-modal="true"
