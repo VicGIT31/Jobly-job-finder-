@@ -242,7 +242,7 @@ export default async function OffrePage({
 
       <div className="mt-8 grid grid-cols-[minmax(0,1fr)] gap-10 lg:grid-cols-[minmax(0,1fr)_360px] lg:gap-14">
         <article className="min-w-0">
-          <header>
+          <header className="rounded-2xl border border-line bg-paper p-5 sm:p-8">
             <div className="flex items-center gap-3">
               <CompanyLogo
                 name={offer.company.name}
@@ -304,7 +304,7 @@ export default async function OffrePage({
           </header>
 
           <div className="mt-10">
-            <h2 className="eyebrow">Description du poste</h2>
+            <h2 className="text-2xl font-semibold">Description du poste</h2>
             <div className="mt-2 max-w-[70ch] text-[15.5px] leading-[1.75] text-ink/85">
               {offer.universe !== "TECH" && <div className="mb-6 border-y border-line py-4 text-sm text-ink/75"><p>Première détection : {formatDateFr(offer.createdAt.getTime())} · Dernière observation : {formatDateFr(offer.lastSeenAt.getTime())}</p>{offer.qualificationText && <p className="mt-2">Qualification mentionnée : {offer.qualificationText}</p>}<p className="mt-2">Sources : {(offer.origins.length ? offer.origins : [{ sourceSite: offer.sourceSite, sourceUrl: offer.sourceUrl }]).map((origin, index) => <span key={origin.sourceUrl}>{index > 0 && " · "}<a className="link break-all" href={origin.sourceUrl} target="_blank" rel="noreferrer">{sourceLabel(origin.sourceSite)}</a></span>)}</p></div>}
             <Markdown content={offer.description} />
@@ -320,7 +320,7 @@ export default async function OffrePage({
                   href={`/go/${offer.id}`}
                   target="_blank"
                   rel="nofollow noopener"
-                  className="btn-volt group !min-h-[52px] w-full !whitespace-normal text-center text-base"
+                  className="btn-cobalt group !min-h-[52px] w-full !whitespace-normal text-center text-base"
                 >
                   Postuler sur {offer.sourceSite.replace(/^www\./, "")}
                   <ArrowUpRight
