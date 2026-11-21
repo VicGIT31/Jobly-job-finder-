@@ -1,3 +1,4 @@
+import { getWelcome } from "@/server/personal/welcome";
 import { NextRequest, NextResponse } from "next/server";
 import { timingSafeEqual } from "node:crypto";
 import { readdir, readFile } from "node:fs/promises";
@@ -40,7 +41,7 @@ export async function GET(request: NextRequest) {
   }));
   const sources = (await getSourceEntries()).map(({ id, connector }) => ({ id, label: connector.label, group: connector.group ?? "TECH" }));
   const selected = await prisma.siteSetting.findUnique({ where: { key: "desktopSources" } });
-  return NextResponse.json({ ready: true, configured: true, offers, runs, settings, sources, progress: getIngestionProgress(), selectedSources: selected?.value ?? [], collecting: !!state.desktopCollecting, error: state.desktopError ?? null, messages: messages.filter(Boolean) });
+  return NextResponse.json({ ready: true, configured: true, assistantConfigured: (await getWelcome()).completed, offers, runs, settings, sources, progress: getIngestionProgress(), selectedSources: selected?.value ?? [], collecting: !!state.desktopCollecting, error: state.desktopError ?? null, messages: messages.filter(Boolean) });
 }
 
 export async function POST(request: NextRequest) {
@@ -48,6 +49,7 @@ export async function POST(request: NextRequest) {
   const body = await request.json().catch(() => null);
   if (body?.action === "collect") {
     if (state.desktopCollecting) return NextResponse.json({ ok: true, collecting: true });
+    if (!body.manual && !((await getWelcome()).completed)) return NextResponse.json({ ok: true, paused: true });
     if (typeof body.city === "string" && body.city.trim()) { try { await saveSearchArea(body.city); } catch (error) { return NextResponse.json({ error: error instanceof Error ? error.message : "Ville non reconnue" }, { status: 400 }); } }
     if (!(await getSettings("ingestion")).ingestionEnabled && !body.manual) return NextResponse.json({ ok: true, paused: true });
     state.desktopCollecting = true;
