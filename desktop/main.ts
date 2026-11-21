@@ -6,6 +6,8 @@ import { randomBytes } from "node:crypto";
 import { spawn, type ChildProcess } from "node:child_process";
 import { LocalDatabase, freePort } from "./database";
 import { createBackup, restoreBackup } from "./backup";
+import { startSubscription } from "./subscription";
+import { MODEL_ASSISTANTS, type RemoteAssistant } from "../src/lib/collection-assistant";
 
 app.setName("Jobly");
 if (process.env.JOBLY_USER_DATA) app.setPath("userData", resolve(process.env.JOBLY_USER_DATA));
@@ -17,6 +19,7 @@ if (!acquired) app.quit();
 let window: BrowserWindow | undefined;
 let database: LocalDatabase | undefined;
 let server: UtilityProcess | undefined;
+let subscription: Awaited<ReturnType<typeof startSubscription>> | undefined;
 let searchProcess: ChildProcess | undefined;
 let origin = "";
 let token = "";
@@ -82,7 +85,7 @@ function menu() {
       { label: "Mon espace", accelerator: "CmdOrCtrl+2", click: () => go("/mon-espace") },
       { label: "Bureau et messages locaux", accelerator: "CmdOrCtrl+3", click: () => go("/bureau") },
       { type: "separator" },
-      { label: "Actualiser les offres", accelerator: "CmdOrCtrl+Shift+R", click: () => { const current = new URL(window?.webContents.getURL() || origin); const city = current.pathname === "/offres" && current.searchParams.get("national") !== "1" ? current.searchParams.get("ville") || "Toulouse" : undefined; void api("collect", { manual: true, ...(city ? { city } : {}) }).then(() => go("/bureau")).catch(handleError); } },
+      { label: "Actualiser les offres", accelerator: "CmdOrCtrl+Shift+R", click: () => { const current = new URL(window?.webContents.getURL() || origin); const city = current.pathname === "/offres" && current.searchParams.get("national") !== "1" ? current.searchParams.get("ville") : undefined; void api("collect", { manual: true, ...(city ? { city } : {}) }).then(() => go("/bureau")).catch(handleError); } },
       { label: "Sauvegarder…", click: () => { void backupDialog().catch(handleError); } },
       { label: "Importer une sauvegarde…", click: () => { void restoreDialog().then((file) => { if (file) app.relaunch(); if (file) app.quit(); }).catch(handleError); } },
       { type: "separator" }, { role: "quit" },
@@ -161,7 +164,7 @@ async function start() {
   // Deliberate allowlist: never inherit the developer's .env, API keys or DB URL.
   const env: Record<string, string> = {};
   for (const key of ["PATH", "HOME", "USERPROFILE", "APPDATA", "LOCALAPPDATA", "SystemRoot", "SYSTEMROOT", "WINDIR", "TEMP", "TMP", "TMPDIR", "LANG", "LC_ALL"]) if (process.env[key]) env[key] = process.env[key]!;
-  Object.assign(env, { NODE_ENV: "production", HOSTNAME: "127.0.0.1", PORT: String(port), NEXT_TELEMETRY_DISABLED: "1", JOBLY_DESKTOP: "1", JOBLY_DESKTOP_TOKEN: token, JOBLY_LOCAL_ORIGIN: origin, JOBLY_FILES_DIR: join(userData, "files"), JOBLY_MAIL_DIR: join(userData, "mail"), INGEST_CACHE_DIR: join(userData, "cache"), JOB_ALERTS_DIR: join(userData, "job-alerts"), DATABASE_URL: database.url, AUTH_SECRET: config.authSecret, AUTH_URL: origin, AUTH_TRUST_HOST: "true", NEXT_PUBLIC_APP_URL: origin });
+  Object.assign(env, { NODE_ENV: "production", HOSTNAME: "127.0.0.1", PORT: String(port), NEXT_TELEMETRY_DISABLED: "1", JOBLY_DESKTOP: "1", JOBLY_DESKTOP_TOKEN: token, JOBLY_LOCAL_ORIGIN: origin, JOBLY_FILES_DIR: join(userData, "files"), JOBLY_MAIL_DIR: join(userData, "mail"), JOBLY_ASSISTANT_DIR: join(userData, "private"), INGEST_CACHE_DIR: join(userData, "cache"), JOB_ALERTS_DIR: join(userData, "job-alerts"), DATABASE_URL: database.url, AUTH_SECRET: config.authSecret, AUTH_URL: origin, AUTH_TRUST_HOST: "true", NEXT_PUBLIC_APP_URL: origin });
   const searchPort = await freePort();
   env.MEILISEARCH_HOST = `http://127.0.0.1:${searchPort}`;
   env.MEILISEARCH_API_KEY = config.searchKey;
@@ -173,6 +176,11 @@ async function start() {
     if (attempt === 99 || searchProcess.exitCode !== null) throw new Error("Le moteur de recherche local ne démarre pas. Consultez le journal depuis le menu Aide.");
     await pause(200);
   }
+  subscription = await startSubscription(userData, resources);
+  env.JOBLY_SUBSCRIPTION_URL = subscription.url;
+  env.JOBLY_SUBSCRIPTION_TOKEN = subscription.secret;
+  env.JOBLY_ASSISTANTS = subscription.present.join(",");
+  redactions.add(subscription.secret);
   server = utilityProcess.fork(join(resources, "server", "server.js"), [], { cwd: join(userData), env, stdio: "pipe", serviceName: "Jobly local backend" });
   server.stdout?.on("data", (data) => log(String(data))); server.stderr?.on("data", (data) => log(String(data)));
   server.once("exit", (code) => { if (!closing) { ready = false; loading("Le service local s’est arrêté. Fermez puis relancez Jobly. Vos données sont conservées."); log(`backend exit ${code}`); } });
@@ -186,15 +194,23 @@ async function start() {
   for (const [name, handler] of Object.entries(handlers)) {
     ipcMain.handle(`jobly:${name}`, (event, data) => { validate(event); return handler(data); });
   }
+  function providerFrom(data: unknown): RemoteAssistant {
+    if (!MODEL_ASSISTANTS.includes(data as RemoteAssistant)) throw new Error("Fournisseur inconnu.");
+    return data as RemoteAssistant;
+  }
+  ipcMain.handle("jobly:subscription-status", (event, provider) => { validate(event); return subscription!.status(providerFrom(provider)); });
+  ipcMain.handle("jobly:subscription-connect", (event, provider) => { validate(event); return subscription!.connect(providerFrom(provider)); });
+  ipcMain.handle("jobly:subscription-disconnect", (event, provider) => { validate(event); return subscription!.disconnect(providerFrom(provider)); });
   ready = true;
-  await window.loadURL(origin + (config.lastPath?.startsWith("/offres") ? config.lastPath : "/"));
+  const welcome = !smoke && !status.assistantConfigured;
+  await window.loadURL(origin + (welcome ? "/assistant?bienvenue=1" : config.lastPath?.startsWith("/offres") ? config.lastPath : "/"));
   let configWrites = Promise.resolve();
   const saveLocation = () => { const url = window?.webContents.getURL(); if (url && isLocal(url)) { const current = new URL(url); if (current.pathname === "/offres") { config.lastPath = current.pathname + current.search; const serialized = JSON.stringify(config); configWrites = configWrites.then(() => writeFile(configPath + ".tmp", serialized, { mode: 0o600 })).then(() => rename(configPath + ".tmp", configPath)).catch((error) => log(String(error))); } } };
   window.webContents.on("did-navigate", saveLocation); window.webContents.on("did-navigate-in-page", saveLocation);
   if (smoke) await writeFile(join(userData, "smoke-runtime.json"), JSON.stringify({ origin, databasePort: database.port, appVersion: app.getVersion(), packaged: app.isPackaged }), { mode: 0o600 });
   // No irreversible purge on desktop: old offers expire, personal history is kept.
   if (!smoke) {
-    void api("collect").catch(log);
+    if (!welcome) void api("collect").catch(log);
     void api("maintenance").catch(log);
     timers.push(setInterval(() => { void api("collect").catch(log); }, 120 * 60000));
     timers.push(setInterval(() => { void api("maintenance").catch(log); }, 15 * 60000));
@@ -205,6 +221,7 @@ async function shutdown() {
   closing = true;
   await starting?.catch(() => {});
   for (const timer of timers) clearInterval(timer);
+  subscription?.close();
   if (ready) await api("cancel").catch(() => {});
   if (server) { const child = server; await Promise.race([new Promise<void>((resolve) => { child.once("exit", () => resolve()); child.kill(); }), pause(5000)]); server = undefined; }
   if (searchProcess && searchProcess.exitCode === null) { const child = searchProcess; await Promise.race([new Promise<void>((resolve) => { child.once("exit", () => resolve()); child.kill("SIGTERM"); }), pause(5000)]); searchProcess = undefined; }
