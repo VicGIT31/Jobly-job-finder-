@@ -24,8 +24,7 @@ export default async function MentionsLegalesPage() {
             Éditeur
           </h2>
           <p className="mt-2">
-            Jobly — projet de démonstration. 42 rue de l'Exemple, 75000 Paris. Directeur de la
-            publication : Jobly. Contact : {contactEmail}.
+            Jobly est une application de recherche d’emploi. Adresse de contact configurée pour cette installation : {contactEmail}.
           </p>
         </section>
 
@@ -34,8 +33,8 @@ export default async function MentionsLegalesPage() {
             Hébergement
           </h2>
           <p className="mt-2">
-            Application auto-hébergée (Docker). Base de données PostgreSQL, moteur de recherche
-            Meilisearch, stockage S3-compatible.
+            Dans l’application de bureau, la base, l’index de recherche et les fichiers sont stockés sur votre ordinateur.
+            L’édition de développement peut être hébergée localement dans Docker.
           </p>
         </section>
 
@@ -56,22 +55,18 @@ export default async function MentionsLegalesPage() {
             Données personnelles
           </h2>
           <p className="mt-2">
-            Les comptes candidats stockent : email, nom, école, année de diplôme, CV (fichier PDF),
-            offres sauvegardées, alertes et historique de clics « Postuler ». Ces données servent
-            uniquement au fonctionnement du service (espace personnel, alertes email). Vous pouvez
-            demander la suppression de votre compte et de vos données à tout moment : {contactEmail}
-            . Conformément au RGPD, vous disposez d'un droit d'accès, de rectification et
-            d'effacement.
+            Le profil, les CV, les offres sauvegardées, les recherches et le suivi des candidatures sont conservés localement dans l’édition de bureau.
+            Les sauvegardes exportées peuvent contenir ces informations. Si vous activez les alertes par e-mail, l’envoi utilise la messagerie que vous avez configurée.
           </p>
         </section>
 
         <section>
           <h2 className="border-t border-line pt-6 text-lg font-semibold tracking-tight text-ink">
-            Cookies
+            Assistant de classement
           </h2>
           <p className="mt-2">
-            Jobly utilise uniquement des cookies techniques de session (authentification). Aucun
-            cookie publicitaire ou de mesure d'audience tierce n'est déposé.
+            Si vous sélectionnez GitHub Copilot, Jobly transmet de courts extraits d’annonces au fournisseur choisi via GitHub. Ollama traite ces extraits sur votre ordinateur.
+            Votre CV, votre profil, vos favoris et vos notes sont exclus des requêtes de classement. Vous pouvez changer de modèle ou désactiver l’assistant à tout moment.
           </p>
         </section>
       </div>
