@@ -42,6 +42,43 @@ try {
   sourceDigest = buildManifest.sourceDigest;
   timings.firstSearchWindowMs = Date.now() - start;
   await page.getByRole("heading", { name: /Tous les métiers/ }).waitFor();
+  for (const width of [390, 768, 1440]) {
+    await page.setViewportSize({ width, height: 1000 });
+    await page.screenshot({ path: join(artifacts, `accueil-${width}.png`) });
+    assert.ok(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth));
+  }
+  await page.evaluate(() => window.joblyDesktop.sources(["local-job-alerts"]));
+  await page.goto(origin + "/assistant?bienvenue=1");
+  await page.getByRole("heading", { name: "Bonjour, bienvenue sur Jobly." }).waitFor();
+  await page.getByLabel("Prénom", { exact: true }).fill("Camille");
+  await page.getByLabel("Nom", { exact: true }).fill("Test");
+  await page.screenshot({ path: join(artifacts, "profil-initial.png") });
+  await page.getByRole("button", { name: "Continuer", exact: true }).click();
+  await page.getByRole("heading", { name: "Choisissez votre modèle d’IA" }).waitFor();
+  const copilotOption = page.getByRole("radio", { name: /^GitHub Copilot/ });
+  await copilotOption.check();
+  const copilotStatus = await page.evaluate(() => window.joblyDesktop.subscriptionStatus("copilot"));
+  assert.ok(Array.isArray(copilotStatus.models));
+  assert.ok(!copilotStatus.message?.includes("service Copilot est indisponible"), copilotStatus.message);
+  await page.getByRole("radio", { name: /^Ollama/ }).check();
+  assert.ok(Array.isArray((await page.evaluate(() => window.joblyDesktop.subscriptionStatus("ollama"))).models));
+  assert.equal(await page.locator('input[type="password"]').count(), 0);
+  await page.getByRole("radio", { name: /^Ollama/ }).focus();
+  await page.keyboard.press("ArrowDown");
+  assert.ok(await page.getByRole("radio", { name: /Continuer sans IA/ }).isChecked());
+
+  await page.screenshot({ path: join(artifacts, "assistant.png") });
+  for (const width of [768, 390]) {
+    await page.setViewportSize({ width, height: 860 });
+    await page.screenshot({ path: join(artifacts, `assistant-${width}.png`) });
+    assert.ok(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth));
+  }
+
+  await page.getByRole("button", { name: "Découvrir les offres" }).click();
+  await page.waitForURL(/\/offres/);
+  assert.equal((await page.evaluate(() => window.joblyDesktop.status())).assistantConfigured, true);
+  await page.setViewportSize({ width: 1100, height: 900 });
+  checks.push("Accueil, profil local et choix Copilot / Ollama au premier lancement");
   // Let client effects register global shortcuts before exercising them. The
   // static heading can be visible one paint before React's passive effects.
   await page.waitForTimeout(100);
@@ -49,10 +86,11 @@ try {
   assert.equal((await fetch(origin + "/api/search")).status, 403);
   checks.push("Exécutable distribué démarré sur l’accueil, PATH sans Node/npm/Docker ; recherche directe sans compte ; loopback protégé");
   const db = await database();
-  const users = await db.query('SELECT id,"passwordHash" FROM users'); assert.equal(users.rowCount, 1); assert.equal(users.rows[0].passwordHash, null);
+  const users = await db.query('SELECT id,name,"passwordHash" FROM users'); assert.equal(users.rowCount, 1); assert.equal(users.rows[0].passwordHash, null); assert.equal(users.rows[0].name, "Camille Test");
   const now = new Date();
   await db.query(`INSERT INTO companies (id,name,slug,description,sector,size,"updatedAt") VALUES ('desktop-qa-company','Entreprise de vérification','desktop-qa-company','Jeu synthétique isolé de validation.','Commerce','11-50',$1) ON CONFLICT DO NOTHING`, [now]);
   const fixtures = [
+    ["category-manager", "Cheffe de catégorie — vérification", "CDI", "COMMERCE", "CATEGORY_MANAGER", "Paris",48.8566,2.3522],
     ["barista-toulouse", "Barista Toulouse — vérification", "CDI", "HOSPITALITY", "BARISTA", "Toulouse",43.6047,1.4442],
     ["barista-agen", "Barista Agen — vérification", "CDD", "HOSPITALITY", "BARISTA", "Agen",44.2031,0.6164],
     ["barista-bordeaux", "Barista Bordeaux — vérification", "PART_TIME", "HOSPITALITY", "BARISTA", "Bordeaux",44.8378,-0.5792],
@@ -76,6 +114,10 @@ try {
   assert.equal(ai.totalHits,2); assert.ok(ai.hits.some(offer=>offer.id==='desktop-qa-legacy-ai'&&offer.city==='Toulouse')); assert.ok(ai.hits.some(offer=>offer.id==='desktop-qa-hybrid-ai'&&offer.specialty==='SOFTWARE'));
   const llm = await page.evaluate(async () => (await fetch('/api/search?q=LLM&contrat=STAGE&ville=Toulouse&rayon=30&tri=date')).json());
   assert.equal(llm.totalHits,1); assert.equal(llm.hits[0].id,'desktop-qa-hybrid-ai');
+  const category = await page.evaluate(async () => (await fetch('/api/search?q=category%20manager&metier=CATEGORY_MANAGER')).json());
+  assert.equal(category.totalHits, 1);
+  assert.equal(category.hits[0].id, 'desktop-qa-category-manager');
+  checks.push('Category Manager : requête anglaise, titre français et filtre métier');
   checks.push('Réparation du campus Thales en commune ; stage IA hybride et lieu secondaire retrouvés dans le rayon, sans changer sa spécialité principale');
   await page.goto(origin + "/offres?ville=Toulouse&rayon=30&tri=pertinence");
   await page.getByRole("link", { name: "Commercial CDI — vérification", exact: true }).waitFor();
@@ -91,9 +133,11 @@ try {
   await page.getByRole("link", { name: "Barista Agen — vérification", exact: true }).waitFor();
   for (const width of [390,768,1440]) { await page.setViewportSize({ width, height: 1000 }); await page.waitForTimeout(500); await page.screenshot({ path: join(artifacts, `barista-${width}.png`), fullPage: true }); assert.ok(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth), `Débordement barista à ${width}px`); }
   checks.push("Barista : Haute-Garonne, Toulouse, Agen, Bordeaux ; CDI, CDD, temps partiel et filtres dédiés");
+  await page.setViewportSize({ width: 1100, height: 900 });
   await page.goto(origin + "/offres?univers=FINANCE&national=1");
   await page.getByRole("link", { name: "Stage BTS Assurance — vérification", exact: true }).waitFor();
   for (const width of [390,768,1440]) { await page.setViewportSize({ width, height: 1000 }); await page.screenshot({ path: join(artifacts, `finance-${width}.png`), fullPage: true }); assert.ok(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth), `Débordement finance à ${width}px`); }
+  await page.setViewportSize({ width: 1100, height: 900 });
   await page.goto(origin + "/offres?ville=Toulouse&rayon=30&tri=pertinence");
   await page.getByRole("link", { name: "Commercial CDI — vérification", exact: true }).waitFor();
   checks.push("Assurance et BTS Assurance nationaux, filtres domaine/métier et rendu mobile/tablette/desktop");
@@ -106,7 +150,17 @@ try {
   await page.locator('[data-offer-id="desktop-qa-commerce"]').getByRole("button", { name: "Sauvegarder", exact: true }).click(); await page.locator('[data-offer-id="desktop-qa-commerce"]').getByRole("button", { name: "Sauvegardée", exact: true }).waitFor();
   timings.savedFirstOfferMs = Date.now() - start;
   checks.push("Recherche sauvegardée avec tous ses filtres et favori sans authentification");
+  await page.setViewportSize({ width: 390, height: 860 });
+  const filters = page.getByRole("button", { name: /Filtres/ }).first();
+  await filters.click();
+  await page.getByRole("dialog", { name: "Filtres" }).waitFor();
+  await page.keyboard.press("Escape");
+  await page.getByRole("dialog", { name: "Filtres" }).waitFor({ state: "hidden" });
+  assert.ok(await filters.evaluate(el => el === document.activeElement));
   for (const width of [390,768,1440]) { await page.setViewportSize({ width, height: 1000 }); await page.screenshot({ path: join(artifacts, `offres-${width}.png`), fullPage: true }); assert.ok(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth), `Débordement à ${width}px`); }
+  await page.getByRole("button", { name: /Commercial CDI — vérification/ }).click();
+  await page.getByRole("region", { name: "Aperçu de l’offre" }).getByRole("heading", { name: "Commercial CDI — vérification" }).waitFor();
+  await page.setViewportSize({ width: 1100, height: 900 });
   await page.goto(origin + "/offres/desktop-qa-commerce"); await page.getByRole("heading", { name: "Commercial CDI — vérification" }).waitFor();
   await page.screenshot({ path: join(artifacts, "fiche-offre.png"), fullPage: true });
   await app.evaluate(({ shell }) => { shell.openExternal = async (url) => { globalThis.__joblyLastExternal = url; }; });
