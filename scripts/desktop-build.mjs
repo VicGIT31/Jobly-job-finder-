@@ -7,13 +7,14 @@ import { execFileSync } from "node:child_process";
 import sharp from "sharp";
 import { createHash } from "node:crypto";
 import { chmod } from "node:fs/promises";
+const personalChatGPT = process.env.JOBLY_PERSONAL_CHATGPT === "1";
 
 const root = process.cwd();
 const resources = resolve("build/desktop-resources");
 const desktop = resolve("build/desktop-app");
 await mkdir(desktop, { recursive: true });
 await mkdir(resources, { recursive: true });
-await build({ entryPoints: ["desktop/main.ts"], outfile: join(desktop, "main.cjs"), bundle: true, platform: "node", format: "cjs", target: "node22", external: ["electron", "pg-native"], sourcemap: false });
+await build({ entryPoints: ["desktop/main.ts"], outfile: join(desktop, "main.cjs"), bundle: true, platform: "node", format: "cjs", target: "node22", define: { JOBLY_PERSONAL_CHATGPT: JSON.stringify(personalChatGPT) }, minifySyntax: true, external: ["electron", "pg-native"], sourcemap: false });
 await cp("desktop/preload.cjs", join(desktop, "preload.cjs"));
 const pkg = JSON.parse(await readFile("package.json", "utf8"));
 await writeFile(join(desktop, "package.json"), JSON.stringify({ name: "jobly-desktop", productName: "Jobly", version: pkg.version, description: "Tech, commerce, assurance, finance, barista et métiers animaliers en France", author: "Jobly", main: "main.cjs" }, null, 2));
@@ -30,6 +31,27 @@ await cp("node_modules/@embedded-postgres/" + nativePackage + "/LICENSE.md", joi
 await cp("node_modules/embedded-postgres/LICENSE.md", join(resources, "EmbeddedPostgres-LICENSE.md"));
 await cp("desktop/Meilisearch-LICENSE.txt", join(resources, "Meilisearch-LICENSE.txt"));
 await cp("desktop/PostgreSQL-LICENSE.txt", join(resources, "PostgreSQL-LICENSE.txt"));
+if (personalChatGPT) {
+  await cp("desktop/vendor/siwc/LICENSE", join(resources, "OpenAI-DevKit-LICENSE.txt"));
+  await cp("desktop/vendor/siwc/THIRD_PARTY_NOTICES.md", join(resources, "OpenAI-DevKit-NOTICES.md"));
+} else {
+  await rm(join(resources, "OpenAI-DevKit-LICENSE.txt"), { force: true });
+  await rm(join(resources, "OpenAI-DevKit-NOTICES.md"), { force: true });
+}
+
+const runtimePlatform = `${process.platform}-${process.arch}`;
+const copilotDirectory = join(resources, "copilot");
+await rm(copilotDirectory, { recursive: true, force: true });
+for (const dependency of [
+  "@microsoft/copilot-sdk", `@microsoft/copilot-sdk-${runtimePlatform}`,
+  "koffi", `@koromix/koffi-${runtimePlatform}`, "lossless-json", "vscode-jsonrpc", "zod",
+]) {
+  const source = join(root, "node_modules", dependency);
+  const destination = join(copilotDirectory, "node_modules", dependency);
+  await mkdir(join(destination, ".."), { recursive: true });
+  await cp(source, destination, { recursive: true, dereference: true });
+}
+await writeFile(join(copilotDirectory, "package.json"), '{"private":true}');
 const meiliManifest = JSON.parse(await readFile("desktop/meilisearch.json", "utf8"));
 const meiliAsset = meiliManifest.assets[`${process.platform}-${process.arch}`];
 if (!meiliAsset) throw new Error("Moteur de recherche absent pour cette cible");
