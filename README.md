@@ -14,7 +14,7 @@ Au premier lancement, renseignez votre prénom et votre nom, puis choisissez com
 
 Le collecteur national parcourt le répertoire public France Travail par département et métier, outre-mer compris, et reprend sa rotation au cycle suivant. Category Manager possède un filtre dédié et une source complémentaire HelloWork. La couverture effective dépend des sources accessibles et des lots parcourus.
 
-Jobly ne demande aucune clé API. Il envoie uniquement de courts extraits d’annonces au modèle sélectionné. Un abonnement Claude, Gemini, Grok, Mistral ou ChatGPT pris directement auprès de son éditeur ne peut pas servir à connecter Copilot. L’option `JOBLY_PERSONAL_CHATGPT=1` réserve la connexion directe ChatGPT aux builds personnels non commerciaux compatibles avec la licence du DevKit. Le build standard exclut cette option.
+Jobly ne demande aucune clé API. Il envoie uniquement de courts extraits d’annonces au modèle sélectionné. Un abonnement Claude, Gemini, Grok, Mistral ou ChatGPT pris directement auprès de son éditeur ne peut pas servir à connecter Copilot.
 
 Voir [l’audit de la version 0.6.2](docs/audits/2026-11-23-audit-jobly.md) pour les vérifications et les priorités avant une diffusion large.
 
@@ -30,7 +30,7 @@ La [version 0.5.0](https://github.com/VicGIT31/Internship-finders/releases/tag/v
 
 **Déjà installé sous Windows ?** Suivez le [guide de mise à jour par commande PowerShell](docs/MISE_A_JOUR_WINDOWS.md).
 
-Le dépôt reste privé : le téléchargement sur GitHub demande un compte autorisé. Vous pouvez ensuite transmettre le ZIP ou l’installateur à votre ami. Les archives automatiques « Source code » sont destinées au développement et n’installent pas l’application.
+Les installateurs et les ZIP de livraison sont disponibles dans les Releases GitHub lorsqu’une version est publiée. Les archives automatiques « Source code » contiennent les sources destinées au développement.
 
 Pour une installation classique, ouvrez le `.exe` sous Windows, ou le `.dmg` sur Mac puis copiez Jobly dans Applications. Aucun Node.js, npm, Docker, PostgreSQL ou Meilisearch à installer séparément. Les paquets sont non signés ; les protections de Windows et macOS restent actives. Les plateformes effectivement validées sont détaillées dans les preuves de livraison.
 
@@ -106,6 +106,8 @@ npm run desktop:delivery
 `release/` reçoit les installateurs ; `delivery/` les ZIP. Le serveur Next.js de production, PostgreSQL et Meilisearch sont embarqués. Le build exclut les `.env`, certificats et données privées. Les secrets des services locaux sont générés sur l’ordinateur à l’installation ; aucune clé API externe n’est fournie ni nécessaire à la collecte.
 
 Le [workflow natif](.github/workflows/desktop.yml) permet une construction Windows seule ou la matrice complète. La publication des paquets vérifiés se fait dans les Releases GitHub ; les fichiers binaires ne sont pas ajoutés à l’historique Git.
+
+Pour une compilation personnelle non commerciale uniquement, récupérez le [DevKit ChatGPT](https://github.com/openai/sign-in-with-chatgpt-devkit/tree/0a36fefeb913055c8c7a1a29b63d82b96b2e841a) dans un dossier séparé. Lancez la commande de build avec `JOBLY_PERSONAL_CHATGPT=1` et `JOBLY_CHATGPT_DEVKIT_DIR` défini au chemin absolu de ce dossier. Le code du DevKit est absent du dépôt et du paquet standard.
 
 Pour le développement web local, utilisez `.env.example` et les services associés. Cette édition personnelle sans authentification doit rester sur loopback ; le backend empaqueté est protégé par un jeton éphémère local.
 
