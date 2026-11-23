@@ -8,13 +8,24 @@ import sharp from "sharp";
 import { createHash } from "node:crypto";
 import { chmod } from "node:fs/promises";
 const personalChatGPT = process.env.JOBLY_PERSONAL_CHATGPT === "1";
+const chatGPTDevKit = process.env.JOBLY_CHATGPT_DEVKIT_DIR;
+if (personalChatGPT && (!chatGPTDevKit || !existsSync(join(chatGPTDevKit, "packages/local/src/index.ts")))) {
+  throw new Error("Indiquez le dossier du DevKit local avec JOBLY_CHATGPT_DEVKIT_DIR.");
+}
 
 const root = process.cwd();
 const resources = resolve("build/desktop-resources");
 const desktop = resolve("build/desktop-app");
 await mkdir(desktop, { recursive: true });
 await mkdir(resources, { recursive: true });
-await build({ entryPoints: ["desktop/main.ts"], outfile: join(desktop, "main.cjs"), bundle: true, platform: "node", format: "cjs", target: "node22", define: { JOBLY_PERSONAL_CHATGPT: JSON.stringify(personalChatGPT) }, minifySyntax: true, external: ["electron", "pg-native"], sourcemap: false });
+await build({
+  entryPoints: ["desktop/main.ts"], outfile: join(desktop, "main.cjs"),
+  bundle: true, platform: "node", format: "cjs", target: "node22",
+  define: { JOBLY_PERSONAL_CHATGPT: JSON.stringify(personalChatGPT) },
+  alias: personalChatGPT ? { "@jobly/chatgpt-devkit": resolve(chatGPTDevKit, "packages/local/src/index.ts") } : {},
+  nodePaths: personalChatGPT ? [join(root, "node_modules")] : [],
+  minifySyntax: true, external: ["electron", "pg-native"], sourcemap: false,
+});
 await cp("desktop/preload.cjs", join(desktop, "preload.cjs"));
 const pkg = JSON.parse(await readFile("package.json", "utf8"));
 await writeFile(join(desktop, "package.json"), JSON.stringify({ name: "jobly-desktop", productName: "Jobly", version: pkg.version, description: "Tech, commerce, assurance, finance, barista et métiers animaliers en France", author: "Jobly", main: "main.cjs" }, null, 2));
@@ -32,8 +43,8 @@ await cp("node_modules/embedded-postgres/LICENSE.md", join(resources, "EmbeddedP
 await cp("desktop/Meilisearch-LICENSE.txt", join(resources, "Meilisearch-LICENSE.txt"));
 await cp("desktop/PostgreSQL-LICENSE.txt", join(resources, "PostgreSQL-LICENSE.txt"));
 if (personalChatGPT) {
-  await cp("desktop/vendor/siwc/LICENSE", join(resources, "OpenAI-DevKit-LICENSE.txt"));
-  await cp("desktop/vendor/siwc/THIRD_PARTY_NOTICES.md", join(resources, "OpenAI-DevKit-NOTICES.md"));
+  await cp(join(chatGPTDevKit, "LICENSE"), join(resources, "OpenAI-DevKit-LICENSE.txt"));
+  await cp(join(chatGPTDevKit, "THIRD_PARTY_NOTICES.md"), join(resources, "OpenAI-DevKit-NOTICES.md"));
 } else {
   await rm(join(resources, "OpenAI-DevKit-LICENSE.txt"), { force: true });
   await rm(join(resources, "OpenAI-DevKit-NOTICES.md"), { force: true });
