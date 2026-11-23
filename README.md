@@ -1,6 +1,22 @@
-# Jobly 0.5.0
+# Jobly
 
-Application personnelle de recherche d’emploi, sans compte ni clé API à configurer. Les offres, favoris, recherches, candidatures, notes et CV restent sur votre ordinateur. Internet sert à actualiser les offres et à ouvrir les candidatures sur les sites d’origine.
+Application de bureau de recherche d’emploi en France. Chaque installation dispose d’un profil local indépendant. Le catalogue couvre tous les secteurs et se remplit progressivement à partir des sources accessibles.
+
+## Version 0.6.2
+
+Au premier lancement, renseignez votre prénom et votre nom, puis choisissez comment classer les annonces ambiguës. Ce choix est modifiable depuis le menu Assistant.
+
+| Option | Disponibilité |
+| --- | --- |
+| GitHub Copilot | Connectez votre propre compte GitHub dans le navigateur. Jobly affiche les modèles autorisés par votre formule et les règles de votre compte, dont Claude, Gemini, Grok et les modèles OpenAI lorsque GitHub les propose. [Catalogue GitHub](https://docs.github.com/en/copilot/reference/ai-models/supported-models) |
+| Ollama | Lancez Ollama sur le même ordinateur. Jobly détecte les modèles conversationnels téléchargés, dont ceux de Mistral, Qwen, Llama et Gemma. [Documentation Ollama](https://docs.ollama.com/) |
+| Sans IA | La collecte et le classement par règles restent disponibles. Jobly reprend également ce classement lorsque l’assistant sélectionné est indisponible ou atteint son budget local. |
+
+Le collecteur national parcourt le répertoire public France Travail par département et métier, outre-mer compris, et reprend sa rotation au cycle suivant. Category Manager possède un filtre dédié et une source complémentaire HelloWork. La couverture effective dépend des sources accessibles et des lots parcourus.
+
+Jobly ne demande aucune clé API. Il envoie uniquement de courts extraits d’annonces au modèle sélectionné. Un abonnement Claude, Gemini, Grok, Mistral ou ChatGPT pris directement auprès de son éditeur ne peut pas servir à connecter Copilot. L’option `JOBLY_PERSONAL_CHATGPT=1` réserve la connexion directe ChatGPT aux builds personnels non commerciaux compatibles avec la licence du DevKit. Le build standard exclut cette option.
+
+Voir [l’audit de la version 0.6.2](docs/audits/2026-11-23-audit-jobly.md) pour les vérifications et les priorités avant une diffusion large.
 
 ## Télécharger et installer
 
@@ -18,7 +34,7 @@ Le dépôt reste privé : le téléchargement sur GitHub demande un compte autor
 
 Pour une installation classique, ouvrez le `.exe` sous Windows, ou le `.dmg` sur Mac puis copiez Jobly dans Applications. Aucun Node.js, npm, Docker, PostgreSQL ou Meilisearch à installer séparément. Les paquets sont non signés ; les protections de Windows et macOS restent actives. Les plateformes effectivement validées sont détaillées dans les preuves de livraison.
 
-## Métiers et territoires
+## Métiers et territoires de la version 0.5.0
 
 | Domaine | Contrats | Territoire de collecte |
 | --- | --- | --- |
@@ -33,7 +49,7 @@ La finance utilise 52 combinaisons de recherche nationales générées automatiq
 ## Utiliser l’application
 
 1. Ouvrez l’accueil ou le catalogue, puis choisissez un domaine ou un métier. Les raccourcis Assurance/finance et Barista permettent d’explorer leurs offres sans imposer Toulouse comme ville de recherche.
-2. Saisissez une commune et un rayon pour limiter la recherche géographique ; sans ville, la recherche est nationale. Les baristas collectés restent limités aux territoires indiqués ci-dessus.
+2. Saisissez une commune et un rayon pour limiter la recherche géographique ; sans ville, la recherche est nationale. Les filtres s’appliquent au catalogue disponible.
 3. Enregistrez les offres et les recherches. Le bouton « Postuler » ouvre l’annonce d’origine et crée une entrée dans le suivi ; il ne prouve pas qu’une candidature a été envoyée.
 4. Utilisez « Actualiser » ou le Bureau pour suivre la collecte, sélectionner les sources, sauvegarder les données et réparer l’index.
 
@@ -63,7 +79,7 @@ Les sauvegardes contiennent des informations privées et ne sont pas chiffrées 
 
 L’actualisation des offres est automatique ; la mise à jour du programme se fait en installant la nouvelle version. Aucun mécanisme de mise à jour automatique du binaire n’est activé.
 
-## Vérifications de cette livraison
+## Vérifications de la livraison 0.5.0 publiée sur GitHub
 
 - 399 tests Vitest dans 50 fichiers ; contrôle TypeScript et lint réussis.
 - Windows x64 : compilation native, installation NSIS, 13 contrôles d’exécutable et commande PowerShell sur le véritable ZIP réussis. [Build Windows](https://github.com/VicGIT31/Internship-finders/actions/runs/42486479883).
@@ -137,7 +153,7 @@ Les documents 0.3.0, 0.4.0, 0.4.1 et les audits datés décrivent leurs versions
 Les anciens documents de contexte, guides web, audits d'octobre et cahier des charges Europe/Asie ont été retirés de l'arborescence courante après consolidation des informations utiles ici, dans l'analyse actuelle et dans le guide de collecte. Ils restent consultables dans [l'état historique du dépôt](https://github.com/VicGIT31/Internship-finders/tree/c6a7be1a03086788a3a52f9844958444f77e3857) ; ce cahier des charges décrit des intentions anciennes, pas des fonctionnalités garanties.
 
 <!-- COMMANDES-INSTALLATION -->
-## Installation par une commande à copier-coller
+## Installation de la version publiée 0.5.0 par une commande à copier-coller
 
 Téléchargez le ZIP de votre système dans **Téléchargements**. Ces commandes installent le paquet local pour votre utilisateur, vérifient son SHA-256 et ouvrent Jobly. Aucun Node.js, Docker, compte ou clé API n’est nécessaire.
 

@@ -1,5 +1,25 @@
 # Historique des versions
 
+## 0.6.2
+
+- Sélection des modèles du compte GitHub Copilot et connexion dans le navigateur.
+- Détection des modèles conversationnels d’Ollama installés sur la machine, dont Mistral.
+- Distribution standard avec Copilot, Ollama et classement local automatique. Le DevKit ChatGPT est réservé à une compilation privée non commerciale.
+- Métier Category Manager avec filtre, synonymes, reprise des annonces existantes et collecte nationale complémentaire.
+
+## 0.6.1
+
+- Retour à l’outremer de Jobly et accueil avec aperçu des dernières offres.
+- Premier lancement en deux étapes : prénom et nom du profil local, puis modèle d’IA.
+- Connexion officielle à ChatGPT et liste des modèles de l’abonnement, sans clé API.
+
+## 0.6.0
+
+- Nouveau catalogue national et aperçu des offres à côté des résultats sur grand écran.
+- Collecte France Travail par département et métier, avec reprise entre les cycles et conservation des sources spécialisées.
+- Assistant facultatif OpenAI, Claude ou Gemini par clé API, avec cache, lots et budget quotidien.
+- Recherche PostgreSQL pendant la reconstruction de l’index et expiration des offres incertaines avec date limite dépassée.
+
 ## 0.5.0 — Stages IA et collecte progressive
 
 Option B mise en œuvre : correction commune/campus et réparation du catalogue, lieux secondaires, thèmes IA complémentaires sans changer les métiers principaux, missions indexées, collecte par lots et rotation persistante, sources IA servies dès le départ avec les autres métiers. Découverte des liens officiels et adaptateurs Workable/Inria.
